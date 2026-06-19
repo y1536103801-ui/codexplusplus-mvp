@@ -1,0 +1,836 @@
+openapi: 3.1.0
+info:
+  title: Codex++ Client API
+  version: 0.1.0-mvp
+  description: >
+    MVP contract for Codex++ desktop client APIs. The desktop client consumes
+    aggregated runtime snapshots only; pricing, model policy, quota policy and
+    entitlement rules remain server-side. Clients must not hardcode prices,
+    plan logic, model billing multipliers, quota thresholds, rate-limit policy,
+    or renewal/purchase copy; these are displayed or acted on only from the
+    bootstrap/config snapshot.
+servers:
+  - url: https://api.codex-plus.example
+    description: Production placeholder
+  - url: http://localhost:3000
+    description: Local development placeholder
+security:
+  - bearerAuth: []
+paths:
+  /api/v1/auth/desktop/start:
+    post:
+      operationId: startDesktopBrowserLogin
+      summary: Create a browser-approved desktop login session.
+      description: >
+        Public desktop entry point. It returns a browser authorize URL and a
+        desktop-private poll token. The browser must never receive poll_token.
+      security: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DesktopLoginStartRequest"
+      responses:
+        "200":
+          description: Pending desktop browser handoff.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DesktopLoginStartEnvelope"
+        "500":
+          $ref: "#/components/responses/DesktopLoginUnavailable"
+  /api/v1/auth/desktop/complete:
+    post:
+      operationId: completeDesktopBrowserLogin
+      summary: Approve a desktop login from an authenticated browser session.
+      description: >
+        Requires the normal Web JWT. This endpoint binds the pending desktop
+        session to the current browser user and returns only a completion
+        status, never a desktop access token.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DesktopLoginCompleteRequest"
+      responses:
+        "200":
+          description: Desktop login approved.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DesktopLoginCompleteEnvelope"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          $ref: "#/components/responses/DesktopLoginTargetMismatch"
+  /api/v1/auth/desktop/poll:
+    post:
+      operationId: pollDesktopBrowserLogin
+      summary: Let the desktop poll for browser login completion.
+      description: >
+        Public desktop polling endpoint. It requires both session_token and the
+        desktop-private poll_token. A completed poll is one-time and consumes
+        the pending session before issuing desktop tokens.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DesktopLoginPollRequest"
+      responses:
+        "200":
+          description: Pending or completed desktop browser handoff.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DesktopLoginPollEnvelope"
+        "401":
+          $ref: "#/components/responses/PendingAuthUnauthorized"
+  /api/v1/client/bootstrap:
+    get:
+      operationId: getClientBootstrap
+      summary: Return the current user's runtime snapshot.
+      parameters:
+        - $ref: "#/components/parameters/DeviceIdHeader"
+        - $ref: "#/components/parameters/ClientVersionHeader"
+      responses:
+        "200":
+          description: Bootstrap snapshot.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BootstrapEnvelope"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /api/v1/client/usage:
+    get:
+      operationId: getClientUsage
+      summary: Return a refreshable usage and service summary.
+      parameters:
+        - $ref: "#/components/parameters/DeviceIdHeader"
+      responses:
+        "200":
+          description: Usage summary.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UsageEnvelope"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /api/v1/client/devices:
+    post:
+      operationId: registerClientDevice
+      summary: Idempotently register or refresh a desktop device.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeviceRegisterRequest"
+      responses:
+        "200":
+          description: Device registration result.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeviceEnvelope"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /api/v1/client/redeem:
+    post:
+      operationId: redeemClientCode
+      summary: Redeem a client-side activation or compensation code.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RedeemRequest"
+      responses:
+        "200":
+          description: Redeem result.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RedeemEnvelope"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    DeviceIdHeader:
+      name: X-CodexPlus-Device-Id
+      in: header
+      required: false
+      schema:
+        type: string
+        minLength: 8
+        maxLength: 128
+    ClientVersionHeader:
+      name: X-CodexPlus-Client-Version
+      in: header
+      required: false
+      schema:
+        type: string
+        maxLength: 64
+  responses:
+    Unauthorized:
+      description: Missing, expired or invalid user JWT.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorEnvelope"
+          examples:
+            notAuthenticated:
+              value:
+                code: 401
+                status: error
+                message: Please sign in again.
+                reason: CLIENT_AUTH_NOT_AUTHENTICATED
+                data: null
+                error_code: CLIENT_AUTH_NOT_AUTHENTICATED
+    PendingAuthUnauthorized:
+      description: Missing, expired, consumed or mismatched desktop pending auth session.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorEnvelope"
+          examples:
+            expired:
+              value:
+                code: 401
+                status: error
+                message: pending auth session has expired
+                reason: PENDING_AUTH_SESSION_EXPIRED
+                data: null
+                error_code: PENDING_AUTH_SESSION_EXPIRED
+            browserMismatch:
+              value:
+                code: 401
+                status: error
+                message: pending auth completion code does not match this browser session
+                reason: PENDING_AUTH_BROWSER_MISMATCH
+                data: null
+                error_code: PENDING_AUTH_BROWSER_MISMATCH
+    DesktopLoginUnavailable:
+      description: Desktop browser handoff could not be created.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorEnvelope"
+          examples:
+            createFailed:
+              value:
+                code: 500
+                status: error
+                message: failed to create desktop login session
+                reason: CLIENT_AUTH_DESKTOP_SESSION_CREATE_FAILED
+                data: null
+                error_code: CLIENT_AUTH_DESKTOP_SESSION_CREATE_FAILED
+    DesktopLoginTargetMismatch:
+      description: Pending desktop session was already approved by another user.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorEnvelope"
+          examples:
+            mismatch:
+              value:
+                code: 409
+                status: error
+                message: desktop login session has already been approved by another user
+                reason: CLIENT_AUTH_DESKTOP_TARGET_MISMATCH
+                data: null
+                error_code: CLIENT_AUTH_DESKTOP_TARGET_MISMATCH
+  schemas:
+    EnvelopeBase:
+      type: object
+      description: >
+        All MVP responses and fixtures use a dual-compatible envelope:
+        code/status/message/data/error_code/reason. Success responses use
+        code=0, status=success, error_code=null and reason=null. Error
+        responses use status=error; reason must equal error_code for legacy
+        Sub2API consumers. During migration, manual consumers may also unwrap
+        older code/message/reason-only responses.
+      required: [code, status, message, reason, error_code]
+      properties:
+        code:
+          type: integer
+          description: Legacy Sub2API response code. A value of 0 means success; errors mirror the HTTP status or legacy code.
+        status:
+          type: string
+          enum: [success, error]
+          description: Contract fixture status. New fixtures must always include it.
+        message:
+          type: string
+        reason:
+          type: string
+          nullable: true
+          description: Legacy Sub2API error reason; equivalent to error_code for implementation checks.
+        error_code:
+          type: string
+          nullable: true
+    ErrorEnvelope:
+      allOf:
+        - $ref: "#/components/schemas/EnvelopeBase"
+        - type: object
+          required: [data]
+          properties:
+            data:
+              type: "null"
+    BootstrapEnvelope:
+      allOf:
+        - $ref: "#/components/schemas/EnvelopeBase"
+        - type: object
+          required: [data]
+          properties:
+            data:
+              $ref: "#/components/schemas/BootstrapSnapshot"
+    UsageEnvelope:
+      allOf:
+        - $ref: "#/components/schemas/EnvelopeBase"
+        - type: object
+          required: [data]
+          properties:
+            data:
+              $ref: "#/components/schemas/UsageSnapshot"
+    DeviceEnvelope:
+      allOf:
+        - $ref: "#/components/schemas/EnvelopeBase"
+        - type: object
+          required: [data]
+          properties:
+            data:
+              $ref: "#/components/schemas/DeviceRegistration"
+    RedeemEnvelope:
+      allOf:
+        - $ref: "#/components/schemas/EnvelopeBase"
+        - type: object
+          required: [data]
+          properties:
+            data:
+              $ref: "#/components/schemas/RedeemResult"
+    DesktopLoginStartEnvelope:
+      allOf:
+        - $ref: "#/components/schemas/EnvelopeBase"
+        - type: object
+          required: [data]
+          properties:
+            data:
+              $ref: "#/components/schemas/DesktopLoginStartResult"
+    DesktopLoginCompleteEnvelope:
+      allOf:
+        - $ref: "#/components/schemas/EnvelopeBase"
+        - type: object
+          required: [data]
+          properties:
+            data:
+              $ref: "#/components/schemas/DesktopLoginCompleteResult"
+    DesktopLoginPollEnvelope:
+      allOf:
+        - $ref: "#/components/schemas/EnvelopeBase"
+        - type: object
+          required: [data]
+          properties:
+            data:
+              $ref: "#/components/schemas/DesktopLoginPollResult"
+    BootstrapSnapshot:
+      type: object
+      required:
+        - service
+        - provider
+        - plan
+        - models
+        - usage
+        - feature_flags
+        - announcements
+        - version_policy
+        - device
+      properties:
+        service:
+          $ref: "#/components/schemas/ServiceState"
+        provider:
+          $ref: "#/components/schemas/ManagedProvider"
+        plan:
+          $ref: "#/components/schemas/PlanSummary"
+        models:
+          type: array
+          items:
+            $ref: "#/components/schemas/ModelSummary"
+        usage:
+          $ref: "#/components/schemas/UsageSummary"
+        feature_flags:
+          $ref: "#/components/schemas/FeatureFlagSnapshot"
+        announcements:
+          type: array
+          items:
+            $ref: "#/components/schemas/Announcement"
+        version_policy:
+          $ref: "#/components/schemas/VersionPolicy"
+        device:
+          $ref: "#/components/schemas/DeviceRegistration"
+    ServiceState:
+      type: object
+      required: [status, message, message_key, action_hint, retryable]
+      properties:
+        status:
+          $ref: "#/components/schemas/ClientServiceStatus"
+        message:
+          type: string
+          description: Server-resolved display text for the current locale. Clients must not substitute hardcoded purchase, renewal or policy text.
+        message_key:
+          type: string
+          description: Stable config snapshot key for the service message copy.
+        action_hint:
+          type: string
+          enum:
+            - none
+            - sign_in
+            - purchase
+            - renew
+            - recharge
+            - contact_support
+            - retry
+            - repair_local_config
+            - install_codex
+        retryable:
+          type: boolean
+        support_url:
+          type: string
+          nullable: true
+        error_code:
+          type: string
+          nullable: true
+    ClientServiceStatus:
+      type: string
+      enum:
+        - available
+        - not_authenticated
+        - not_purchased
+        - expired
+        - low_balance
+        - disabled
+        - device_revoked
+        - model_unavailable
+        - rate_limited
+        - gateway_unhealthy
+        - local_codex_missing
+        - local_config_failed
+    ManagedProvider:
+      type: object
+      required:
+        - provider_id
+        - display_name
+        - gateway_base_url
+        - auth_mode
+        - key_summary
+        - default_model
+      properties:
+        provider_id:
+          type: string
+          const: codex-plus-cloud
+        display_name:
+          type: string
+          const: Codex++ Cloud
+        gateway_base_url:
+          type: string
+        auth_mode:
+          type: string
+          enum: [user_side_api_key]
+        api_key:
+          type: string
+          nullable: true
+          description: User-side gateway key only. Never an upstream provider key.
+        key_summary:
+          type: object
+          required: [key_id, masked_key, created_at, last_used_at]
+          properties:
+            key_id:
+              type: string
+            masked_key:
+              type: string
+              example: sk-user-...abcd
+            created_at:
+              type: string
+              format: date-time
+            last_used_at:
+              type: string
+              format: date-time
+              nullable: true
+        default_model:
+          type: string
+    PlanSummary:
+      type: object
+      required: [plan_id, name, status, expires_at, renew_url, commerce_action]
+      properties:
+        plan_id:
+          type: string
+        name:
+          type: string
+        status:
+          type: string
+          enum: [none, active, trial, expired, disabled]
+        expires_at:
+          type: string
+          format: date-time
+          nullable: true
+        renew_url:
+          type: string
+          nullable: true
+          description: Compatibility URL sourced from config. Clients must not hardcode billing URLs or copy and should prefer commerce_action for UI.
+        commerce_action:
+          $ref: "#/components/schemas/ClientAction"
+    ModelSummary:
+      type: object
+      required: [model_id, label, is_default, is_available]
+      properties:
+        model_id:
+          type: string
+        route_model:
+          type: string
+          description: Server-side route model. Clients must not infer billing from this.
+        label:
+          type: string
+        is_default:
+          type: boolean
+        is_available:
+          type: boolean
+        disabled_reason:
+          type: string
+          nullable: true
+    UsageSummary:
+      type: object
+      required:
+        - balance_display
+        - low_balance
+        - period_usage_display
+        - rate_limit_state
+        - renew_action
+      properties:
+        balance_display:
+          type: string
+        low_balance:
+          type: boolean
+        period_usage_display:
+          type: string
+        rate_limit_state:
+          type: string
+          enum: [normal, approaching_limit, limited, blocked]
+        renew_action:
+          $ref: "#/components/schemas/ClientAction"
+    UsageSnapshot:
+      type: object
+      required:
+        - service_status
+        - balance_summary
+        - period_usage
+        - rate_limit_state
+        - renew_action
+        - last_updated_at
+        - snapshot_version
+      properties:
+        service_status:
+          $ref: "#/components/schemas/ClientServiceStatus"
+        balance_summary:
+          $ref: "#/components/schemas/BalanceSummary"
+        period_usage:
+          $ref: "#/components/schemas/PeriodUsageSummary"
+        rate_limit_state:
+          type: string
+          enum: [normal, approaching_limit, limited, blocked]
+        renew_action:
+          $ref: "#/components/schemas/ClientAction"
+        last_updated_at:
+          type: string
+          format: date-time
+        snapshot_version:
+          type: string
+    FeatureFlagSnapshot:
+      type: object
+      required:
+        - advanced_provider_config
+        - install_assistant
+        - new_user_tutorial
+        - model_selector
+        - diagnostic_export
+        - announcements
+        - force_update_prompt
+        - strict_device_enforcement
+      properties:
+        advanced_provider_config:
+          type: boolean
+        install_assistant:
+          type: boolean
+        new_user_tutorial:
+          type: boolean
+        model_selector:
+          type: boolean
+        diagnostic_export:
+          type: boolean
+        announcements:
+          type: boolean
+          description: User-safe flag controlling whether active announcements may be shown from the bootstrap announcements array.
+        force_update_prompt:
+          type: boolean
+          description: User-safe flag telling the client whether to show the server-managed update prompt.
+        strict_device_enforcement:
+          type: boolean
+          description: User-safe flag mirroring whether device enforcement is active for this snapshot.
+    ClientAction:
+      type: object
+      required: [action_type, message_key, action_copy_key, label, url]
+      properties:
+        action_type:
+          type: string
+          enum:
+            - none
+            - purchase
+            - renew
+            - recharge
+            - manage_plan
+            - contact_support
+            - check_status
+        message_key:
+          type: string
+          nullable: true
+          description: Stable config snapshot key for related body copy.
+        action_copy_key:
+          type: string
+          nullable: true
+          description: Stable config snapshot key for button or link copy.
+        label:
+          type: string
+          description: Server-resolved display copy for the current locale. Clients must not hardcode renewal or purchase copy.
+        url:
+          type: string
+          nullable: true
+          description: Server-provided action target, if any.
+    BalanceSummary:
+      type: object
+      required: [balance_display, low_balance]
+      properties:
+        balance_display:
+          type: string
+          description: Server-rendered balance summary. Clients must not calculate credit thresholds.
+        low_balance:
+          type: boolean
+          description: Server policy decision.
+    PeriodUsageSummary:
+      type: object
+      required: [period_id, usage_display, reset_at]
+      properties:
+        period_id:
+          type: string
+        usage_display:
+          type: string
+          description: Server-rendered usage text. Clients must not infer pricing or billing multipliers.
+        reset_at:
+          type: string
+          format: date-time
+          nullable: true
+    Announcement:
+      type: object
+      required: [id, severity, message]
+      properties:
+        id:
+          type: string
+        severity:
+          type: string
+          enum: [info, warning, critical]
+        message:
+          type: string
+        url:
+          type: string
+          nullable: true
+    VersionPolicy:
+      type: object
+      required:
+        - config_version
+        - snapshot_version
+        - refresh_ttl_seconds
+        - force_refresh
+        - minimum_client_version
+      properties:
+        config_version:
+          type: string
+        snapshot_version:
+          type: string
+        refresh_ttl_seconds:
+          type: integer
+          minimum: 30
+        force_refresh:
+          type: boolean
+        minimum_client_version:
+          type: string
+    DeviceRegisterRequest:
+      type: object
+      required: [device_id, platform, app_version, codex_version, last_seen_at]
+      properties:
+        device_id:
+          type: string
+          minLength: 8
+          maxLength: 128
+        platform:
+          type: string
+          enum: [windows, macos, linux, unknown]
+        app_version:
+          type: string
+        codex_version:
+          type: string
+          nullable: true
+          description: Required key. Value is the detected local Codex version; null is allowed only when Codex is missing or version probing failed.
+        last_seen_at:
+          type: string
+          format: date-time
+    DeviceRegistration:
+      type: object
+      required: [device_id, status, message, snapshot_version]
+      properties:
+        device_id:
+          type: string
+        status:
+          type: string
+          enum: [active, revoked, blocked, unknown]
+        message:
+          type: string
+        snapshot_version:
+          type: string
+    RedeemRequest:
+      type: object
+      required: [code]
+      properties:
+        code:
+          type: string
+          minLength: 4
+          maxLength: 128
+        device_id:
+          type: string
+          nullable: true
+    RedeemResult:
+      type: object
+      required:
+        - redeem_status
+        - entitlement_delta_summary
+        - service_status_after
+        - snapshot_version
+        - message
+      properties:
+        redeem_status:
+          type: string
+          enum: [applied, already_used, invalid, expired, not_allowed]
+        entitlement_delta_summary:
+          type: string
+        service_status_after:
+          $ref: "#/components/schemas/ClientServiceStatus"
+        snapshot_version:
+          type: string
+        message:
+          type: string
+    DesktopLoginStartRequest:
+      type: object
+      properties:
+        device_id:
+          type: string
+          nullable: true
+          maxLength: 128
+        device_name:
+          type: string
+          nullable: true
+          maxLength: 128
+    DesktopLoginStartResult:
+      type: object
+      required:
+        - session_token
+        - poll_token
+        - authorize_url
+        - verification_code
+        - expires_at
+        - poll_interval_seconds
+      properties:
+        session_token:
+          type: string
+          description: Included in authorize_url and safe to send to the browser.
+        poll_token:
+          type: string
+          description: Desktop-private secret. Never display, log, or append to authorize_url.
+        authorize_url:
+          type: string
+          description: Browser URL containing session_token and verification_code only.
+        verification_code:
+          type: string
+          pattern: "^\\d{6}$"
+        expires_at:
+          type: string
+          format: date-time
+        poll_interval_seconds:
+          type: integer
+          minimum: 1
+    DesktopLoginCompleteRequest:
+      type: object
+      required: [session_token]
+      properties:
+        session_token:
+          type: string
+    DesktopLoginCompleteResult:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [completed]
+    DesktopLoginPollRequest:
+      type: object
+      required: [session_token, poll_token]
+      properties:
+        session_token:
+          type: string
+        poll_token:
+          type: string
+    DesktopLoginPollResult:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [pending, completed]
+        access_token:
+          type: string
+          nullable: true
+        refresh_token:
+          type: string
+          nullable: true
+        expires_in:
+          type: integer
+          nullable: true
+        token_type:
+          type: string
+          nullable: true
+          enum: [Bearer]
+        user:
+          $ref: "#/components/schemas/DesktopLoginUser"
+          nullable: true
+          description: Present only when status=completed. Must not contain tokens, API keys or other secrets.
+    DesktopLoginUser:
+      type: object
+      required: [id, username, email, display_name, role]
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          description: Opaque user identifier; numeric backend IDs must be stringified before entering the desktop contract.
+        username:
+          type: string
+        email:
+          type: string
+          format: email
+        display_name:
+          type: string
+        role:
+          type: string

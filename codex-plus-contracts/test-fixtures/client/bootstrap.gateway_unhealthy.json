@@ -1,0 +1,91 @@
+{
+  "code": 0,
+  "status": "success",
+  "message": "Gateway is temporarily unavailable.",
+  "reason": null,
+  "error_code": null,
+  "data": {
+    "service": {
+      "status": "gateway_unhealthy",
+      "message": "Codex++ Cloud is temporarily unavailable. Please retry later.",
+      "message_key": "service.gateway_unhealthy",
+      "action_hint": "retry",
+      "retryable": true,
+      "support_url": "https://codex-plus.example/status",
+      "error_code": "GATEWAY_POLICY_CONFIG_UNAVAILABLE"
+    },
+    "provider": {
+      "provider_id": "codex-plus-cloud",
+      "display_name": "Codex++ Cloud",
+      "gateway_base_url": "https://api.codex-plus.example/v1",
+      "auth_mode": "user_side_api_key",
+      "api_key": null,
+      "key_summary": {
+        "key_id": "key_fixture_001",
+        "masked_key": "sk-user-...0001",
+        "created_at": "2026-06-16T00:00:00Z",
+        "last_used_at": null
+      },
+      "default_model": "gpt-5-codex"
+    },
+    "plan": {
+      "plan_id": "starter",
+      "name": "Starter",
+      "status": "active",
+      "expires_at": "2026-07-16T00:00:00Z",
+      "renew_url": "https://codex-plus.example/billing",
+      "commerce_action": {
+        "action_type": "check_status",
+        "message_key": "plan.starter.gateway_unhealthy",
+        "action_copy_key": "action.check_status",
+        "label": "Check status",
+        "url": "https://codex-plus.example/status"
+      }
+    },
+    "models": [],
+    "usage": {
+      "balance_display": "Temporarily unavailable",
+      "low_balance": false,
+      "period_usage_display": "Temporarily unavailable",
+      "rate_limit_state": "blocked",
+      "renew_action": {
+        "action_type": "check_status",
+        "message_key": "usage.gateway_unhealthy",
+        "action_copy_key": "action.check_status",
+        "label": "Check status",
+        "url": "https://codex-plus.example/status"
+      }
+    },
+    "feature_flags": {
+      "advanced_provider_config": false,
+      "install_assistant": true,
+      "new_user_tutorial": true,
+      "model_selector": false,
+      "diagnostic_export": true,
+      "announcements": true,
+      "force_update_prompt": false,
+      "strict_device_enforcement": false
+    },
+    "announcements": [
+      {
+        "id": "gateway-maintenance",
+        "severity": "warning",
+        "message": "Gateway maintenance is in progress.",
+        "url": "https://codex-plus.example/status"
+      }
+    ],
+    "version_policy": {
+      "config_version": "cfg_20260616_0001",
+      "snapshot_version": "snap_20260616_gateway_unhealthy",
+      "refresh_ttl_seconds": 60,
+      "force_refresh": false,
+      "minimum_client_version": "0.1.0"
+    },
+    "device": {
+      "device_id": "dev_fixture_windows_001",
+      "status": "active",
+      "message": "Device active.",
+      "snapshot_version": "snap_20260616_gateway_unhealthy"
+    }
+  }
+}

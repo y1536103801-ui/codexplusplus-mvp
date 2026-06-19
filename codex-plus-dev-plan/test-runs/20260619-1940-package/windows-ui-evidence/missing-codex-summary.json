@@ -1,0 +1,33 @@
+{
+  "profile": {
+    "port": 9335,
+    "target_title": "Codex++ 管理工具",
+    "profile_root": "F:\\codex++\\codex+++(2)\\codex+++\\codex-plus-dev-plan\\test-runs\\20260618-2306-package\\missing-codex-profile",
+    "local_appdata": "F:\\codex++\\codex+++(2)\\codex+++\\codex-plus-dev-plan\\test-runs\\20260618-2306-package\\missing-codex-profile\\LocalAppData",
+    "appdata": "F:\\codex++\\codex+++(2)\\codex+++\\codex-plus-dev-plan\\test-runs\\20260618-2306-package\\missing-codex-profile\\Roaming",
+    "userprofile": "F:\\codex++\\codex+++(2)\\codex+++\\codex-plus-dev-plan\\test-runs\\20260618-2306-package\\missing-codex-profile\\UserProfile",
+    "codex_home": "F:\\codex++\\codex+++(2)\\codex+++\\codex-plus-dev-plan\\test-runs\\20260618-2306-package\\missing-codex-profile\\CodexHome",
+    "local_openai_codex_exists": false,
+    "local_programs_openai_codex_exists": false
+  },
+  "markers": {
+    "cloud_mentions_cloud": true,
+    "maintenance_route": true,
+    "codex_app_missing": false,
+    "current_detection_missing": false,
+    "choose_app_directory": true,
+    "choose_codex_exe": true,
+    "about_codex_version_missing": true
+  },
+  "files": [
+    "missing-codex-about-dom.json",
+    "missing-codex-about-dom.txt",
+    "missing-codex-about.png",
+    "missing-codex-cloud-first-run-dom.json",
+    "missing-codex-cloud-first-run-dom.txt",
+    "missing-codex-cloud-first-run.png",
+    "missing-codex-maintenance-dom.json",
+    "missing-codex-maintenance-dom.txt",
+    "missing-codex-maintenance.png"
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "code": 0,
+  "status": "success",
+  "message": "Code applied.",
+  "reason": null,
+  "error_code": null,
+  "data": {
+    "redeem_status": "applied",
+    "entitlement_delta_summary": "Starter plan extended by 30 days",
+    "service_status_after": "available",
+    "snapshot_version": "snap_20260616_redeem_applied",
+    "message": "Redeem code applied."
+  }
+}

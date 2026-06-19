@@ -1,0 +1,1688 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Codex++ 解耦式多会话开发计划</title>
+  <style>
+    :root {
+      --bg: #f6f7f2;
+      --paper: #ffffff;
+      --paper-soft: #eef4ed;
+      --ink: #17201c;
+      --muted: #60706a;
+      --line: #d8e2db;
+      --green: #1f8f65;
+      --green-soft: #e1f4ea;
+      --teal: #16798b;
+      --blue: #375eaa;
+      --amber: #b87516;
+      --coral: #c75444;
+      --shadow: 0 18px 55px rgba(27, 46, 38, 0.13);
+      --radius: 8px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: var(--bg);
+      font-family: Inter, "Microsoft YaHei", "PingFang SC", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.55;
+    }
+
+    button {
+      font: inherit;
+      cursor: pointer;
+    }
+
+    code {
+      font-family: "JetBrains Mono", Consolas, "SFMono-Regular", monospace;
+    }
+
+    .wrap {
+      width: min(1200px, calc(100% - 40px));
+      margin: 0 auto;
+      padding: 28px 0 50px;
+    }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      margin: -28px calc((100vw - min(1200px, calc(100vw - 40px))) / -2) 26px;
+      padding: 13px calc((100vw - min(1200px, calc(100vw - 40px))) / 2);
+      border-bottom: 1px solid rgba(216, 226, 219, 0.9);
+      background: rgba(246, 247, 242, 0.88);
+      backdrop-filter: blur(14px);
+    }
+
+    .topbar-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      width: min(1200px, calc(100vw - 40px));
+      margin: 0 auto;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .mark {
+      display: grid;
+      width: 38px;
+      height: 38px;
+      place-items: center;
+      color: #fff;
+      background: var(--ink);
+      border-radius: var(--radius);
+      font-weight: 900;
+    }
+
+    .brand strong,
+    .brand span {
+      display: block;
+    }
+
+    .brand strong {
+      font-size: 15px;
+    }
+
+    .brand span {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .nav {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      white-space: nowrap;
+    }
+
+    .nav a {
+      color: var(--muted);
+      text-decoration: none;
+      border: 1px solid transparent;
+      border-radius: 999px;
+      padding: 7px 11px;
+      font-size: 13px;
+    }
+
+    .nav a:hover {
+      color: var(--ink);
+      background: rgba(255, 255, 255, 0.78);
+      border-color: var(--line);
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 0.95fr) minmax(360px, 1.05fr);
+      gap: 22px;
+      align-items: stretch;
+      min-height: 460px;
+    }
+
+    .hero-copy {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 28px 0;
+    }
+
+    .eyebrow {
+      width: fit-content;
+      color: var(--green);
+      background: rgba(31, 143, 101, 0.12);
+      border: 1px solid rgba(31, 143, 101, 0.2);
+      border-radius: 999px;
+      padding: 6px 11px;
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    h1 {
+      margin: 14px 0 10px;
+      font-size: clamp(36px, 5.6vw, 58px);
+      line-height: 1.05;
+      letter-spacing: 0;
+    }
+
+    .lead {
+      max-width: 640px;
+      margin: 0;
+      color: #34413b;
+      font-size: 17px;
+    }
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 22px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 40px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 9px 14px;
+      color: var(--ink);
+      background: #fff;
+      text-decoration: none;
+      transition: 160ms ease;
+    }
+
+    .btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 8px 22px rgba(23, 32, 28, 0.1);
+    }
+
+    .btn.primary {
+      color: #fff;
+      background: var(--ink);
+      border-color: var(--ink);
+    }
+
+    .principles {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 24px;
+    }
+
+    .principle {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 13px;
+      background: rgba(255, 255, 255, 0.72);
+    }
+
+    .principle strong,
+    .principle span {
+      display: block;
+    }
+
+    .principle strong {
+      margin-bottom: 4px;
+      font-size: 14px;
+    }
+
+    .principle span {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .hero-board {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      min-height: 460px;
+      border: 1px solid rgba(216, 226, 219, 0.95);
+      border-radius: var(--radius);
+      background: #ffffff;
+      box-shadow: 0 14px 38px rgba(27, 46, 38, 0.1);
+    }
+
+    .pipeline-card {
+      position: relative;
+      z-index: 1;
+      width: min(92%, 560px);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      overflow: hidden;
+      background: #fbfdfb;
+    }
+
+    .pipeline-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 13px 15px;
+      border-bottom: 1px solid var(--line);
+      background: #f1f6f2;
+    }
+
+    .pipeline-head span {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .pipeline-action {
+      border: 1px solid rgba(31, 143, 101, 0.26);
+      border-radius: var(--radius);
+      padding: 6px 9px;
+      color: var(--green);
+      background: #fff;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .pipeline-action:disabled {
+      color: var(--muted);
+      background: #f7faf7;
+      cursor: default;
+    }
+
+    .pipeline-body {
+      padding: 16px;
+    }
+
+    .lane {
+      display: grid;
+      grid-template-columns: 112px 1fr;
+      gap: 12px;
+      align-items: center;
+      margin: 9px 0;
+    }
+
+    .lane-label {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .lane-label span {
+      display: block;
+      margin-top: 1px;
+      color: #8a9993;
+      font-weight: 600;
+    }
+
+    .lane-line {
+      position: relative;
+      height: 34px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #fff;
+      overflow: hidden;
+    }
+
+    .lane-line::before,
+    .lane-line::after {
+      content: "";
+      position: absolute;
+      top: 50%;
+      left: 14px;
+      height: 2px;
+      transform: translateY(-50%);
+    }
+
+    .lane-line::before {
+      right: 14px;
+      background: #e3eae5;
+    }
+
+    .lane-line::after {
+      width: 0;
+      background: var(--green);
+      transition: width 520ms ease;
+    }
+
+    .moving-dot {
+      position: absolute;
+      z-index: 1;
+      top: 50%;
+      left: 14px;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--green);
+      transform: translateY(-50%);
+      transition: left 520ms ease, background 220ms ease;
+    }
+
+    .lane.done .lane-line::after {
+      width: calc(100% - 28px);
+    }
+
+    .lane.active .lane-line::after {
+      animation: fillPhase 720ms ease forwards;
+    }
+
+    .lane.done .moving-dot,
+    .lane.active .moving-dot {
+      left: calc(100% - 24px);
+    }
+
+    .lane.active .lane-label {
+      color: var(--ink);
+    }
+
+    .stage-summary {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      margin-top: 16px;
+    }
+
+    .stage-pill {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 10px;
+      background: #fff;
+      text-align: center;
+    }
+
+    .stage-pill strong {
+      display: block;
+      font-size: 18px;
+    }
+
+    .stage-pill span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    section {
+      scroll-margin-top: 90px;
+    }
+
+    .section-head {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 16px;
+      margin: 30px 0 14px;
+    }
+
+    .section-head h2 {
+      margin: 0;
+      font-size: 30px;
+    }
+
+    .section-head p {
+      max-width: 650px;
+      margin: 0;
+      color: var(--muted);
+    }
+
+    .timeline {
+      display: grid;
+      grid-template-columns: 300px 1fr;
+      gap: 16px;
+      align-items: start;
+    }
+
+    .stage-list {
+      position: sticky;
+      top: 86px;
+      display: grid;
+      gap: 8px;
+    }
+
+    .stage-button {
+      display: grid;
+      grid-template-columns: 44px 1fr;
+      gap: 10px;
+      align-items: center;
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 10px;
+      color: var(--ink);
+      background: rgba(255, 255, 255, 0.8);
+      text-align: left;
+      transition: 160ms ease;
+    }
+
+    .stage-button.active {
+      border-color: rgba(31, 143, 101, 0.5);
+      background: var(--green-soft);
+      transform: translateX(2px);
+    }
+
+    .stage-num {
+      display: grid;
+      width: 38px;
+      height: 38px;
+      place-items: center;
+      color: #fff;
+      background: var(--ink);
+      border-radius: 50%;
+      font-weight: 900;
+      font-size: 13px;
+    }
+
+    .stage-button strong,
+    .stage-button small {
+      display: block;
+    }
+
+    .stage-button small {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .stage-detail {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      overflow: hidden;
+      background: rgba(255, 255, 255, 0.84);
+      box-shadow: 0 15px 42px rgba(24, 42, 35, 0.1);
+    }
+
+    .stage-detail-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 14px;
+      align-items: start;
+      padding: 18px;
+      border-bottom: 1px solid var(--line);
+      background: #f8fbf8;
+    }
+
+    .stage-detail-head h3 {
+      margin: 0 0 5px;
+      font-size: 24px;
+    }
+
+    .stage-detail-head p {
+      margin: 0;
+      color: var(--muted);
+    }
+
+    .parallel-badge {
+      flex: 0 0 auto;
+      border: 1px solid rgba(31, 143, 101, 0.22);
+      border-radius: 999px;
+      padding: 6px 10px;
+      color: var(--green);
+      background: var(--green-soft);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .task-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      padding: 18px;
+    }
+
+    .task-card {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 14px;
+      background: #fff;
+      transition: 170ms ease;
+    }
+
+    .task-card:hover {
+      transform: translateY(-3px);
+      border-color: rgba(31, 143, 101, 0.36);
+      box-shadow: 0 12px 30px rgba(24, 42, 35, 0.1);
+    }
+
+    .task-card header {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: start;
+      margin-bottom: 8px;
+    }
+
+    .task-card h4 {
+      margin: 0;
+      font-size: 17px;
+    }
+
+    .task-card p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .task-file {
+      display: inline-flex;
+      max-width: 100%;
+      margin-top: 12px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 5px 9px;
+      color: var(--muted);
+      background: #f8fbf8;
+      font-size: 12px;
+      text-decoration: none;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .merge-strip {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 8px;
+      padding: 0 18px 18px;
+    }
+
+    .merge-step {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 10px;
+      background: #fbfdfb;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .merge-step strong {
+      display: block;
+      color: var(--ink);
+      font-size: 13px;
+    }
+
+    .architecture {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 22px;
+      background: #fff;
+    }
+
+    .arch-planes {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .arch-plane {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #fbfdfb;
+      overflow: hidden;
+    }
+
+    .arch-plane header {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--line);
+      background: #f1f6f2;
+    }
+
+    .arch-plane strong,
+    .arch-plane span {
+      display: block;
+    }
+
+    .arch-plane strong {
+      font-size: 15px;
+    }
+
+    .arch-plane span {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .service-grid {
+      display: grid;
+      gap: 8px;
+      padding: 12px;
+    }
+
+    .service {
+      border: 1px solid var(--line);
+      border-left: 3px solid var(--green);
+      border-radius: var(--radius);
+      padding: 10px;
+      background: #fff;
+    }
+
+    .service b,
+    .service span {
+      display: block;
+    }
+
+    .service b {
+      margin-bottom: 3px;
+      font-size: 13px;
+    }
+
+    .service span {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .arch-flows {
+      display: grid;
+      gap: 8px;
+      margin: 14px 0;
+    }
+
+    .arch-flow {
+      display: grid;
+      grid-template-columns: 118px 1fr 136px;
+      gap: 10px;
+      align-items: center;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 9px 10px;
+      background: #fff;
+    }
+
+    .arch-flow b {
+      font-size: 12px;
+    }
+
+    .arch-flow span {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .flow-track {
+      position: relative;
+      height: 2px;
+      background: #dfe7e2;
+      overflow: visible;
+    }
+
+    .flow-track::after {
+      content: "";
+      position: absolute;
+      top: 50%;
+      right: -1px;
+      width: 8px;
+      height: 8px;
+      border-top: 2px solid var(--green);
+      border-right: 2px solid var(--green);
+      transform: translateY(-50%) rotate(45deg);
+    }
+
+    .flow-token {
+      position: absolute;
+      top: 50%;
+      left: 0;
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--green);
+      transform: translateY(-50%);
+      animation: traceFlow 3.6s ease-in-out infinite;
+    }
+
+    .arch-flow:nth-child(2) .flow-token {
+      animation-delay: 0.8s;
+      background: var(--blue);
+    }
+
+    .arch-flow:nth-child(3) .flow-token {
+      animation-delay: 1.4s;
+      background: var(--amber);
+    }
+
+    .arch-boundaries {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .boundary {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 11px;
+      background: #fbfdfb;
+    }
+
+    .boundary strong,
+    .boundary span {
+      display: block;
+    }
+
+    .boundary strong {
+      margin-bottom: 4px;
+      font-size: 13px;
+    }
+
+    .boundary span {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .rules {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+
+    .rule {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 16px;
+      background: rgba(255, 255, 255, 0.82);
+    }
+
+    .rule strong,
+    .rule span {
+      display: block;
+    }
+
+    .rule strong {
+      margin-bottom: 6px;
+    }
+
+    .rule span {
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .code-showcase {
+      display: grid;
+      grid-template-columns: 0.82fr 1.18fr;
+      gap: 16px;
+      align-items: stretch;
+    }
+
+    .product-stack {
+      display: grid;
+      gap: 10px;
+    }
+
+    .stack-item {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 14px;
+      background: rgba(255, 255, 255, 0.84);
+    }
+
+    .stack-item strong,
+    .stack-item span {
+      display: block;
+    }
+
+    .stack-item strong {
+      margin-bottom: 5px;
+    }
+
+    .stack-item span {
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .code-shell {
+      overflow: hidden;
+      border: 1px solid #26332d;
+      border-radius: var(--radius);
+      background: #111915;
+      box-shadow: var(--shadow);
+    }
+
+    .code-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      justify-content: space-between;
+      padding: 11px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .code-title {
+      color: #d7e9df;
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .code-tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .code-tab {
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: 999px;
+      padding: 6px 9px;
+      color: #b6c8bf;
+      background: rgba(255, 255, 255, 0.06);
+      font-size: 12px;
+    }
+
+    .code-tab.active {
+      color: #102017;
+      background: #8be3b2;
+      border-color: #8be3b2;
+    }
+
+    .code-panel {
+      display: none;
+      margin: 0;
+      max-height: 470px;
+      overflow: auto;
+      padding: 18px;
+      color: #dbece5;
+      background:
+        linear-gradient(90deg, rgba(139, 227, 178, 0.08), transparent 42%),
+        #111915;
+      font-size: 13px;
+      line-height: 1.55;
+      tab-size: 2;
+    }
+
+    .code-panel.active {
+      display: block;
+    }
+
+    .code-panel code {
+      white-space: pre;
+    }
+
+    .code-note {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .code-note span {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 10px;
+      color: var(--muted);
+      background: rgba(255, 255, 255, 0.72);
+      font-size: 13px;
+    }
+
+    .checklist {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+
+    .check {
+      display: grid;
+      grid-template-columns: 34px 1fr;
+      gap: 10px;
+      align-items: start;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 14px;
+      background: rgba(255, 255, 255, 0.82);
+    }
+
+    .check i {
+      display: grid;
+      width: 28px;
+      height: 28px;
+      place-items: center;
+      color: #fff;
+      background: var(--green);
+      border-radius: 50%;
+      font-style: normal;
+      font-weight: 900;
+    }
+
+    .check strong,
+    .check span {
+      display: block;
+    }
+
+    .check span {
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .footer {
+      margin-top: 34px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 20px;
+      color: var(--muted);
+      background: rgba(255, 255, 255, 0.82);
+      text-align: center;
+    }
+
+    @keyframes fillPhase {
+      from {
+        width: 0;
+      }
+      to {
+        width: calc(100% - 28px);
+      }
+    }
+
+    @keyframes traceFlow {
+      0% {
+        left: 0;
+        opacity: 0;
+      }
+      12% {
+        opacity: 1;
+      }
+      88% {
+        opacity: 1;
+      }
+      100% {
+        left: calc(100% - 9px);
+        opacity: 0;
+      }
+    }
+
+    @media (max-width: 980px) {
+      .topbar {
+        margin-left: -20px;
+        margin-right: -20px;
+        padding-left: 20px;
+        padding-right: 20px;
+      }
+
+      .topbar-inner,
+      .hero,
+      .timeline,
+      .arch-planes {
+        grid-template-columns: 1fr;
+      }
+
+      .topbar-inner {
+        align-items: start;
+        flex-direction: column;
+      }
+
+      .hero {
+        min-height: auto;
+      }
+
+      .stage-list {
+        position: static;
+      }
+
+      .rules,
+      .task-grid,
+      .merge-strip,
+      .code-showcase,
+      .arch-boundaries,
+      .checklist {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .code-showcase {
+        grid-template-columns: 1fr;
+      }
+
+      .code-note {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 660px) {
+      .wrap {
+        width: min(100% - 24px, 1200px);
+      }
+
+      h1 {
+        font-size: 42px;
+      }
+
+      .lead {
+        font-size: 16px;
+      }
+
+      .principles,
+      .stage-summary,
+      .rules,
+      .task-grid,
+      .merge-strip,
+      .code-showcase,
+      .code-note,
+      .arch-boundaries,
+      .checklist {
+        grid-template-columns: 1fr;
+      }
+
+      .arch-flow {
+        grid-template-columns: 1fr;
+        gap: 8px;
+      }
+
+      .hero-board {
+        min-height: 430px;
+      }
+
+      .section-head {
+        display: block;
+      }
+
+      .section-head h2 {
+        margin-bottom: 8px;
+        font-size: 25px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">
+        <div class="mark">C++</div>
+        <div>
+          <strong>Codex++ 解耦式多会话开发计划</strong>
+          <span>阶段顺序推进，同级任务并行</span>
+        </div>
+      </div>
+      <nav class="nav" aria-label="页面导航">
+        <a href="#intent">原意</a>
+        <a href="#stages">阶段</a>
+        <a href="#decoupling">解耦</a>
+        <a href="#rules">并行规则</a>
+        <a href="#product-code">成品结构</a>
+        <a href="#acceptance">验收</a>
+      </nav>
+    </div>
+  </div>
+
+  <main class="wrap">
+    <header class="hero" id="intent">
+      <div class="hero-copy">
+        <div class="eyebrow">Codex++ 开发任务分派图</div>
+        <h1>模块清楚，任务好分。</h1>
+        <p class="lead">
+          先冻结契约，再分阶段推进；同一数字目录内并行开发，下一数字目录等待上一阶段集成完成后再进入。
+        </p>
+        <div class="hero-actions">
+          <a class="btn primary" href="#stages">查看阶段任务</a>
+          <a class="btn" href="#decoupling">查看解耦关系</a>
+        </div>
+        <div class="principles">
+          <div class="principle">
+            <strong>客户端轻量</strong>
+            <span>不内置价格、模型、套餐、额度、倍率、限流和续费文案。</span>
+          </div>
+          <div class="principle">
+            <strong>后台可运营</strong>
+            <span>管理员在 Sub2API 调整规则，客户端通过 bootstrap 承接。</span>
+          </div>
+          <div class="principle">
+            <strong>网关强制执行</strong>
+            <span>模型权限、额度、限流和风控不能只靠客户端隐藏按钮。</span>
+          </div>
+          <div class="principle">
+            <strong>多会话并行</strong>
+            <span>同级任务互不阻塞，跨级任务按目录序号顺序集成。</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="hero-board" aria-label="多会话开发流水线示意">
+        <div class="pipeline-card">
+          <div class="pipeline-head">
+            <div>
+              <strong>阶段推进</strong>
+              <span id="pipelineStageMeta">当前：00-contract</span>
+            </div>
+            <button class="pipeline-action" id="playFlow" type="button">演示推进</button>
+          </div>
+          <div class="pipeline-body">
+            <div class="lane" data-phase="0">
+              <div class="lane-label">契约冻结<span>00</span></div>
+              <div class="lane-line"><span class="moving-dot"></span></div>
+            </div>
+            <div class="lane" data-phase="1">
+              <div class="lane-label">后台/API<span>01-02</span></div>
+              <div class="lane-line"><span class="moving-dot"></span></div>
+            </div>
+            <div class="lane" data-phase="2">
+              <div class="lane-label">客户端<span>03-04</span></div>
+              <div class="lane-line"><span class="moving-dot"></span></div>
+            </div>
+            <div class="lane" data-phase="3">
+              <div class="lane-label">运营执行<span>05-06</span></div>
+              <div class="lane-line"><span class="moving-dot"></span></div>
+            </div>
+            <div class="lane" data-phase="4">
+              <div class="lane-label">集成发布<span>07</span></div>
+              <div class="lane-line"><span class="moving-dot"></span></div>
+            </div>
+            <div class="stage-summary">
+              <div class="stage-pill"><strong>8</strong><span>阶段目录</span></div>
+              <div class="stage-pill"><strong>31</strong><span>任务文档</span></div>
+              <div class="stage-pill"><strong>4</strong><span>配置中心</span></div>
+              <div class="stage-pill"><strong>1</strong><span>bootstrap 快照</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <section id="stages">
+      <div class="section-head">
+        <h2>阶段与并行任务</h2>
+        <p>左侧选择阶段，右侧查看同级可并行任务。每张卡都对应一个已经落地的 `task-*.md` 文件。</p>
+      </div>
+      <div class="timeline">
+        <div class="stage-list" id="stageList"></div>
+        <div class="stage-detail">
+          <div class="stage-detail-head">
+            <div>
+              <h3 id="stageTitle">00-contract</h3>
+              <p id="stageGoal">冻结接口、状态、错误码、mock 响应。</p>
+            </div>
+            <span class="parallel-badge" id="stageParallel">3 个并行任务</span>
+          </div>
+          <div class="task-grid" id="taskGrid"></div>
+          <div class="merge-strip" id="mergeStrip"></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="decoupling">
+      <div class="section-head">
+        <h2>工业级目标架构</h2>
+        <p>按控制面、数据面、客户端运行时分层：控制面负责运营与策略，数据面负责请求执行，客户端只消费最小快照。</p>
+      </div>
+      <div class="architecture">
+        <div class="arch-planes">
+          <div class="arch-plane">
+            <header>
+              <strong>Control Plane</strong>
+              <span>后台运营、策略决策、配置发布</span>
+            </header>
+            <div class="service-grid">
+              <div class="service"><b>Admin Console</b><span>套餐、模型、价格、功能开关、用户权益</span></div>
+              <div class="service"><b>Config Registry</b><span>版本化配置、灰度发布、回滚、审计</span></div>
+              <div class="service"><b>Entitlement</b><span>订阅、余额、设备、模型组、有效期</span></div>
+              <div class="service"><b>Billing & Metering</b><span>支付回调、用量入账、对账、补偿任务</span></div>
+              <div class="service"><b>Policy Decision</b><span>把权益和策略编译成可执行决策</span></div>
+            </div>
+          </div>
+
+          <div class="arch-plane">
+            <header>
+              <strong>Data Plane</strong>
+              <span>请求入口、策略执行、模型路由</span>
+            </header>
+            <div class="service-grid">
+              <div class="service"><b>Client API Gateway</b><span>bootstrap、usage、devices、redeem</span></div>
+              <div class="service"><b>Policy Enforcement</b><span>模型权限、余额、限流、设备状态强校验</span></div>
+              <div class="service"><b>Model Router</b><span>展示模型到真实供应商模型的路由</span></div>
+              <div class="service"><b>Quota & Rate Limit</b><span>并发、RPM、TPM、余额预扣与回补</span></div>
+              <div class="service"><b>Risk Guard</b><span>异常设备、盗刷、共享账号、滥用检测</span></div>
+            </div>
+          </div>
+
+          <div class="arch-plane">
+            <header>
+              <strong>Client Runtime</strong>
+              <span>桌面端登录、快照缓存、托管供应商</span>
+            </header>
+            <div class="service-grid">
+              <div class="service"><b>Auth & Device</b><span>账号登录、设备绑定、撤销感知</span></div>
+              <div class="service"><b>Bootstrap Cache</b><span>只缓存运行快照，不缓存完整运营策略</span></div>
+              <div class="service"><b>Managed Provider</b><span>生成 Codex++ Cloud，隐藏 API Key 配置</span></div>
+              <div class="service"><b>UX Shell</b><span>首页、安装辅助、新手教程、状态提示</span></div>
+              <div class="service"><b>Local Privacy</b><span>日志脱敏、最小本地存储、错误映射</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="arch-flows" aria-label="生产级关键链路">
+          <div class="arch-flow">
+            <b>配置发布</b>
+            <div class="flow-track"><span class="flow-token"></span></div>
+            <span>Control Plane -> Bootstrap Snapshot -> Client Runtime</span>
+          </div>
+          <div class="arch-flow">
+            <b>请求执行</b>
+            <div class="flow-track"><span class="flow-token"></span></div>
+            <span>Client Runtime -> Data Plane -> Model Provider</span>
+          </div>
+          <div class="arch-flow">
+            <b>用量闭环</b>
+            <div class="flow-track"><span class="flow-token"></span></div>
+            <span>Data Plane -> Metering -> Billing / Audit / Risk</span>
+          </div>
+        </div>
+
+        <div class="arch-boundaries">
+          <div class="boundary"><strong>配置版本化</strong><span>任何套餐、模型、额度、开关变更必须有版本、操作者、发布时间和回滚点。</span></div>
+          <div class="boundary"><strong>策略双层校验</strong><span>客户端可隐藏入口，但真实拒绝必须发生在数据面策略执行层。</span></div>
+          <div class="boundary"><strong>计量可对账</strong><span>请求预扣、实际消耗、失败回补、支付入账和审计记录必须可追踪。</span></div>
+          <div class="boundary"><strong>观测可定位</strong><span>bootstrap、网关拒绝、模型路由、余额变化和设备风险都有结构化事件。</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="rules">
+      <div class="section-head">
+        <h2>执行规则</h2>
+        <p>这几条是多会话开发时最容易跑偏的地方，HTML 用来把边界钉清楚。</p>
+      </div>
+      <div class="rules">
+        <div class="rule">
+          <strong>依赖并行</strong>
+          <span>按模块 DAG 和文件归属并行，不再简单把同一数字目录全部同时开跑。</span>
+        </div>
+        <div class="rule">
+          <strong>契约门禁</strong>
+          <span>`00-contract` 必须产出 OpenAPI、schema、mock、状态错误和事件契约。</span>
+        </div>
+        <div class="rule">
+          <strong>文件归属</strong>
+          <span>路由、schema、setting service、gateway hooks、lockfile 和全局 UI 必须有单一 owner。</span>
+        </div>
+        <div class="rule">
+          <strong>模型质量</strong>
+          <span>核心实现和集成使用高能力 worker；轻量模型只做只读探索、日志整理和摘要。</span>
+        </div>
+        <div class="rule">
+          <strong>后台不绑 UI</strong>
+          <span>后台配置只表达运营规则，不依赖 Codex++ 页面组件或前端结构。</span>
+        </div>
+        <div class="rule">
+          <strong>网关不信任客户端</strong>
+          <span>模型权限和用量策略必须在 Sub2API 网关侧强制执行。</span>
+        </div>
+      </div>
+    </section>
+
+    <section id="product-code">
+      <div class="section-head">
+        <h2>最终成品代码结构</h2>
+        <p>这里展示最终工程应该形成的模块边界和文件组织，不展示具体源码。开发会话按这些目录认领任务，避免把后台运营规则写进客户端。</p>
+      </div>
+      <div class="code-showcase">
+        <div class="product-stack">
+          <div class="stack-item">
+            <strong>1. Contract & Versioning</strong>
+            <span>接口、配置、事件、错误码都要版本化，支持兼容检查和回滚。</span>
+          </div>
+          <div class="stack-item">
+            <strong>2. Control Plane</strong>
+            <span>承载后台运营、权益、计费、策略决策、配置发布和审计。</span>
+          </div>
+          <div class="stack-item">
+            <strong>3. Data Plane + Client Runtime</strong>
+            <span>数据面执行策略，客户端只消费快照并写入托管供应商。</span>
+          </div>
+          <div class="stack-item">
+            <strong>4. Platform Ops</strong>
+            <span>可观测、风控、迁移、发布门禁、烟测和回滚方案独立成层。</span>
+          </div>
+        </div>
+
+        <div>
+          <div class="code-shell" aria-label="最终成品代码结构">
+            <div class="code-toolbar">
+              <div class="code-title">Final Module Structure</div>
+              <div class="code-tabs" role="tablist" aria-label="代码结构切换">
+                <button class="code-tab active" type="button" data-code="contracts">contracts</button>
+                <button class="code-tab" type="button" data-code="control">control-plane</button>
+                <button class="code-tab" type="button" data-code="runtime">runtime</button>
+                <button class="code-tab" type="button" data-code="ops">platform-ops</button>
+              </div>
+            </div>
+
+            <pre class="code-panel active" data-panel="contracts"><code>codex-plus-contracts/
+  api/
+    client-openapi.yaml
+
+  config/
+    plan-catalog.schema.json
+    model-catalog.schema.json
+    usage-policy.schema.json
+    feature-flags.schema.json
+
+  events/
+    client-events.schema.json
+
+  status-error/
+    client-status-errors.md
+
+  test-fixtures/client/
+    bootstrap.available.json
+    bootstrap.not_purchased.json
+    bootstrap.expired.json
+    bootstrap.low_balance.json
+    bootstrap.device_revoked.json
+    bootstrap.gateway_unhealthy.json
+    bootstrap.model_unavailable.json
+
+  storage-decision.md
+  compatibility-matrix.md
+  change-review-policy.md
+  coordinator-review.md</code></pre>
+
+            <pre class="code-panel" data-panel="control"><code>sub2api-main/backend/
+  ent/schema/
+    codexplus_device.go
+    codexplus_managed_provider_key.go
+    codexplus_event.go
+
+  migrations/
+    151_codexplus_foundation.sql
+
+  internal/repository/
+    codexplus_device_repo.go
+    codexplus_managed_provider_key_repo.go
+    codexplus_event_repo.go
+
+  internal/service/
+    codexplus_config_service.go
+    codexplus_admin_service.go
+
+  internal/handler/admin/
+    codexplus_handler.go
+
+  internal/server/routes/
+    codexplus_admin.go
+
+sub2api-main/frontend/src/
+  api/admin/
+    codexPlus.ts
+  views/admin/codexPlus/
+    CodexPlusView.vue
+    CodexPlusPlanCatalogPanel.vue
+    CodexPlusModelCatalogPanel.vue
+    CodexPlusUsagePolicyPanel.vue
+    CodexPlusFeatureFlagsPanel.vue
+    CodexPlusUserEntitlementPanel.vue
+    CodexPlusConfigVersionsPanel.vue</code></pre>
+
+            <pre class="code-panel" data-panel="runtime"><code>sub2api-main/backend/internal/
+  server/routes/
+    client.go
+  handler/
+    client_handler.go
+  handler/dto/
+    codexplus_client.go
+  service/
+    codexplus_client.go
+    codexplus_gateway_policy_service.go
+
+CodexPlusPlus-main/
+  crates/codex-plus-core/src/codexplus_cloud/
+    api.rs
+    bootstrap.rs
+    device.rs
+    local_state.rs
+    provider_writer.rs
+    redaction.rs
+    status.rs
+
+  apps/codex-plus-manager/src-tauri/src/
+    cloud_commands.rs
+
+  apps/codex-plus-manager/src/cloud/
+    cloudCommands.ts
+    useCloudRuntime.ts
+    CloudHomeScreen.tsx
+    CloudLoginPanel.tsx
+    CloudStatusPanel.tsx
+    CloudInstallAssistant.tsx
+    CloudUsagePanel.tsx
+    CloudTutorialPanel.tsx
+    CloudDiagnosticsPanel.tsx
+    cloud.css</code></pre>
+
+            <pre class="code-panel" data-panel="ops"><code>codex-plus-dev-plan/
+  PHASE1-MODULE-I-E2E-RELEASE-GATE-PLAN.md
+  PHASE1-MODULE-J-INTEGRATION-COORDINATOR-PLAN.md
+  INTEGRATION-VERIFICATION-CHECKLIST.md
+  CODEX-AUTONOMOUS-TEST-RUNBOOK.md
+  QA-TESTING-ACCEPTANCE-PLAN.md
+  PRODUCTION-LAUNCH-PLAN.md
+
+  07-integration-release/
+    task-e2e-buy-login-launch.md
+    task-compatibility-and-migration.md
+    task-package-install-check.md
+    task-docs-and-product-copy.md
+
+  test-runs/
+    YYYYMMDD-HHMM-e2e/
+      00-environment.md
+      04-client-api-e2e.md
+      05-gateway-policy-e2e.md
+      06-desktop-manager-e2e.md
+      10-rollback-notes.md
+      12-release-gate-report.md
+
+  deployment/
+    templates/
+    scripts/</code></pre>
+          </div>
+
+          <div class="code-note">
+            <span>结构展示表达工业级边界，不代表必须一次性创建全部源码文件。</span>
+            <span>控制面可以慢，数据面必须稳；策略决策和策略执行不能混在客户端。</span>
+            <span>价格、模型、额度、倍率、限流和续费文案只来自控制面配置版本。</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="acceptance">
+      <div class="section-head">
+        <h2>最终验收</h2>
+        <p>验收重点是“可运营、可并行、可集成”，不是只有文档目录看起来完整。</p>
+      </div>
+      <div class="checklist">
+        <div class="check"><i>✓</i><div><strong>两阶段路线</strong><span>第一阶段做本地/测试 MVP，第二阶段补服务器、域名、HTTPS、QA 验收、监控和回滚。</span></div></div>
+        <div class="check"><i>✓</i><div><strong>契约门禁</strong><span>OpenAPI、schema、mock、状态错误、事件和存储决策完成后才派发实现。</span></div></div>
+        <div class="check"><i>✓</i><div><strong>文件归属</strong><span>路由、网关、setting service、UI 入口和 lockfile 有明确 owner。</span></div></div>
+        <div class="check"><i>✓</i><div><strong>模型质量</strong><span>核心实现与集成使用高能力 worker，轻量 worker 只做只读辅助。</span></div></div>
+        <div class="check"><i>✓</i><div><strong>网关执行</strong><span>下架模型、套餐过期、余额不足和限流必须由网关拒绝。</span></div></div>
+        <div class="check"><i>✓</i><div><strong>无需发版</strong><span>后台新增套餐、新模型、新策略后，客户端通过 bootstrap 自动承接。</span></div></div>
+      </div>
+    </section>
+
+    <div class="footer">
+      这份 HTML 是 `codex-plus-dev-plan/` 的可视化索引，保留原计划含义：阶段目录顺序推进，同级任务并行，客户端与后台完全解耦。
+    </div>
+  </main>
+
+  <script>
+    const stages = [
+      {
+        id: "00-contract",
+        goal: "冻结接口、状态、错误码、mock 响应。",
+        tasks: [
+          ["客户端 API 契约", "冻结 bootstrap、usage、devices、redeem 的请求响应和 mock。", "00-contract/task-client-api-contract.md"],
+          ["后台配置契约", "定义套餐、模型、用量策略、功能开关的后台 schema。", "00-contract/task-admin-config-contract.md"],
+          ["状态与错误模型", "统一服务状态、错误码、用户提示和日志脱敏规则。", "00-contract/task-status-and-error-model.md"]
+        ],
+        merge: ["API 契约", "配置契约", "状态错误"]
+      },
+      {
+        id: "01-backend-config-center",
+        goal: "建设后台配置中心，让管理员可调控运营内容。",
+        tasks: [
+          ["套餐目录", "配置套餐名称、价格、周期、额度、模型组和上下架。", "01-backend-config-center/task-plan-catalog.md"],
+          ["模型目录", "配置展示模型、真实路由模型、倍率、上下文和默认模型。", "01-backend-config-center/task-model-catalog.md"],
+          ["用量策略", "配置每日额度、并发、RPM、TPM、低余额提醒和过期策略。", "01-backend-config-center/task-usage-policy.md"],
+          ["功能开关", "配置高级设置、安装向导、新手教程、模型选择和公告入口。", "01-backend-config-center/task-feature-flags.md"]
+        ],
+        merge: ["套餐", "模型", "用量", "开关"]
+      },
+      {
+        id: "02-backend-client-api",
+        goal: "实现客户端专用 API，输出聚合快照。",
+        tasks: [
+          ["Bootstrap API", "聚合用户权益、Key、模型、余额和开关，返回托管配置。", "02-backend-client-api/task-client-bootstrap-api.md"],
+          ["Usage API", "返回余额、今日用量、限流状态、续费入口和用户提示。", "02-backend-client-api/task-client-usage-api.md"],
+          ["Device API", "登记桌面设备，支持撤销状态进入 bootstrap。", "02-backend-client-api/task-client-device-api.md"],
+          ["Redeem API", "允许客户端兑换活动码或补偿码，成功后刷新权益。", "02-backend-client-api/task-client-redeem-api.md"]
+        ],
+        merge: ["设备", "Bootstrap", "Usage", "Redeem"]
+      },
+      {
+        id: "03-client-cloud-core",
+        goal: "Codex++ 消费 bootstrap 并写入托管供应商。",
+        tasks: [
+          ["Bootstrap Consumer", "调用后端快照，转成客户端内部状态和 Tauri 命令。", "03-client-cloud-core/task-bootstrap-consumer.md"],
+          ["托管供应商写入", "生成或更新 Codex++ Cloud，不删除手动供应商。", "03-client-cloud-core/task-managed-provider-writer.md"],
+          ["本地登录态存储", "保存云服务登录态、设备 ID 和 bootstrap 缓存。", "03-client-cloud-core/task-local-session-store.md"],
+          ["错误与日志脱敏", "映射错误状态，确保 Key、JWT、header 不泄露。", "03-client-cloud-core/task-error-and-log-redaction.md"]
+        ],
+        merge: ["本地存储", "Consumer", "供应商写入", "脱敏"]
+      },
+      {
+        id: "04-client-user-experience",
+        goal: "普通用户首页、登录绑定、安装辅助和新手教学。",
+        tasks: [
+          ["首页仪表盘", "展示服务状态、套餐、余额、用量、模型和一键启动。", "04-client-user-experience/task-home-dashboard-ui.md"],
+          ["登录绑定", "登录购买账号、绑定设备、退出登录和自动刷新。", "04-client-user-experience/task-login-binding-ui.md"],
+          ["安装辅助", "检测 Codex 是否安装，提供平台安装和权限修复说明。", "04-client-user-experience/task-install-assistant-ui.md"],
+          ["新手教学", "提供任务模板、结果确认、安全提示和教程入口。", "04-client-user-experience/task-new-user-tutorial-ui.md"]
+        ],
+        merge: ["登录", "首页", "安装", "教程"]
+      },
+      {
+        id: "05-admin-operations",
+        goal: "后台运营管理价格、模型、用量和用户权益。",
+        tasks: [
+          ["套餐管理", "管理套餐价格、周期、额度、模型组和上下架。", "05-admin-operations/task-admin-plan-management.md"],
+          ["模型管理", "管理可售模型、默认模型、倍率、展示名和下架。", "05-admin-operations/task-admin-model-management.md"],
+          ["用量策略管理", "管理低余额提醒、每日额度、并发和速率限制。", "05-admin-operations/task-admin-usage-policy-management.md"],
+          ["用户权益视图", "查看用户套餐、余额、模型权限、设备、Key 摘要和异常。", "05-admin-operations/task-admin-user-entitlement-view.md"]
+        ],
+        merge: ["套餐", "模型", "策略", "用户视图"]
+      },
+      {
+        id: "06-commerce-and-enforcement",
+        goal: "支付开通、网关强制执行、设备和风控。",
+        tasks: [
+          ["支付权益开通", "支付成功后自动开通套餐或充值，并刷新用户权益。", "06-commerce-and-enforcement/task-payment-entitlement-flow.md"],
+          ["网关策略强制执行", "模型权限、余额、套餐、并发和限流由网关拒绝。", "06-commerce-and-enforcement/task-gateway-policy-enforcement.md"],
+          ["设备管理", "管理员查看、撤销、恢复设备，bootstrap 感知设备状态。", "06-commerce-and-enforcement/task-device-management.md"],
+          ["审计与风控", "记录登录、bootstrap、Key、拒绝事件和管理员操作。", "06-commerce-and-enforcement/task-audit-and-risk-control.md"]
+        ],
+        merge: ["支付权益", "网关策略", "设备", "审计"]
+      },
+      {
+        id: "07-integration-release",
+        goal: "端到端验收、兼容迁移、安装包和文案。",
+        tasks: [
+          ["E2E 购买登录启动", "验证购买、登录、bootstrap、写配置、启动 Codex 和完成请求。", "07-integration-release/task-e2e-buy-login-launch.md"],
+          ["兼容迁移", "确保旧手动供应商、增强功能、更新和安装入口不破坏。", "07-integration-release/task-compatibility-and-migration.md"],
+          ["安装包检查", "检查 Windows/macOS 安装包、快捷方式和首启向导。", "07-integration-release/task-package-install-check.md"],
+          ["文档与产品文案", "同步用户指南、管理员指南、HTML 展示页和发布说明。", "07-integration-release/task-docs-and-product-copy.md"],
+          ["Module I E2E 门禁", "定义测试账号、证据目录、失败路径、发布裁决和 go/no-go 输入。", "PHASE1-MODULE-I-E2E-RELEASE-GATE-PLAN.md"],
+          ["Module J 集成裁决", "定义合并顺序、冲突处理、验证分层、文档同步和最终报告。", "PHASE1-MODULE-J-INTEGRATION-COORDINATOR-PLAN.md"]
+        ],
+        merge: ["兼容", "E2E", "安装包", "文案", "证据", "裁决"]
+      }
+    ];
+
+    const stageList = document.getElementById("stageList");
+    const taskGrid = document.getElementById("taskGrid");
+    const mergeStrip = document.getElementById("mergeStrip");
+    const stageTitle = document.getElementById("stageTitle");
+    const stageGoal = document.getElementById("stageGoal");
+    const stageParallel = document.getElementById("stageParallel");
+    const codeTabs = document.querySelectorAll(".code-tab");
+    const codePanels = document.querySelectorAll(".code-panel");
+    const pipelineLanes = document.querySelectorAll(".lane[data-phase]");
+    const pipelineStageMeta = document.getElementById("pipelineStageMeta");
+    const playFlowButton = document.getElementById("playFlow");
+    let activeStageIndex = 0;
+    let flowTimer = null;
+
+    function phaseForStage(index) {
+      if (index === 0) return 0;
+      if (index <= 2) return 1;
+      if (index <= 4) return 2;
+      if (index <= 6) return 3;
+      return 4;
+    }
+
+    function renderStage(index) {
+      const stage = stages[index];
+      document.querySelectorAll(".stage-button").forEach((button) => button.classList.remove("active"));
+      const current = document.querySelector(`[data-stage="${index}"]`);
+      if (current) current.classList.add("active");
+      stageTitle.textContent = stage.id;
+      stageGoal.textContent = stage.goal;
+      stageParallel.textContent = `${stage.tasks.length} 个并行任务`;
+      pipelineStageMeta.textContent = `当前：${stage.id}`;
+      const phase = phaseForStage(index);
+      pipelineLanes.forEach((lane, laneIndex) => {
+        lane.classList.toggle("done", laneIndex < phase);
+        lane.classList.toggle("active", laneIndex === phase);
+      });
+      taskGrid.innerHTML = stage.tasks.map((task) => `
+        <article class="task-card">
+          <header>
+            <h4>${task[0]}</h4>
+          </header>
+          <p>${task[1]}</p>
+          <a class="task-file" href="${task[2]}">${task[2]}</a>
+        </article>
+      `).join("");
+      mergeStrip.innerHTML = stage.merge.map((item, order) => `
+        <div class="merge-step"><strong>${order + 1}. ${item}</strong><span>合并检查</span></div>
+      `).join("");
+    }
+
+    function selectStage(index) {
+      activeStageIndex = index;
+      renderStage(index);
+    }
+
+    function stopFlowDemo() {
+      if (flowTimer) window.clearTimeout(flowTimer);
+      flowTimer = null;
+      playFlowButton.disabled = false;
+      playFlowButton.textContent = "演示推进";
+    }
+
+    function runFlowDemo() {
+      if (flowTimer) return;
+      playFlowButton.disabled = true;
+      playFlowButton.textContent = "演示中";
+      let step = 0;
+      const advance = () => {
+        selectStage(step);
+        step += 1;
+        if (step < stages.length) {
+          flowTimer = window.setTimeout(advance, 820);
+          return;
+        }
+        flowTimer = null;
+        playFlowButton.disabled = false;
+        playFlowButton.textContent = "演示推进";
+      };
+      advance();
+    }
+
+    codeTabs.forEach((tab) => {
+      tab.addEventListener("click", () => {
+        const target = tab.dataset.code;
+        codeTabs.forEach((item) => item.classList.toggle("active", item === tab));
+        codePanels.forEach((panel) => panel.classList.toggle("active", panel.dataset.panel === target));
+      });
+    });
+
+    stageList.innerHTML = stages.map((stage, index) => `
+      <button class="stage-button ${index === 0 ? "active" : ""}" type="button" data-stage="${index}">
+        <span class="stage-num">${stage.id.slice(0, 2)}</span>
+        <span><strong>${stage.id}</strong><small>${stage.tasks.length} 个同级任务</small></span>
+      </button>
+    `).join("");
+
+    stageList.querySelectorAll(".stage-button").forEach((button) => {
+      button.addEventListener("click", () => {
+        stopFlowDemo();
+        selectStage(Number(button.dataset.stage));
+      });
+    });
+
+    playFlowButton.addEventListener("click", runFlowDemo);
+    selectStage(activeStageIndex);
+  </script>
+</body>
+</html>

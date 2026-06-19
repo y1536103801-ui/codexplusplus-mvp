@@ -1,0 +1,57 @@
+# Heavy/generated dependency folders
+node_modules/
+target/
+dist/
+build/
+coverage/
+.cache/
+.turbo/
+.next/
+__pycache__/
+
+# Local Docker/runtime data
+sub2api-main/deploy/.codexplus-local/
+sub2api-main/deploy/.codexplus-local-mvp/
+sub2api-main/deploy/.codexplus-local-mvp-fresh-*/
+sub2api-main/deploy/data/
+sub2api-main/deploy/postgres_data/
+sub2api-main/deploy/redis_data/
+
+# Portable machine snapshots
+_portable-env/
+.codex-session-delete/
+
+# Local browser/WebView state
+**/*.WebView2/
+**/User Data/
+**/EBWebView/
+**/INetCache/
+**/GPUCache/
+**/Code Cache/
+**/DawnCache/
+**/DawnGraphiteCache/
+**/DawnWebGPUCache/
+**/ShaderCache/
+
+# Local auth / generated E2E secrets
+auth.json
+e2e-env.local.generated.ps1
+e2e-env.local.ps1
+*.pem
+*.pfx
+*.key
+*.crt
+*.cer
+
+# Keep local dev env needed by the clone runbook
+!sub2api-main/deploy/.env.codexplus-local
+!sub2api-main/deploy/.env.codexplus-local.example
+
+# Most historical test runs are noisy; keep final MVP evidence only.
+codex-plus-dev-plan/test-runs/*
+!codex-plus-dev-plan/test-runs/20260619-1940-business/
+!codex-plus-dev-plan/test-runs/20260619-1940-compatibility/
+!codex-plus-dev-plan/test-runs/20260619-1940-docs/
+!codex-plus-dev-plan/test-runs/20260619-1940-e2e/
+!codex-plus-dev-plan/test-runs/20260619-1940-package/
+!codex-plus-dev-plan/test-runs/20260619-1940-release/

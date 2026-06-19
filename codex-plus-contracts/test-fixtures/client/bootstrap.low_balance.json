@@ -1,0 +1,93 @@
+{
+  "code": 0,
+  "status": "success",
+  "message": "Codex++ balance is low.",
+  "reason": null,
+  "error_code": null,
+  "data": {
+    "service": {
+      "status": "low_balance",
+      "message": "Your remaining Codex++ balance is low.",
+      "message_key": "service.low_balance",
+      "action_hint": "recharge",
+      "retryable": true,
+      "support_url": "https://codex-plus.example/billing",
+      "error_code": "CLIENT_ENTITLEMENT_LOW_BALANCE"
+    },
+    "provider": {
+      "provider_id": "codex-plus-cloud",
+      "display_name": "Codex++ Cloud",
+      "gateway_base_url": "https://api.codex-plus.example/v1",
+      "auth_mode": "user_side_api_key",
+      "api_key": "REDACTED_USER_SIDE_KEY",
+      "key_summary": {
+        "key_id": "key_fixture_001",
+        "masked_key": "sk-user-...0001",
+        "created_at": "2026-06-16T00:00:00Z",
+        "last_used_at": "2026-06-16T01:00:00Z"
+      },
+      "default_model": "gpt-5-codex"
+    },
+    "plan": {
+      "plan_id": "starter",
+      "name": "Starter",
+      "status": "active",
+      "expires_at": "2026-07-16T00:00:00Z",
+      "renew_url": "https://codex-plus.example/billing",
+      "commerce_action": {
+        "action_type": "recharge",
+        "message_key": "plan.starter.low_balance",
+        "action_copy_key": "action.recharge",
+        "label": "Recharge",
+        "url": "https://codex-plus.example/billing"
+      }
+    },
+    "models": [
+      {
+        "model_id": "gpt-5-codex",
+        "route_model": "openai/gpt-5-codex",
+        "label": "GPT-5 Codex",
+        "is_default": true,
+        "is_available": true,
+        "disabled_reason": null
+      }
+    ],
+    "usage": {
+      "balance_display": "120 credits remaining",
+      "low_balance": true,
+      "period_usage_display": "760 credits used today",
+      "rate_limit_state": "normal",
+      "renew_action": {
+        "action_type": "recharge",
+        "message_key": "usage.low_balance",
+        "action_copy_key": "action.recharge",
+        "label": "Recharge",
+        "url": "https://codex-plus.example/billing"
+      }
+    },
+    "feature_flags": {
+      "advanced_provider_config": false,
+      "install_assistant": true,
+      "new_user_tutorial": true,
+      "model_selector": true,
+      "diagnostic_export": true,
+      "announcements": true,
+      "force_update_prompt": false,
+      "strict_device_enforcement": false
+    },
+    "announcements": [],
+    "version_policy": {
+      "config_version": "cfg_20260616_0001",
+      "snapshot_version": "snap_20260616_low_balance",
+      "refresh_ttl_seconds": 180,
+      "force_refresh": false,
+      "minimum_client_version": "0.1.0"
+    },
+    "device": {
+      "device_id": "dev_fixture_windows_001",
+      "status": "active",
+      "message": "Device active.",
+      "snapshot_version": "snap_20260616_low_balance"
+    }
+  }
+}

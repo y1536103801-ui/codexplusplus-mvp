@@ -1,0 +1,8 @@
+{
+  "code": 401,
+  "status": "error",
+  "message": "Please sign in again.",
+  "reason": "CLIENT_AUTH_NOT_AUTHENTICATED",
+  "error_code": "CLIENT_AUTH_NOT_AUTHENTICATED",
+  "data": null
+}

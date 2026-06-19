@@ -1,0 +1,84 @@
+{
+  "code": 0,
+  "status": "success",
+  "message": "Codex++ plan expired.",
+  "reason": null,
+  "error_code": null,
+  "data": {
+    "service": {
+      "status": "expired",
+      "message": "Your Codex++ plan has expired.",
+      "message_key": "service.expired",
+      "action_hint": "renew",
+      "retryable": false,
+      "support_url": "https://codex-plus.example/billing",
+      "error_code": "CLIENT_ENTITLEMENT_EXPIRED"
+    },
+    "provider": {
+      "provider_id": "codex-plus-cloud",
+      "display_name": "Codex++ Cloud",
+      "gateway_base_url": "https://api.codex-plus.example/v1",
+      "auth_mode": "user_side_api_key",
+      "api_key": null,
+      "key_summary": {
+        "key_id": "key_fixture_001",
+        "masked_key": "sk-user-...0001",
+        "created_at": "2026-05-16T00:00:00Z",
+        "last_used_at": "2026-06-15T00:00:00Z"
+      },
+      "default_model": ""
+    },
+    "plan": {
+      "plan_id": "starter",
+      "name": "Starter",
+      "status": "expired",
+      "expires_at": "2026-06-15T00:00:00Z",
+      "renew_url": "https://codex-plus.example/billing",
+      "commerce_action": {
+        "action_type": "renew",
+        "message_key": "plan.starter.expired",
+        "action_copy_key": "action.renew_plan",
+        "label": "Renew plan",
+        "url": "https://codex-plus.example/billing"
+      }
+    },
+    "models": [],
+    "usage": {
+      "balance_display": "Plan expired",
+      "low_balance": false,
+      "period_usage_display": "No current usage",
+      "rate_limit_state": "blocked",
+      "renew_action": {
+        "action_type": "renew",
+        "message_key": "usage.plan_expired",
+        "action_copy_key": "action.renew_plan",
+        "label": "Renew plan",
+        "url": "https://codex-plus.example/billing"
+      }
+    },
+    "feature_flags": {
+      "advanced_provider_config": false,
+      "install_assistant": true,
+      "new_user_tutorial": true,
+      "model_selector": false,
+      "diagnostic_export": true,
+      "announcements": true,
+      "force_update_prompt": false,
+      "strict_device_enforcement": false
+    },
+    "announcements": [],
+    "version_policy": {
+      "config_version": "cfg_20260616_0001",
+      "snapshot_version": "snap_20260616_expired",
+      "refresh_ttl_seconds": 300,
+      "force_refresh": false,
+      "minimum_client_version": "0.1.0"
+    },
+    "device": {
+      "device_id": "dev_fixture_windows_001",
+      "status": "active",
+      "message": "Device active.",
+      "snapshot_version": "snap_20260616_expired"
+    }
+  }
+}

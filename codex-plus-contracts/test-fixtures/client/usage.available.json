@@ -1,0 +1,29 @@
+{
+  "code": 0,
+  "status": "success",
+  "message": "Usage snapshot ready.",
+  "reason": null,
+  "error_code": null,
+  "data": {
+    "service_status": "available",
+    "balance_summary": {
+      "balance_display": "1520 credits remaining",
+      "low_balance": false
+    },
+    "period_usage": {
+      "period_id": "2026-06-16",
+      "usage_display": "118 credits used today",
+      "reset_at": "2026-06-17T00:00:00Z"
+    },
+    "rate_limit_state": "normal",
+    "renew_action": {
+      "action_type": "manage_plan",
+      "message_key": "usage.manage_plan",
+      "action_copy_key": "action.manage_plan",
+      "label": "Manage plan",
+      "url": "https://codex-plus.example/billing"
+    },
+    "last_updated_at": "2026-06-16T01:00:00Z",
+    "snapshot_version": "snap_20260616_0001"
+  }
+}

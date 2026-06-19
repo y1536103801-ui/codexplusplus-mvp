@@ -1,0 +1,2437 @@
+﻿<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Codex++ 成品方案</title>
+  <link rel="icon" href="data:,">
+  <style>
+    :root {
+      --bg: #f6f7f4;
+      --paper: #ffffff;
+      --ink: #121a16;
+      --muted: #5c6862;
+      --soft: #eef2ee;
+      --line: #d9e1db;
+      --green: #18865f;
+      --green-soft: #dff3e9;
+      --teal: #13768a;
+      --amber: #b56c16;
+      --amber-soft: #fff1d8;
+      --red: #bd4b3e;
+      --red-soft: #ffe6e0;
+      --shadow: 0 18px 48px rgba(18, 26, 22, 0.12);
+      --radius: 8px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      background:
+        linear-gradient(180deg, rgba(24, 134, 95, 0.1), transparent 460px),
+        var(--bg);
+      font-family: Inter, "Microsoft YaHei", "PingFang SC", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.55;
+    }
+
+    button {
+      font: inherit;
+      cursor: pointer;
+    }
+
+    a {
+      color: inherit;
+    }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      border-bottom: 1px solid rgba(217, 225, 219, 0.9);
+      background: rgba(246, 247, 244, 0.9);
+      backdrop-filter: blur(14px);
+    }
+
+    .nav-wrap,
+    .shell {
+      width: min(1120px, calc(100% - 40px));
+      margin: 0 auto;
+    }
+
+    .nav-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      min-height: 68px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      min-width: 0;
+      color: var(--ink);
+      text-decoration: none;
+    }
+
+    .brand-mark {
+      display: grid;
+      width: 38px;
+      height: 38px;
+      place-items: center;
+      color: #fff;
+      background: var(--ink);
+      border-radius: var(--radius);
+      font-weight: 900;
+      letter-spacing: 0;
+    }
+
+    .brand strong,
+    .brand span {
+      display: block;
+      white-space: nowrap;
+    }
+
+    .brand strong {
+      font-size: 15px;
+    }
+
+    .brand span {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .nav {
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      white-space: nowrap;
+    }
+
+    .nav a {
+      border: 1px solid transparent;
+      border-radius: 999px;
+      padding: 7px 10px;
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 13px;
+      transition: color 160ms ease, background 160ms ease, border-color 160ms ease;
+    }
+
+    .nav a:hover {
+      color: var(--ink);
+      background: var(--paper);
+      border-color: var(--line);
+    }
+
+    .shell {
+      padding: 30px 0 48px;
+    }
+
+    section,
+    header {
+      scroll-margin-top: 92px;
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 0.94fr) minmax(390px, 1.06fr);
+      gap: 34px;
+      align-items: center;
+      min-height: 560px;
+      padding: 18px 0 26px;
+    }
+
+    .hero > * {
+      min-width: 0;
+    }
+
+    .kicker {
+      display: inline-flex;
+      width: fit-content;
+      margin: 0 0 18px;
+      border: 1px solid rgba(24, 134, 95, 0.18);
+      border-radius: 999px;
+      padding: 6px 11px;
+      color: var(--green);
+      background: rgba(223, 243, 233, 0.8);
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    h1,
+    h2,
+    h3,
+    p {
+      letter-spacing: 0;
+    }
+
+    h1 {
+      max-width: 650px;
+      margin: 0;
+      font-size: clamp(40px, 5.2vw, 64px);
+      line-height: 1;
+      overflow-wrap: anywhere;
+      text-wrap: balance;
+    }
+
+    .lead {
+      max-width: 610px;
+      margin: 18px 0 0;
+      color: #33413a;
+      font-size: 18px;
+      overflow-wrap: anywhere;
+    }
+
+    .lead-line {
+      display: inline;
+    }
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 28px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 42px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 9px 14px;
+      background: var(--paper);
+      text-decoration: none;
+      transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease;
+    }
+
+    .btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 10px 22px rgba(18, 26, 22, 0.1);
+    }
+
+    .btn.primary {
+      color: #fff;
+      background: var(--ink);
+      border-color: var(--ink);
+    }
+
+    .signal-strip {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 1px;
+      margin-top: 30px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--line);
+    }
+
+    .signal {
+      min-height: 88px;
+      padding: 14px;
+      background: rgba(255, 255, 255, 0.72);
+    }
+
+    .signal strong {
+      display: block;
+      margin-bottom: 4px;
+      font-size: 16px;
+    }
+
+    .signal span {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .product-preview {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.82);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .mock-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      border-bottom: 1px solid var(--line);
+      padding: 12px 16px;
+      background: #f4f7f4;
+    }
+
+    .dots {
+      display: flex;
+      gap: 6px;
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #c8d2cc;
+    }
+
+    .dot:nth-child(1) {
+      background: #e36a5c;
+    }
+
+    .dot:nth-child(2) {
+      background: #d8a13b;
+    }
+
+    .dot:nth-child(3) {
+      background: #4aae76;
+    }
+
+    .mock-title {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .mock-body {
+      padding: 20px;
+    }
+
+    .account {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .avatar {
+      display: grid;
+      width: 42px;
+      height: 42px;
+      place-items: center;
+      border-radius: var(--radius);
+      color: #fff;
+      background: var(--green);
+      font-weight: 900;
+    }
+
+    .account strong,
+    .account span {
+      display: block;
+    }
+
+    .account span,
+    .muted {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .status-pill {
+      min-width: 76px;
+      border-radius: 999px;
+      padding: 7px 10px;
+      text-align: center;
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .status-pill.ok {
+      color: var(--green);
+      background: var(--green-soft);
+    }
+
+    .status-pill.warn {
+      color: var(--amber);
+      background: var(--amber-soft);
+    }
+
+    .status-pill.fail {
+      color: var(--red);
+      background: var(--red-soft);
+    }
+
+    .metric-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin: 18px 0;
+    }
+
+    .metric {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 13px;
+      background: var(--paper);
+    }
+
+    .metric span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .metric strong {
+      display: block;
+      margin-top: 4px;
+      font-size: 20px;
+    }
+
+    .launch-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 14px;
+      align-items: center;
+      border: 1px solid rgba(24, 134, 95, 0.22);
+      border-radius: var(--radius);
+      padding: 15px;
+      background: linear-gradient(120deg, #ffffff, #eef8f2);
+    }
+
+    .launch-row strong,
+    .launch-row span {
+      display: block;
+    }
+
+    .launch-row span {
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .launch-button {
+      position: relative;
+      display: grid;
+      width: 54px;
+      height: 54px;
+      place-items: center;
+      border: 0;
+      border-radius: 50%;
+      color: #fff;
+      background: var(--ink);
+      font-size: 18px;
+    }
+
+    .launch-button::after {
+      content: "";
+      position: absolute;
+      inset: -7px;
+      border: 1px solid rgba(24, 134, 95, 0.42);
+      border-radius: inherit;
+      animation: readyRing 2.8s ease-out infinite;
+    }
+
+    .route {
+      display: grid;
+      grid-template-columns: 1fr 64px 1fr 64px 1fr;
+      align-items: center;
+      margin-top: 18px;
+    }
+
+    .route-node {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 12px;
+      background: #fff;
+    }
+
+    .route-node b {
+      display: block;
+      margin-bottom: 4px;
+      font-size: 14px;
+    }
+
+    .route-node span {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .connector {
+      position: relative;
+      height: 2px;
+      background: linear-gradient(90deg, rgba(24, 134, 95, 0.18), rgba(24, 134, 95, 0.82));
+    }
+
+    .connector::after {
+      content: "";
+      position: absolute;
+      top: 50%;
+      right: -4px;
+      width: 10px;
+      height: 10px;
+      border-top: 2px solid var(--green);
+      border-right: 2px solid var(--green);
+      transform: translateY(-50%) rotate(45deg);
+    }
+
+    .packet {
+      position: absolute;
+      top: 50%;
+      left: 0;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--green);
+      transform: translateY(-50%);
+      animation: packet 2.5s linear infinite;
+    }
+
+    .section-head {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 20px;
+      margin: 42px 0 16px;
+    }
+
+    .section-head h2 {
+      margin: 0;
+      font-size: clamp(25px, 3vw, 34px);
+      line-height: 1.12;
+    }
+
+    .section-head p {
+      max-width: 560px;
+      margin: 0;
+      color: var(--muted);
+    }
+
+    .clean-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+
+    .clean-card {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 18px;
+      background: rgba(255, 255, 255, 0.76);
+    }
+
+    .clean-card h3 {
+      margin: 0 0 8px;
+      font-size: 18px;
+    }
+
+    .clean-card p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .flow-layout {
+      display: grid;
+      grid-template-columns: minmax(280px, 0.86fr) minmax(0, 1.14fr);
+      gap: 14px;
+      align-items: stretch;
+    }
+
+    .flow-list,
+    .flow-detail,
+    .status-demo,
+    .guide,
+    .api-workbench,
+    .roadmap {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: rgba(255, 255, 255, 0.8);
+    }
+
+    .flow-list {
+      display: grid;
+      gap: 8px;
+      padding: 12px;
+    }
+
+    .flow-step {
+      position: relative;
+      display: grid;
+      grid-template-columns: 34px 1fr;
+      gap: 10px;
+      width: 100%;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 10px;
+      color: var(--ink);
+      background: #fff;
+      text-align: left;
+      transition: background 180ms ease, border-color 180ms ease, transform 180ms ease;
+    }
+
+    .flow-step.active {
+      border-color: rgba(24, 134, 95, 0.5);
+      background: var(--green-soft);
+      transform: translateX(3px);
+    }
+
+    .flow-step b {
+      display: grid;
+      width: 30px;
+      height: 30px;
+      place-items: center;
+      border-radius: 50%;
+      color: #fff;
+      background: var(--ink);
+      font-size: 13px;
+    }
+
+    .flow-step strong,
+    .flow-step span {
+      display: block;
+    }
+
+    .flow-step span {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .step-timer {
+      position: absolute;
+      left: 0;
+      bottom: 0;
+      width: 100%;
+      height: 3px;
+      background: transparent;
+    }
+
+    .flow-step.active .step-timer::before {
+      content: "";
+      display: block;
+      width: 100%;
+      height: 100%;
+      background: var(--green);
+      transform-origin: left center;
+      animation: stepTimer 5s linear forwards;
+    }
+
+    .flow-detail {
+      display: grid;
+      align-content: start;
+      gap: 18px;
+      padding: 22px;
+      min-height: 360px;
+    }
+
+    .flow-detail h3 {
+      margin: 0;
+      font-size: 28px;
+    }
+
+    .flow-detail p {
+      margin: 0;
+      color: var(--muted);
+    }
+
+    .outcomes {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .outcome {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 14px;
+      background: #fff;
+    }
+
+    .outcome span {
+      display: block;
+      margin-bottom: 5px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .outcome strong {
+      display: block;
+      font-size: 17px;
+    }
+
+    .flow-progress {
+      height: 8px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: #e8eee9;
+    }
+
+    .flow-progress i {
+      display: block;
+      width: var(--flow-progress, 20%);
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--green), var(--teal));
+      transition: width 260ms ease;
+    }
+
+    .architecture {
+      display: grid;
+      grid-template-columns: 1fr 86px 1fr 86px 1fr;
+      align-items: center;
+    }
+
+    .arch-node {
+      min-height: 174px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 18px;
+      background: rgba(255, 255, 255, 0.82);
+    }
+
+    .arch-node h3 {
+      margin: 0 0 10px;
+      font-size: 18px;
+    }
+
+    .arch-node ul {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .arch-node li {
+      display: flex;
+      gap: 8px;
+      margin: 7px 0;
+    }
+
+    .arch-node li::before {
+      content: "";
+      flex: 0 0 auto;
+      width: 7px;
+      height: 7px;
+      margin-top: 8px;
+      border-radius: 50%;
+      background: var(--green);
+    }
+
+    .runtime-board {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .runtime-card,
+    .runtime-chain {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: rgba(255, 255, 255, 0.82);
+    }
+
+    .runtime-card {
+      display: grid;
+      gap: 12px;
+      padding: 18px;
+    }
+
+    .runtime-card h3 {
+      margin: 0;
+      font-size: 20px;
+    }
+
+    .runtime-card p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .command-box {
+      overflow: auto;
+      border: 1px solid #24352e;
+      border-radius: var(--radius);
+      padding: 13px;
+      color: #d9f5e4;
+      background: #101a15;
+      font-size: 12px;
+      line-height: 1.55;
+    }
+
+    .command-box code {
+      white-space: pre;
+    }
+
+    .runtime-notes {
+      display: grid;
+      gap: 7px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .runtime-notes li {
+      display: grid;
+      grid-template-columns: 18px 1fr;
+      gap: 8px;
+      align-items: start;
+    }
+
+    .runtime-notes li::before {
+      content: "";
+      width: 7px;
+      height: 7px;
+      margin-top: 8px;
+      border-radius: 50%;
+      background: var(--green);
+    }
+
+    .runtime-chain {
+      grid-column: 1 / -1;
+      padding: 18px;
+    }
+
+    .runtime-chain h3 {
+      margin: 0 0 14px;
+      font-size: 20px;
+    }
+
+    .chain-steps {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .chain-step {
+      position: relative;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 13px;
+      background: #fff;
+      min-height: 132px;
+    }
+
+    .chain-step:not(:last-child)::after {
+      content: "";
+      position: absolute;
+      top: 24px;
+      right: -9px;
+      width: 14px;
+      height: 2px;
+      background: var(--green);
+    }
+
+    .chain-step b,
+    .chain-step strong,
+    .chain-step span {
+      display: block;
+    }
+
+    .chain-step b {
+      width: fit-content;
+      margin-bottom: 9px;
+      border-radius: 999px;
+      padding: 3px 8px;
+      color: var(--green);
+      background: var(--green-soft);
+      font-size: 12px;
+    }
+
+    .chain-step strong {
+      margin-bottom: 6px;
+      font-size: 14px;
+    }
+
+    .chain-step span {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .experience-grid {
+      display: grid;
+      grid-template-columns: 0.92fr 1.08fr;
+      gap: 14px;
+    }
+
+    .interface-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.08fr) minmax(340px, 0.92fr);
+      gap: 14px;
+      align-items: stretch;
+    }
+
+    .interface-panel {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: rgba(255, 255, 255, 0.82);
+      overflow: hidden;
+    }
+
+    .interface-primary {
+      grid-row: span 2;
+    }
+
+    .panel-label {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      border-bottom: 1px solid var(--line);
+      padding: 12px 14px;
+      background: #f7faf7;
+    }
+
+    .panel-label strong,
+    .panel-label span {
+      display: block;
+    }
+
+    .panel-label span {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .client-home {
+      display: grid;
+      gap: 14px;
+      padding: 18px;
+    }
+
+    .client-alert {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 14px;
+      align-items: center;
+      border: 1px solid rgba(24, 134, 95, 0.22);
+      border-radius: var(--radius);
+      padding: 16px;
+      background: linear-gradient(120deg, #ffffff, #eef8f2);
+    }
+
+    .client-alert strong,
+    .client-alert span {
+      display: block;
+    }
+
+    .client-alert span {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .launch-pill {
+      border: 0;
+      border-radius: 999px;
+      padding: 10px 14px;
+      color: #fff;
+      background: var(--ink);
+      white-space: nowrap;
+    }
+
+    .diagnostic-list {
+      display: grid;
+      gap: 9px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .diagnostic-list li {
+      display: grid;
+      grid-template-columns: 24px 1fr auto;
+      gap: 10px;
+      align-items: center;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 10px;
+      background: #fff;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .diagnostic-list b {
+      display: grid;
+      width: 22px;
+      height: 22px;
+      place-items: center;
+      border-radius: 50%;
+      color: #fff;
+      background: var(--green);
+      font-size: 12px;
+    }
+
+    .diagnostic-list strong {
+      color: var(--ink);
+    }
+
+    .session-log {
+      display: grid;
+      gap: 8px;
+      border: 1px solid #24352e;
+      border-radius: var(--radius);
+      padding: 12px;
+      color: #d9f5e4;
+      background: #101a15;
+      font-size: 12px;
+    }
+
+    .session-log div {
+      display: grid;
+      grid-template-columns: 64px 1fr;
+      gap: 10px;
+      align-items: start;
+    }
+
+    .session-log code {
+      color: #8fe6ba;
+    }
+
+    .wizard-panel {
+      display: grid;
+      grid-template-columns: 190px 1fr;
+      min-height: 320px;
+    }
+
+    .wizard-steps {
+      display: grid;
+      align-content: start;
+      gap: 8px;
+      border-right: 1px solid var(--line);
+      padding: 14px;
+      background: #f7faf7;
+    }
+
+    .wizard-steps button {
+      display: grid;
+      grid-template-columns: 28px 1fr;
+      gap: 9px;
+      align-items: center;
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 9px;
+      color: var(--ink);
+      background: #fff;
+      text-align: left;
+      transition: background 160ms ease, border-color 160ms ease, transform 160ms ease;
+    }
+
+    .wizard-steps button.active {
+      border-color: rgba(24, 134, 95, 0.45);
+      background: var(--green-soft);
+      transform: translateX(2px);
+    }
+
+    .wizard-steps b {
+      display: grid;
+      width: 26px;
+      height: 26px;
+      place-items: center;
+      border-radius: 50%;
+      color: #fff;
+      background: var(--ink);
+      font-size: 12px;
+    }
+
+    .wizard-steps span,
+    .wizard-steps small {
+      display: block;
+    }
+
+    .wizard-steps small {
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .wizard-stage {
+      display: grid;
+      gap: 12px;
+      align-content: start;
+      padding: 16px;
+    }
+
+    .wizard-visual {
+      display: grid;
+      grid-template-columns: 58px 1fr;
+      gap: 12px;
+      align-items: center;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 12px;
+      background: #fff;
+    }
+
+    .wizard-icon {
+      display: grid;
+      width: 54px;
+      height: 54px;
+      place-items: center;
+      border-radius: 12px;
+      color: #fff;
+      background: linear-gradient(145deg, var(--green), var(--teal));
+      font-size: 22px;
+      font-weight: 900;
+    }
+
+    .wizard-visual h3 {
+      margin: 0 0 4px;
+      font-size: 18px;
+    }
+
+    .wizard-visual p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .wizard-checks {
+      display: grid;
+      gap: 7px;
+    }
+
+    .wizard-checks div {
+      display: grid;
+      grid-template-columns: 20px 1fr;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .wizard-checks i {
+      display: grid;
+      width: 18px;
+      height: 18px;
+      place-items: center;
+      margin-top: 1px;
+      border-radius: 50%;
+      color: #fff;
+      background: var(--green);
+      font-style: normal;
+      font-size: 11px;
+      font-weight: 900;
+    }
+
+    .prompt-strip {
+      border: 1px solid #24352e;
+      border-radius: var(--radius);
+      padding: 12px;
+      color: #d9f5e4;
+      background: #101a15;
+      font-family: "JetBrains Mono", Consolas, "SFMono-Regular", monospace;
+      font-size: 12px;
+    }
+
+    .ops-panel {
+      grid-column: 1 / -1;
+    }
+
+    .ops-body {
+      display: grid;
+      grid-template-columns: 0.8fr 1.2fr;
+      gap: 14px;
+      padding: 16px;
+    }
+
+    .ops-metrics {
+      display: grid;
+      gap: 10px;
+    }
+
+    .ops-metric {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 12px;
+      background: #fff;
+    }
+
+    .ops-metric span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .ops-metric strong {
+      display: block;
+      margin-top: 4px;
+      font-size: 18px;
+    }
+
+    .ops-table {
+      display: grid;
+      gap: 8px;
+    }
+
+    .ops-row {
+      display: grid;
+      grid-template-columns: 1.1fr 0.8fr 0.8fr auto;
+      gap: 10px;
+      align-items: center;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 10px;
+      background: #fff;
+      font-size: 13px;
+    }
+
+    .ops-row span {
+      color: var(--muted);
+    }
+
+    .status-demo {
+      overflow: hidden;
+    }
+
+    .status-controls {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1px;
+      background: var(--line);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .status-controls button,
+    .api-tabs button {
+      min-height: 44px;
+      border: 0;
+      color: var(--muted);
+      background: #f7faf7;
+      transition: background 160ms ease, color 160ms ease;
+    }
+
+    .status-controls button.active,
+    .api-tabs button.active {
+      color: var(--ink);
+      background: #fff;
+      font-weight: 900;
+    }
+
+    .state-card {
+      padding: 20px;
+    }
+
+    .state-card h3 {
+      margin: 0 0 6px;
+      font-size: 24px;
+    }
+
+    .state-card p {
+      margin: 0;
+      color: var(--muted);
+    }
+
+    .quota-line {
+      margin: 18px 0;
+    }
+
+    .quota-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 8px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .quota-bar {
+      height: 10px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: #e8eee9;
+    }
+
+    .quota-bar i {
+      display: block;
+      width: var(--quota-progress, 100%);
+      height: 100%;
+      border-radius: inherit;
+      background: var(--quota-color, linear-gradient(90deg, var(--green), var(--teal)));
+      transition: width 280ms ease, background 180ms ease;
+    }
+
+    .state-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+
+    .state-item {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 12px;
+      background: #fff;
+    }
+
+    .state-item span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .state-item strong {
+      display: block;
+      margin-top: 4px;
+    }
+
+    .guide {
+      padding: 20px;
+    }
+
+    .guide h3 {
+      margin: 0 0 10px;
+      font-size: 22px;
+    }
+
+    .guide-list {
+      display: grid;
+      gap: 9px;
+      margin: 14px 0 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .guide-list li {
+      display: grid;
+      grid-template-columns: 28px 1fr;
+      gap: 10px;
+      align-items: start;
+      color: var(--muted);
+    }
+
+    .guide-list b {
+      display: grid;
+      width: 24px;
+      height: 24px;
+      place-items: center;
+      margin-top: 1px;
+      border-radius: 50%;
+      color: #fff;
+      background: var(--green);
+      font-size: 12px;
+    }
+
+    .api-roadmap {
+      display: grid;
+      grid-template-columns: minmax(0, 1.05fr) minmax(280px, 0.95fr);
+      gap: 14px;
+    }
+
+    .api-workbench {
+      overflow: hidden;
+    }
+
+    .api-tabs {
+      display: flex;
+      background: var(--line);
+      gap: 1px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .api-tabs button {
+      flex: 1;
+    }
+
+    .api-body {
+      display: grid;
+      grid-template-columns: 0.85fr 1.15fr;
+      gap: 18px;
+      padding: 20px;
+    }
+
+    .api-body h3 {
+      margin: 0 0 8px;
+      font-size: 20px;
+    }
+
+    .api-body p {
+      margin: 0;
+      color: var(--muted);
+    }
+
+    pre {
+      margin: 0;
+      overflow: auto;
+      border: 1px solid #24352e;
+      border-radius: var(--radius);
+      padding: 16px;
+      color: #d9f5e4;
+      background: #101a15;
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+    code {
+      font-family: "JetBrains Mono", Consolas, "SFMono-Regular", monospace;
+    }
+
+    .roadmap {
+      display: grid;
+      gap: 1px;
+      overflow: hidden;
+      background: var(--line);
+    }
+
+    .phase {
+      display: grid;
+      grid-template-columns: 70px 1fr;
+      gap: 12px;
+      padding: 16px;
+      background: rgba(255, 255, 255, 0.84);
+    }
+
+    .phase span {
+      width: fit-content;
+      height: fit-content;
+      border: 1px solid rgba(24, 134, 95, 0.2);
+      border-radius: 999px;
+      padding: 5px 9px;
+      color: var(--green);
+      background: var(--green-soft);
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .phase h3 {
+      margin: 0 0 4px;
+      font-size: 17px;
+    }
+
+    .phase p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .acceptance {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+
+    .check {
+      display: grid;
+      grid-template-columns: 30px 1fr;
+      gap: 10px;
+      align-items: start;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 14px;
+      background: rgba(255, 255, 255, 0.76);
+    }
+
+    .check i {
+      display: grid;
+      width: 26px;
+      height: 26px;
+      place-items: center;
+      border-radius: 50%;
+      color: #fff;
+      background: var(--green);
+      font-style: normal;
+      font-weight: 900;
+    }
+
+    .check strong,
+    .check span {
+      display: block;
+    }
+
+    .check span {
+      margin-top: 2px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .footer {
+      margin-top: 34px;
+      border-top: 1px solid var(--line);
+      padding: 20px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+      text-align: center;
+    }
+
+    @keyframes readyRing {
+      0% {
+        opacity: 0.9;
+        transform: scale(0.9);
+      }
+      72% {
+        opacity: 0;
+        transform: scale(1.35);
+      }
+      100% {
+        opacity: 0;
+        transform: scale(1.35);
+      }
+    }
+
+    @keyframes packet {
+      from {
+        left: 0;
+      }
+      to {
+        left: calc(100% - 8px);
+      }
+    }
+
+    @keyframes stepTimer {
+      from {
+        transform: scaleX(0);
+      }
+      to {
+        transform: scaleX(1);
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        scroll-behavior: auto !important;
+        animation-duration: 0.001ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.001ms !important;
+      }
+    }
+
+    @media (max-width: 980px) {
+      .nav-wrap {
+        align-items: flex-start;
+        flex-direction: column;
+        padding: 12px 0;
+      }
+
+      .hero,
+      .flow-layout,
+      .experience-grid,
+      .interface-grid,
+      .api-roadmap,
+      .api-body,
+      .ops-body {
+        grid-template-columns: 1fr;
+      }
+
+      .hero {
+        min-height: auto;
+        width: 100%;
+        max-width: 100%;
+      }
+
+      .interface-primary,
+      .ops-panel {
+        grid-row: auto;
+        grid-column: auto;
+      }
+
+      .clean-grid,
+      .signal-strip,
+      .runtime-board,
+      .acceptance {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .runtime-chain {
+        grid-column: auto;
+      }
+
+      .chain-steps {
+        grid-template-columns: 1fr;
+      }
+
+      .chain-step:not(:last-child)::after {
+        top: auto;
+        right: auto;
+        bottom: -8px;
+        left: 24px;
+        width: 2px;
+        height: 14px;
+      }
+
+      .architecture {
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+
+      .connector {
+        width: 2px;
+        height: 42px;
+        margin: 0 auto;
+        background: linear-gradient(180deg, rgba(24, 134, 95, 0.18), rgba(24, 134, 95, 0.82));
+      }
+
+      .connector::after {
+        top: auto;
+        right: auto;
+        bottom: -4px;
+        left: 50%;
+        transform: translateX(-50%) rotate(135deg);
+      }
+
+      .packet {
+        top: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        animation-name: packetVertical;
+      }
+
+      .route {
+        grid-template-columns: 1fr;
+        gap: 10px;
+      }
+
+      .route .connector {
+        display: none;
+      }
+    }
+
+    @keyframes packetVertical {
+      from {
+        top: 0;
+      }
+      to {
+        top: calc(100% - 8px);
+      }
+    }
+
+    @media (max-width: 660px) {
+      .nav-wrap,
+      .shell {
+        width: min(100% - 24px, 1120px);
+      }
+
+      .brand span {
+        white-space: normal;
+      }
+
+      h1 {
+        font-size: 34px;
+        line-height: 1.06;
+      }
+
+      .hero > div:first-child,
+      h1,
+      .lead,
+      .hero-actions,
+      .signal-strip {
+        box-sizing: border-box;
+        width: 100%;
+        max-width: calc(100vw - 24px);
+      }
+
+      .lead {
+        font-size: 16px;
+      }
+
+      .lead-line {
+        display: block;
+      }
+
+      .clean-grid,
+      .signal-strip,
+      .metric-row,
+      .outcomes,
+      .runtime-board,
+      .state-grid,
+      .acceptance,
+      .status-controls {
+        grid-template-columns: 1fr;
+      }
+
+      .section-head {
+        display: block;
+      }
+
+      .section-head h2 {
+        margin-bottom: 8px;
+      }
+
+      .account,
+      .launch-row,
+      .phase {
+        grid-template-columns: 1fr;
+      }
+
+      .status-pill {
+        width: fit-content;
+      }
+
+      .client-alert,
+      .wizard-panel,
+      .wizard-visual,
+      .ops-row {
+        grid-template-columns: 1fr;
+      }
+
+      .wizard-steps {
+        border-right: 0;
+        border-bottom: 1px solid var(--line);
+      }
+
+      pre code {
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+      }
+
+      .launch-button {
+        width: 100%;
+        height: 44px;
+        border-radius: var(--radius);
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="nav-wrap">
+      <a class="brand" href="#overview" aria-label="回到顶部">
+        <span class="brand-mark">C++</span>
+        <span>
+          <strong>Codex++ 成品方案</strong>
+          <span>买完即用的 Codex 增强客户端</span>
+        </span>
+      </a>
+      <nav class="nav" aria-label="页面导航">
+        <a href="#position">定位</a>
+        <a href="#experience">界面</a>
+        <a href="#flow">流程</a>
+        <a href="#architecture">架构</a>
+        <a href="#runtime">运行</a>
+        <a href="#api">接口</a>
+        <a href="#acceptance">验收</a>
+      </nav>
+    </div>
+  </div>
+
+  <main class="shell">
+    <header class="hero" id="overview">
+      <div>
+        <p class="kicker">CodexPlusPlus + Sub2API 一体化成品</p>
+        <h1>把 Codex 变成买完即用的客户端。</h1>
+        <p class="lead">
+          <span class="lead-line">用户只需要购买、登录、启动。</span>
+          <span class="lead-line">Codex++ 自动完成安装检测、账号绑定、</span>
+          <span class="lead-line">托管供应商配置和状态修复，</span>
+          <span class="lead-line">复杂 API 参数全部收进后台。</span>
+        </p>
+        <div class="hero-actions">
+          <a class="btn primary" href="#flow">查看主流程</a>
+          <a class="btn" href="#experience">查看状态演示</a>
+        </div>
+        <div class="signal-strip" aria-label="核心产品信号">
+          <div class="signal">
+            <strong>0 API 配置</strong>
+            <span>不让普通用户填写 Base URL、Key 或协议。</span>
+          </div>
+          <div class="signal">
+            <strong>1 个客户端</strong>
+            <span>安装、登录、启动、诊断、续费都在这里完成。</span>
+          </div>
+          <div class="signal">
+            <strong>后台可运营</strong>
+            <span>Sub2API 管理套餐、支付、Key、账号池和限流。</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="product-preview" aria-label="Codex++ Manager 首页示意">
+        <div class="mock-bar">
+          <div class="dots" aria-hidden="true"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+          <span class="mock-title">Codex++ Manager</span>
+        </div>
+        <div class="mock-body">
+          <div class="account">
+            <div class="avatar">林</div>
+            <div>
+              <strong>lin@example.com</strong>
+              <span>个人 Pro 月卡，到期前自动提醒</span>
+            </div>
+            <span class="status-pill ok">可用</span>
+          </div>
+
+          <div class="metric-row">
+            <div class="metric"><span>剩余额度</span><strong>动态</strong></div>
+            <div class="metric"><span>今日用量</span><strong>快照</strong></div>
+            <div class="metric"><span>默认模型</span><strong>后台配置</strong></div>
+          </div>
+
+          <div class="launch-row">
+            <div>
+              <strong>Codex 服务已自动配置</strong>
+              <span>托管供应商 Codex++ Cloud 已写入，可直接启动。</span>
+            </div>
+            <button class="launch-button" type="button" aria-label="启动 Codex">▶</button>
+          </div>
+
+          <div class="route" aria-label="请求路径">
+            <div class="route-node"><b>客户端</b><span>保存用户侧 Key</span></div>
+            <div class="connector" aria-hidden="true"><span class="packet"></span></div>
+            <div class="route-node"><b>Sub2API</b><span>计费、限流、调度</span></div>
+            <div class="connector" aria-hidden="true"><span class="packet"></span></div>
+            <div class="route-node"><b>模型服务</b><span>上游账号池容灾</span></div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <section id="position">
+      <div class="section-head">
+        <h2>产品定位</h2>
+        <p>说明书只保留决策信息：用户看到什么、系统自动做什么、哪些复杂项默认隐藏。</p>
+      </div>
+      <div class="clean-grid">
+        <article class="clean-card">
+          <h3>用户看到</h3>
+          <p>登录账号、查看套餐和余额、点击启动 Codex；失败时看到原因和可执行修复。</p>
+        </article>
+        <article class="clean-card">
+          <h3>系统自动做</h3>
+          <p>检测 Codex 安装、拉取托管配置、写入供应商、启动 launcher、注入增强能力。</p>
+        </article>
+        <article class="clean-card">
+          <h3>默认隐藏</h3>
+          <p>Base URL、API Key、wire API、账号池、限流规则、支付回调和上游真实凭证。</p>
+        </article>
+      </div>
+    </section>
+
+    <section id="experience">
+      <div class="section-head">
+        <h2>关键界面展示</h2>
+        <p>说明对象最需要先看到成品形态：用户入口、首启向导、异常状态和后台运营，这些界面决定“普通人能不能用”。</p>
+      </div>
+      <div class="interface-grid">
+        <article class="interface-panel interface-primary">
+          <div class="panel-label">
+            <div>
+              <strong>客户端首页</strong>
+              <span>日常使用入口：先确认状态，再启动 Codex。</span>
+            </div>
+            <span class="status-pill ok">可用</span>
+          </div>
+          <div class="client-home">
+            <div class="account">
+              <div class="avatar">林</div>
+              <div>
+                <strong>lin@example.com</strong>
+              <span>后台配置套餐 · 到期与设备状态随账号同步</span>
+              </div>
+              <span class="status-pill ok">服务正常</span>
+            </div>
+
+            <div class="metric-row">
+              <div class="metric"><span>剩余额度</span><strong>动态</strong></div>
+              <div class="metric"><span>今日用量</span><strong>快照</strong></div>
+              <div class="metric"><span>默认模型</span><strong>后台配置</strong></div>
+            </div>
+
+            <div class="client-alert">
+              <div>
+                <strong>已自动配置 Codex++ Cloud</strong>
+                <span>无需填写 API Key。点击启动后，Codex 会使用托管供应商发起请求。</span>
+              </div>
+              <button class="launch-pill" type="button">启动 Codex</button>
+            </div>
+
+            <ul class="diagnostic-list" aria-label="客户端诊断结果">
+              <li><b>✓</b><span><strong>Codex App</strong> 已检测到安装路径</span><span>正常</span></li>
+              <li><b>✓</b><span><strong>托管供应商</strong> 已写入配置文件</span><span>正常</span></li>
+              <li><b>✓</b><span><strong>账号权益</strong> 套餐、余额、模型权限同步完成</span><span>正常</span></li>
+              <li><b>!</b><span><strong>高级配置</strong> 手动供应商仍保留，但默认收起</span><span>可选</span></li>
+            </ul>
+
+            <div class="session-log" aria-label="客户端启动日志">
+              <div><code>09:42</code><span>登录状态已确认，设备记录已刷新。</span></div>
+              <div><code>09:42</code><span>已从 /client/bootstrap 拉取托管配置。</span></div>
+              <div><code>09:43</code><span>Codex++ Cloud 已写入，启动前检查通过。</span></div>
+              <div><code>09:43</code><span>用户点击启动后进入 Codex，不需要打开高级配置。</span></div>
+            </div>
+          </div>
+        </article>
+
+        <article class="interface-panel wizard-panel">
+          <div class="wizard-steps" id="guideButtons" aria-label="首启向导步骤">
+            <button class="active" type="button" data-guide="detect">
+              <b>1</b><span>检测环境<small>能不能启动</small></span>
+            </button>
+            <button type="button" data-guide="install">
+              <b>2</b><span>辅助安装<small>下载和权限</small></span>
+            </button>
+            <button type="button" data-guide="login">
+              <b>3</b><span>自动配置<small>不碰 API</small></span>
+            </button>
+            <button type="button" data-guide="lesson">
+              <b>4</b><span>新手任务<small>学会提需求</small></span>
+            </button>
+          </div>
+          <div class="wizard-stage">
+            <div class="panel-label">
+              <div>
+                <strong id="guideHead">Codex 安装检测</strong>
+                <span id="guideStep">步骤 1 / 4</span>
+              </div>
+            </div>
+            <div class="wizard-visual">
+              <div class="wizard-icon" id="guideIcon">✓</div>
+              <div>
+                <h3 id="guideTitle">先判断“能不能启动”</h3>
+                <p id="guideDesc">Codex++ 自动检查 Codex App、配置目录、登录状态、网络连通性和本机权限。</p>
+              </div>
+            </div>
+            <div class="wizard-checks" id="guideChecks">
+              <div><i>✓</i><span>未安装时显示下载入口和安装说明。</span></div>
+              <div><i>✓</i><span>已安装但无法启动时，提供路径和权限修复。</span></div>
+              <div><i>✓</i><span>可启动时进入登录与自动配置。</span></div>
+            </div>
+            <div class="prompt-strip" id="guidePrompt">下一步建议：点击“开始检测”，让 Codex++ 自动完成环境检查。</div>
+          </div>
+        </article>
+
+        <article class="status-demo interface-panel">
+          <div class="panel-label">
+            <div>
+              <strong>异常与续费状态</strong>
+              <span>复杂配置问题要翻译成用户能执行的动作。</span>
+            </div>
+          </div>
+          <div class="status-controls" id="stateButtons" aria-label="切换客户端状态">
+            <button class="active" type="button" data-state="ok">可用</button>
+            <button type="button" data-state="low">余额不足</button>
+            <button type="button" data-state="expired">已过期</button>
+          </div>
+          <div class="state-card">
+            <span id="demoStatus" class="status-pill ok">服务可用</span>
+            <h3 id="demoTitle">服务已就绪</h3>
+            <p id="demoDesc">托管供应商已自动写入，点击启动即可使用 Codex。</p>
+            <div class="quota-line">
+              <div class="quota-head"><span>剩余额度</span><strong id="demoQuota">后台快照</strong></div>
+              <div class="quota-bar"><i id="demoProgress"></i></div>
+            </div>
+            <div class="state-grid">
+              <div class="state-item"><span>默认模型</span><strong id="demoModel">后台配置</strong></div>
+              <div class="state-item"><span>主按钮</span><strong id="demoAction">一键启动 Codex</strong></div>
+              <div class="state-item"><span>高级配置</span><strong>默认隐藏</strong></div>
+              <div class="state-item"><span>修复入口</span><strong id="demoFix">可选</strong></div>
+            </div>
+          </div>
+        </article>
+
+        <article class="interface-panel ops-panel">
+          <div class="panel-label">
+            <div>
+              <strong>后台运营视图</strong>
+              <span>如果只展示客户端，看不出商业闭环；后台要能接住支付、Key、设备和用量。</span>
+            </div>
+          </div>
+          <div class="ops-body">
+            <div class="ops-metrics">
+              <div class="ops-metric"><span>今日活跃用户</span><strong>486</strong></div>
+              <div class="ops-metric"><span>支付成功率</span><strong>97.2%</strong></div>
+              <div class="ops-metric"><span>账号池健康度</span><strong>正常</strong></div>
+            </div>
+            <div class="ops-table" aria-label="后台用户列表示意">
+              <div class="ops-row"><strong>用户</strong><strong>套餐</strong><strong>额度</strong><strong>状态</strong></div>
+              <div class="ops-row"><span>lin@example.com</span><span>后台套餐 A</span><span>动态</span><span class="status-pill ok">可用</span></div>
+              <div class="ops-row"><span>team@studio.cn</span><span>团队策略</span><span>提醒</span><span class="status-pill warn">提醒</span></div>
+              <div class="ops-row"><span>old@demo.dev</span><span>到期策略</span><span>暂停</span><span class="status-pill fail">暂停</span></div>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section id="flow">
+      <div class="section-head">
+        <h2>买完即用流程</h2>
+        <p>流程会自动推进，也可以点击步骤查看细节；动效只用于标记当前节点和整体进度。</p>
+      </div>
+      <div class="flow-layout">
+        <div class="flow-list" id="flowSteps" aria-label="买完即用步骤">
+          <button class="flow-step active" type="button" data-step="0">
+            <b>1</b>
+            <span><strong>购买套餐</strong><span>官网、后台或兑换码开通权益。</span></span>
+            <i class="step-timer" aria-hidden="true"></i>
+          </button>
+          <button class="flow-step" type="button" data-step="1">
+            <b>2</b>
+            <span><strong>登录绑定</strong><span>账号、购买记录和设备关联。</span></span>
+            <i class="step-timer" aria-hidden="true"></i>
+          </button>
+          <button class="flow-step" type="button" data-step="2">
+            <b>3</b>
+            <span><strong>自动配置</strong><span>拉取网关地址和用户侧 Key。</span></span>
+            <i class="step-timer" aria-hidden="true"></i>
+          </button>
+          <button class="flow-step" type="button" data-step="3">
+            <b>4</b>
+            <span><strong>启动 Codex</strong><span>launcher 启动并注入增强。</span></span>
+            <i class="step-timer" aria-hidden="true"></i>
+          </button>
+          <button class="flow-step" type="button" data-step="4">
+            <b>5</b>
+            <span><strong>持续使用</strong><span>余额、续费和修复形成闭环。</span></span>
+            <i class="step-timer" aria-hidden="true"></i>
+          </button>
+        </div>
+
+        <article class="flow-detail" aria-live="polite">
+          <div>
+            <h3 id="flowTitle">购买套餐</h3>
+            <p id="flowText">支付成功后，Sub2API 自动为账号开通套餐或充值余额，客户端随后按账号拉取权益。</p>
+          </div>
+          <div class="outcomes">
+            <div class="outcome">
+              <span>用户动作</span>
+              <strong id="flowUser">完成支付或兑换</strong>
+            </div>
+            <div class="outcome">
+              <span>系统结果</span>
+              <strong id="flowSystem">权益立即进入账号</strong>
+            </div>
+          </div>
+          <div>
+            <div class="quota-head"><span>完成度</span><strong id="flowPercent">20%</strong></div>
+            <div class="flow-progress"><i id="flowProgress" style="--flow-progress:20%;"></i></div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section id="architecture">
+      <div class="section-head">
+        <h2>系统架构</h2>
+        <p>架构按 Control Plane、Data Plane、Client Runtime 和 Platform Ops 分层；客户端不内置共享 Key，也不保存上游真实密钥。</p>
+      </div>
+      <div class="architecture">
+        <article class="arch-node">
+          <h3>Client Runtime</h3>
+          <ul>
+            <li>安装检测与修复</li>
+            <li>登录、设备绑定、余额展示</li>
+            <li>自动写入 Codex++ Cloud</li>
+            <li>启动 Codex 并注入增强</li>
+          </ul>
+        </article>
+        <div class="connector" aria-hidden="true"><span class="packet"></span></div>
+        <article class="arch-node">
+          <h3>Control Plane + Data Plane</h3>
+          <ul>
+            <li>用户专属 API Key</li>
+            <li>后台配置套餐、支付和兑换码</li>
+            <li>计费、限流、并发控制</li>
+            <li>账号池调度与后台看板</li>
+          </ul>
+        </article>
+        <div class="connector" aria-hidden="true"><span class="packet"></span></div>
+        <article class="arch-node">
+          <h3>Platform Ops 与上游模型服务</h3>
+          <ul>
+            <li>OpenAI / Codex Responses</li>
+            <li>Claude、Gemini 等扩展渠道</li>
+            <li>多账号容灾和失败切换</li>
+            <li>按后台配置开放模型权限</li>
+          </ul>
+        </article>
+      </div>
+    </section>
+
+    <section id="runtime">
+      <div class="section-head">
+        <h2>两个项目运行流程</h2>
+        <p>这部分对应文件夹里的两个真实项目：先把 Sub2API 跑成网关和后台，再把 Codex++ Manager 跑成桌面客户端，最后联调用用户侧 Key 走网关。</p>
+      </div>
+      <div class="runtime-board">
+        <article class="runtime-card">
+          <h3>1. sub2api-main：先跑云端网关</h3>
+          <p>Sub2API 是后端服务、管理后台、用户体系、套餐/余额和 OpenAI 兼容网关的来源。</p>
+          <div class="command-box"><code># 本地开发
+cd sub2api-main/backend
+go run ./cmd/server
+
+cd ../frontend
+pnpm install
+pnpm run dev</code></div>
+          <ul class="runtime-notes">
+            <li>后端默认服务端口是 `8080`；前端 Vite 默认端口是 `3000`。</li>
+            <li>前端代理 `/api`、`/v1`、`/setup` 到后端，目标默认 `http://localhost:8080`。</li>
+            <li>本地开发需要 PostgreSQL 15+ 和 Redis 7+；生产更适合用 Docker Compose。</li>
+          </ul>
+        </article>
+
+        <article class="runtime-card">
+          <h3>2. CodexPlusPlus-main：再跑桌面客户端</h3>
+          <p>Codex++ Manager 是 Tauri 管理工具；launcher 是静默启动入口，负责打开 Codex 并注入增强。</p>
+          <div class="command-box"><code># 桌面端开发
+cd CodexPlusPlus-main/apps/codex-plus-manager
+npm install
+npm run dev
+
+# 打包
+npm run build</code></div>
+          <ul class="runtime-notes">
+            <li>`npm run dev` 执行 `tauri dev`，并自动启动 Vite 到 `127.0.0.1:1420`。</li>
+            <li>`npm run build` 会先构建 `codex-plus-launcher`，再执行 Tauri 打包。</li>
+            <li>运行时由 Manager 检测 Codex、写入供应商配置，再交给 launcher 启动 Codex。</li>
+          </ul>
+        </article>
+
+        <article class="runtime-chain">
+          <h3>两个项目联调链路</h3>
+          <div class="chain-steps">
+            <div class="chain-step">
+              <b>Step 1</b>
+              <strong>启动 Sub2API</strong>
+              <span>配置数据库、Redis、上游账号、套餐、余额和用户 API Key。</span>
+            </div>
+            <div class="chain-step">
+              <b>Step 2</b>
+              <strong>启动 Codex++ Manager</strong>
+              <span>桌面端进入登录、检测、自动配置和启动流程。</span>
+            </div>
+            <div class="chain-step">
+              <b>Step 3</b>
+              <strong>拉取托管配置</strong>
+              <span>目标产品需要把 Sub2API 能力包装成 `/api/v1/client/bootstrap` 等客户端接口。</span>
+            </div>
+            <div class="chain-step">
+              <b>Step 4</b>
+              <strong>写入 Codex++ Cloud</strong>
+              <span>客户端生成托管供应商：Base URL 指向 Sub2API 的 `/v1` 网关，Key 使用用户侧 Key。</span>
+            </div>
+            <div class="chain-step">
+              <b>Step 5</b>
+              <strong>请求闭环</strong>
+              <span>Codex 请求进入 Sub2API，后台完成鉴权、计费、限流、账号池调度和用量回写。</span>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section id="api">
+      <div class="section-head">
+        <h2>接口与里程碑</h2>
+        <p>第一版只做桌面端必须依赖的接口；先完成可交付闭环，再扩展运营能力。</p>
+      </div>
+      <div class="api-roadmap">
+        <div class="api-workbench">
+          <div class="api-tabs" id="apiTabs" aria-label="核心接口">
+            <button class="active" type="button" data-api="bootstrap">Bootstrap</button>
+            <button type="button" data-api="device">Devices</button>
+            <button type="button" data-api="usage">Usage</button>
+          </div>
+          <div class="api-body">
+            <div>
+              <h3 id="apiTitle">GET /api/v1/client/bootstrap</h3>
+              <p id="apiDesc">客户端登录后拉取后台托管服务配置，并据此生成 Codex++ Cloud 供应商。</p>
+            </div>
+            <pre><code id="apiCode">{
+  "gateway_base_url": "https://api.codex-plus.example/openai/v1",
+  "api_key": "[redacted]",
+  "default_model": "backend-configured",
+  "usage_display": { "remaining": "backend snapshot" },
+  "feature_flags": {
+    "advanced_provider_config": false,
+    "codex_enhancements": true
+  }
+}</code></pre>
+          </div>
+        </div>
+
+        <div class="roadmap">
+          <article class="phase">
+            <span>MVP</span>
+            <div><h3>买完能用</h3><p>登录绑定、自动配置、一键启动、余额展示和人工发放套餐。</p></div>
+          </article>
+          <article class="phase">
+            <span>V1</span>
+            <div><h3>支付闭环</h3><p>接入支付和兑换码，支付成功后自动开通或续费。</p></div>
+          </article>
+          <article class="phase">
+            <span>V1.5</span>
+            <div><h3>稳定运营</h3><p>设备管理、Key 轮换、异常用量风控、公告和灰度更新。</p></div>
+          </article>
+          <article class="phase">
+            <span>V2</span>
+            <div><h3>商业扩展</h3><p>团队套餐、多人额度池、发票、工单、模型包分层和白标。</p></div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="acceptance">
+      <div class="section-head">
+        <h2>验收标准</h2>
+        <p>验收重点不是“能配置”，而是普通用户全程不需要配置。</p>
+      </div>
+      <div class="acceptance">
+        <div class="check"><i>✓</i><span><strong>购买后可启动</strong><span>新用户登录后能完成一次可用请求。</span></span></div>
+        <div class="check"><i>✓</i><span><strong>无 API 配置</strong><span>全程无需填写 Base URL、Key 或模型协议。</span></span></div>
+        <div class="check"><i>✓</i><span><strong>状态可理解</strong><span>余额不足、过期、禁用都有明确原因和动作。</span></span></div>
+        <div class="check"><i>✓</i><span><strong>支付能恢复</strong><span>续费成功后刷新客户端即可恢复服务。</span></span></div>
+        <div class="check"><i>✓</i><span><strong>后台可运营</strong><span>管理员能查看用户、订单、设备、Key 和用量。</span></span></div>
+        <div class="check"><i>✓</i><span><strong>高级能力保留</strong><span>手动供应商配置仍可用，但不出现在默认路径。</span></span></div>
+      </div>
+    </section>
+
+    <div class="footer">
+      默认决策：保留登录体系；不在安装包内置共享 Key；客户端只保存 Sub2API 用户侧 Key；第一版优先完成“买完即用”闭环。
+    </div>
+  </main>
+
+  <script>
+    const flowData = [
+      {
+        title: "购买套餐",
+        text: "支付成功后，Sub2API 自动为账号开通套餐或充值余额，客户端随后按账号拉取权益。",
+        user: "完成支付或兑换",
+        system: "权益立即进入账号",
+        progress: "20%"
+      },
+      {
+        title: "登录绑定",
+        text: "登录把购买记录、套餐、余额、设备和售后关系绑定起来，换设备后也能重新拉取配置。",
+        user: "输入账号并确认设备",
+        system: "创建设备记录与会话",
+        progress: "40%"
+      },
+      {
+        title: "自动配置",
+        text: "客户端调用 /client/bootstrap，获取网关地址、用户侧 Key、后台配置的默认模型和功能开关。",
+        user: "无需填写任何 API 信息",
+        system: "写入 Codex++ Cloud",
+        progress: "60%"
+      },
+      {
+        title: "启动 Codex",
+        text: "Codex++ 使用外部 launcher 启动 Codex，通过 CDP 注入增强，不修改 Codex 原始安装文件。",
+        user: "点击启动",
+        system: "启动并注入增强能力",
+        progress: "80%"
+      },
+      {
+        title: "持续使用",
+        text: "余额、续费、限流、设备撤销和异常状态由后台管理，客户端只展示用户能理解的结果。",
+        user: "关注余额和状态",
+        system: "完成续费与风控闭环",
+        progress: "100%"
+      }
+    ];
+
+    const stateData = {
+      ok: {
+        status: "服务可用",
+        statusClass: "ok",
+        title: "服务已就绪",
+        desc: "托管供应商已自动写入，点击启动即可使用 Codex。",
+        quota: "后台快照",
+        quotaProgress: "100%",
+        quotaColor: "linear-gradient(90deg, var(--green), var(--teal))",
+        model: "后台配置",
+        action: "一键启动 Codex",
+        fix: "可选"
+      },
+      low: {
+        status: "待续费",
+        statusClass: "warn",
+        title: "余额即将不足",
+        desc: "额度低于后台提醒阈值，续费后无需重新配置。",
+        quota: "提醒",
+        quotaProgress: "42%",
+        quotaColor: "linear-gradient(90deg, var(--amber), #d99b34)",
+        model: "后台降级策略",
+        action: "去续费",
+        fix: "无需修复"
+      },
+      expired: {
+        status: "已暂停",
+        statusClass: "fail",
+        title: "套餐已过期",
+        desc: "服务暂时不可用，续费成功后自动恢复托管供应商。",
+        quota: "0%",
+        quotaProgress: "0%",
+        quotaColor: "linear-gradient(90deg, var(--red), #d56b5e)",
+        model: "未开放",
+        action: "恢复服务",
+        fix: "续费恢复"
+      }
+    };
+
+    const guideData = {
+      detect: {
+        head: "Codex 安装检测",
+        step: "步骤 1 / 4",
+        icon: "✓",
+        title: "先判断“能不能启动”",
+        desc: "Codex++ 自动检查 Codex App、配置目录、登录状态、网络连通性和本机权限。",
+        checks: [
+          "未安装时显示下载入口和安装说明。",
+          "已安装但无法启动时，提供路径和权限修复。",
+          "可启动时进入登录与自动配置。"
+        ],
+        prompt: "下一步建议：点击“开始检测”，让 Codex++ 自动完成环境检查。"
+      },
+      install: {
+        head: "辅助安装 Codex",
+        step: "步骤 2 / 4",
+        icon: "↓",
+        title: "把安装过程做成向导",
+        desc: "用户不需要自己判断系统版本、安装路径或权限弹窗，Codex++ 给出对应平台的可执行步骤。",
+        checks: [
+          "Windows 展示安装包、桌面快捷方式和防火墙说明。",
+          "macOS 展示 DMG、应用目录、Gatekeeper 放行说明。",
+          "安装后自动重新检测，不让用户手动回到第一步。"
+        ],
+        prompt: "页面文案：安装完成后回到 Codex++，我会自动继续。"
+      },
+      login: {
+        head: "登录并自动配置",
+        step: "步骤 3 / 4",
+        icon: "↻",
+        title: "登录后不让用户碰 API",
+        desc: "客户端拉取后台配置的套餐、余额、网关地址、用户侧 Key 和默认模型，自动生成 Codex++ Cloud 托管供应商。",
+        checks: [
+          "登录成功后调用 /api/v1/client/bootstrap。",
+          "自动写入托管供应商，隐藏 Base URL 和 API Key。",
+          "配置失败时提供一键修复和日志导出。"
+        ],
+        prompt: "用户看到：服务配置完成。你不需要填写任何 API 信息，可以直接启动 Codex。"
+      },
+      lesson: {
+        head: "第一堂 Codex 使用课",
+        step: "步骤 4 / 4",
+        icon: "▶",
+        title: "用示例教用户怎么开口",
+        desc: "第一次启动后展示可复制任务模板，让用户知道 Codex 适合做什么、怎么描述需求、怎么确认结果。",
+        checks: [
+          "提供“修 bug、加功能、解释项目”三个新手模板。",
+          "引导用户先选择项目目录，再描述目标。",
+          "提醒不要粘贴私密 Key、密码和支付信息。"
+        ],
+        prompt: "示例：帮我阅读这个项目，说明启动方式，并找出首页按钮点击无反应的可能原因。"
+      }
+    };
+
+    const apiData = {
+      bootstrap: {
+        title: "GET /api/v1/client/bootstrap",
+        desc: "客户端登录后拉取后台托管服务配置，并据此生成 Codex++ Cloud 供应商。",
+        code: `{
+  "gateway_base_url": "https://api.codex-plus.example/openai/v1",
+  "api_key": "[redacted]",
+  "default_model": "backend-configured",
+  "usage_display": { "remaining": "backend snapshot" },
+  "feature_flags": {
+    "advanced_provider_config": false,
+    "codex_enhancements": true
+  }
+}`
+      },
+      device: {
+        title: "POST /api/v1/client/devices",
+        desc: "登记或刷新桌面设备，用于撤销设备、风控、版本策略和售后定位。",
+        code: `{
+  "device_id": "win-8f31c2a0",
+  "platform": "windows-x64",
+  "app_version": "1.3.0",
+  "codex_version": "detected",
+  "last_seen_at": "2026-06-16T09:46:00+08:00"
+}`
+      },
+      usage: {
+        title: "GET /api/v1/client/usage",
+        desc: "给客户端首页展示后台计算后的余额、今日用量、限流状态和续费入口。",
+        code: `{
+  "available": true,
+  "balance_display": "backend snapshot",
+  "today_usage": "backend snapshot",
+  "rate_limit": "backend policy",
+  "renew_url": "https://codex-plus.example/billing",
+  "message": "服务正常"
+}`
+      }
+    };
+
+    const flowButtons = [...document.querySelectorAll(".flow-step")];
+    let flowIndex = 0;
+    let flowTimer = null;
+
+    function setFlow(index, restart = true) {
+      flowIndex = index;
+      const data = flowData[index];
+      flowButtons.forEach((button) => button.classList.toggle("active", Number(button.dataset.step) === index));
+      document.getElementById("flowTitle").textContent = data.title;
+      document.getElementById("flowText").textContent = data.text;
+      document.getElementById("flowUser").textContent = data.user;
+      document.getElementById("flowSystem").textContent = data.system;
+      document.getElementById("flowPercent").textContent = data.progress;
+      document.getElementById("flowProgress").style.setProperty("--flow-progress", data.progress);
+      if (restart) startFlowTimer();
+    }
+
+    function startFlowTimer() {
+      window.clearInterval(flowTimer);
+      flowTimer = window.setInterval(() => {
+        setFlow((flowIndex + 1) % flowData.length, false);
+      }, 5000);
+    }
+
+    flowButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        setFlow(Number(button.dataset.step));
+      });
+    });
+    startFlowTimer();
+
+    document.querySelectorAll("#stateButtons button").forEach((button) => {
+      button.addEventListener("click", () => {
+        const data = stateData[button.dataset.state];
+        document.querySelectorAll("#stateButtons button").forEach((item) => item.classList.remove("active"));
+        button.classList.add("active");
+
+        const status = document.getElementById("demoStatus");
+        status.className = `status-pill ${data.statusClass}`;
+        status.textContent = data.status;
+        document.getElementById("demoTitle").textContent = data.title;
+        document.getElementById("demoDesc").textContent = data.desc;
+        document.getElementById("demoQuota").textContent = data.quota;
+        document.getElementById("demoProgress").style.setProperty("--quota-progress", data.quotaProgress);
+        document.getElementById("demoProgress").style.setProperty("--quota-color", data.quotaColor);
+        document.getElementById("demoModel").textContent = data.model;
+        document.getElementById("demoAction").textContent = data.action;
+        document.getElementById("demoFix").textContent = data.fix;
+      });
+    });
+
+    document.querySelectorAll("#guideButtons button").forEach((button) => {
+      button.addEventListener("click", () => {
+        const data = guideData[button.dataset.guide];
+        document.querySelectorAll("#guideButtons button").forEach((item) => item.classList.remove("active"));
+        button.classList.add("active");
+        document.getElementById("guideHead").textContent = data.head;
+        document.getElementById("guideStep").textContent = data.step;
+        document.getElementById("guideIcon").textContent = data.icon;
+        document.getElementById("guideTitle").textContent = data.title;
+        document.getElementById("guideDesc").textContent = data.desc;
+        document.getElementById("guideChecks").innerHTML = data.checks
+          .map((item) => `<div><i>✓</i><span>${item}</span></div>`)
+          .join("");
+        document.getElementById("guidePrompt").textContent = data.prompt;
+      });
+    });
+
+    document.querySelectorAll("#apiTabs button").forEach((button) => {
+      button.addEventListener("click", () => {
+        const data = apiData[button.dataset.api];
+        document.querySelectorAll("#apiTabs button").forEach((item) => item.classList.remove("active"));
+        button.classList.add("active");
+        document.getElementById("apiTitle").textContent = data.title;
+        document.getElementById("apiDesc").textContent = data.desc;
+        document.getElementById("apiCode").textContent = data.code;
+      });
+    });
+  </script>
+</body>
+</html>

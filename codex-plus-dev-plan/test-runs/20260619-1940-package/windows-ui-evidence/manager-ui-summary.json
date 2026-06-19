@@ -1,0 +1,63 @@
+{
+  "target": {
+    "title": "Codex++ 管理工具",
+    "url": "http://tauri.localhost/",
+    "port": 9334
+  },
+  "markers": {
+    "login": {
+      "has_cloud_route": true,
+      "has_browser_login_button": true,
+      "has_advanced_password_login": true,
+      "has_email_label": true,
+      "has_password_label": true
+    },
+    "install_assistant": {
+      "has_install_assistant": false,
+      "has_codex_install_row": false,
+      "has_silent_entry_row": false,
+      "has_manager_entry_row": false,
+      "has_watcher_row": false
+    },
+    "cloud_diagnostics": {
+      "has_diagnostics_panel": true,
+      "has_generate_or_copy": false
+    },
+    "maintenance_diagnostics": {
+      "has_maintenance_route": true,
+      "has_diagnostics_report": false,
+      "has_report_action": false
+    },
+    "advanced_provider": {
+      "has_route": true,
+      "has_supplier_list": true,
+      "has_access_mode": false,
+      "has_key_field": true
+    }
+  },
+  "files": [
+    "manager-advanced-provider-dom.json",
+    "manager-advanced-provider-dom.txt",
+    "manager-advanced-provider.png",
+    "manager-cloud-diagnostics-dom.json",
+    "manager-cloud-diagnostics-dom.txt",
+    "manager-cloud-diagnostics.png",
+    "manager-cloud-dom.json",
+    "manager-cloud-home-dom.json",
+    "manager-cloud-home-dom.txt",
+    "manager-cloud-home.png",
+    "manager-cloud-page.png",
+    "manager-install-assistant-dom.json",
+    "manager-install-assistant-dom.txt",
+    "manager-install-assistant.png",
+    "manager-login-panel-dom.json",
+    "manager-login-panel-dom.txt",
+    "manager-login-panel.png",
+    "manager-maintenance-diagnostics.png",
+    "manager-maintenance-dom.json",
+    "manager-maintenance-dom.txt",
+    "manager-start-stderr.log",
+    "manager-start-stdout.log",
+    "manager-ui-summary.json"
+  ]
+}

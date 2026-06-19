@@ -1,0 +1,243 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contracts.codex-plus.local/config/plan-catalog.schema.json",
+  "title": "CodexPlusPlanCatalog",
+  "type": "object",
+  "required": [
+    "config_version",
+    "draft_status",
+    "publish_scope",
+    "rollback_from",
+    "updated_by",
+    "updated_at",
+    "change_reason",
+    "plans"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "config_version": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Shared config metadata. Monotonic version for cache keys, audits and rollback references."
+    },
+    "draft_status": {
+      "type": "string",
+      "enum": ["editing", "ready_for_review", "approved", "published", "archived"],
+      "description": "Shared config metadata. Lifecycle state before and after publication."
+    },
+    "publish_scope": {
+      "type": "string",
+      "enum": ["draft", "internal", "canary", "production"],
+      "description": "Shared config metadata. Defines which audience can receive this document."
+    },
+    "rollback_from": {
+      "type": ["string", "null"],
+      "description": "Shared config metadata. Previous config_version when this document is a rollback, otherwise null."
+    },
+    "updated_by": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Shared config metadata. Admin or automation principal that last changed this document."
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Shared config metadata. Last change timestamp."
+    },
+    "change_reason": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500,
+      "description": "Shared config metadata. Human-readable audit reason."
+    },
+    "plans": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/plan" }
+    }
+  },
+  "$defs": {
+    "copyKey": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_.-]{2,127}$",
+      "description": "Stable localization or action-copy key. Client-facing operator copy must use keys, not raw text."
+    },
+    "plan": {
+      "type": "object",
+      "required": [
+        "plan_id",
+        "name",
+        "description",
+        "billing_period",
+        "currency",
+        "price_amount_minor",
+        "display_price",
+        "entitlement_grant",
+        "entitlement_sources",
+        "model_groups",
+        "usage_policy_id",
+        "purchase_url",
+        "renew_url",
+        "copy_keys",
+        "is_listed",
+        "status"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "plan_id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_-]{1,63}$"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 400
+        },
+        "billing_period": {
+          "type": "string",
+          "enum": ["none", "trial", "monthly", "quarterly", "yearly", "one_time"]
+        },
+        "currency": {
+          "type": "string",
+          "pattern": "^[A-Z]{3}$"
+        },
+        "price_amount_minor": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Admin-controlled price in minor currency units. Backend billing logic is the only calculator."
+        },
+        "display_price": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Display-safe price summary emitted by backend snapshots. Clients must not derive it from price_amount_minor."
+        },
+        "entitlement_grant": {
+          "type": "object",
+          "required": ["balance_credit", "duration_days", "daily_quota"],
+          "additionalProperties": false,
+          "properties": {
+            "balance_credit": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "duration_days": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "daily_quota": {
+              "type": ["integer", "null"],
+              "minimum": 0
+            },
+            "period_quota": {
+              "type": ["integer", "null"],
+              "minimum": 0
+            }
+          }
+        },
+        "entitlement_sources": {
+          "type": "object",
+          "required": ["subscription_group_ids", "api_key_group_ids", "group_names"],
+          "additionalProperties": false,
+          "properties": {
+            "subscription_group_ids": {
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "uniqueItems": true
+            },
+            "api_key_group_ids": {
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "uniqueItems": true
+            },
+            "group_names": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "uniqueItems": true
+            }
+          }
+        },
+        "model_groups": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_-]{1,63}$"
+          },
+          "uniqueItems": true
+        },
+        "usage_policy_id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_-]{1,63}$",
+          "description": "Links this plan to UsagePolicy quota, rate-limit and device-policy decisions."
+        },
+        "purchase_url": {
+          "type": ["string", "null"],
+          "format": "uri"
+        },
+        "renew_url": {
+          "type": ["string", "null"],
+          "format": "uri"
+        },
+        "copy_keys": {
+          "type": "object",
+          "required": [
+            "purchase_action",
+            "renew_action",
+            "upgrade_action",
+            "not_purchased_message",
+            "expired_message",
+            "low_balance_message"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "purchase_action": { "$ref": "#/$defs/copyKey" },
+            "renew_action": { "$ref": "#/$defs/copyKey" },
+            "upgrade_action": { "$ref": "#/$defs/copyKey" },
+            "not_purchased_message": { "$ref": "#/$defs/copyKey" },
+            "expired_message": { "$ref": "#/$defs/copyKey" },
+            "low_balance_message": { "$ref": "#/$defs/copyKey" }
+          }
+        },
+        "is_listed": {
+          "type": "boolean"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["active", "hidden", "disabled"]
+        },
+        "sort_order": {
+          "type": "integer",
+          "minimum": 0,
+          "default": 0
+        },
+        "external_billing_refs": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "product_id": {
+              "type": ["string", "null"]
+            },
+            "sku_id": {
+              "type": ["string", "null"]
+            }
+          },
+          "default": {}
+        }
+      }
+    }
+  }
+}

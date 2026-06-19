@@ -1,0 +1,236 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contracts.codex-plus.local/config/model-catalog.schema.json",
+  "title": "CodexPlusModelCatalog",
+  "type": "object",
+  "required": [
+    "config_version",
+    "draft_status",
+    "publish_scope",
+    "rollback_from",
+    "updated_by",
+    "updated_at",
+    "change_reason",
+    "models"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "config_version": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Shared config metadata. Monotonic version for cache keys, audits and rollback references."
+    },
+    "draft_status": {
+      "type": "string",
+      "enum": ["editing", "ready_for_review", "approved", "published", "archived"],
+      "description": "Shared config metadata. Lifecycle state before and after publication."
+    },
+    "publish_scope": {
+      "type": "string",
+      "enum": ["draft", "internal", "canary", "production"],
+      "description": "Shared config metadata. Defines which audience can receive this document."
+    },
+    "rollback_from": {
+      "type": ["string", "null"],
+      "description": "Shared config metadata. Previous config_version when this document is a rollback, otherwise null."
+    },
+    "updated_by": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Shared config metadata. Admin or automation principal that last changed this document."
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Shared config metadata. Last change timestamp."
+    },
+    "change_reason": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500,
+      "description": "Shared config metadata. Human-readable audit reason."
+    },
+    "models": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/model" },
+      "allOf": [
+        {
+          "contains": {
+            "type": "object",
+            "required": ["is_default"],
+            "properties": {
+              "is_default": { "const": true }
+            }
+          },
+          "minContains": 1,
+          "maxContains": 1
+        }
+      ]
+    }
+  },
+  "$defs": {
+    "copyKey": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_.-]{2,127}$",
+      "description": "Stable localization or action-copy key. Client-facing operator copy must use keys, not raw text."
+    },
+    "modelId": {
+      "type": "string",
+      "pattern": "^[a-zA-Z0-9._:-]{2,128}$"
+    },
+    "model": {
+      "type": "object",
+      "required": [
+        "model_id",
+        "display_name",
+        "route_model",
+        "model_group",
+        "context_window",
+        "billing_multiplier",
+        "is_default",
+        "is_enabled",
+        "is_hidden",
+        "disabled_reason",
+        "rollout_channel",
+        "quality_tier",
+        "fallback_model_id",
+        "deprecation_at",
+        "disabled_replacement_model_id",
+        "disabled_message_key"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "required": ["is_default"],
+            "properties": {
+              "is_default": { "const": true }
+            }
+          },
+          "then": {
+            "properties": {
+              "is_enabled": { "const": true },
+              "is_hidden": { "const": false }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": ["is_enabled"],
+            "properties": {
+              "is_enabled": { "const": false }
+            }
+          },
+          "then": {
+            "properties": {
+              "disabled_reason": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 160
+              },
+              "disabled_message_key": { "$ref": "#/$defs/copyKey" }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": ["rollout_channel"],
+            "properties": {
+              "rollout_channel": { "const": "deprecated" }
+            }
+          },
+          "then": {
+            "properties": {
+              "deprecation_at": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          }
+        }
+      ],
+      "properties": {
+        "model_id": { "$ref": "#/$defs/modelId" },
+        "display_name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "route_model": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Server-side route target. Clients must not infer cost or provider behavior from this."
+        },
+        "model_group": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_-]{1,63}$"
+        },
+        "context_window": {
+          "type": "integer",
+          "minimum": 1024
+        },
+        "billing_multiplier": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "Server-side billing and quota multiplier. Never hardcode in clients."
+        },
+        "is_default": {
+          "type": "boolean"
+        },
+        "is_enabled": {
+          "type": "boolean"
+        },
+        "is_hidden": {
+          "type": "boolean"
+        },
+        "disabled_reason": {
+          "type": ["string", "null"],
+          "maxLength": 160
+        },
+        "rollout_channel": {
+          "type": "string",
+          "enum": ["internal", "canary", "stable", "deprecated"],
+          "description": "Operational channel used for exposure and fallback decisions."
+        },
+        "quality_tier": {
+          "type": "string",
+          "enum": ["standard", "premium", "experimental", "legacy"],
+          "description": "Operational quality tier used by entitlement and support messaging."
+        },
+        "fallback_model_id": {
+          "type": ["string", "null"],
+          "pattern": "^[a-zA-Z0-9._:-]{2,128}$",
+          "description": "Model to try when this route is unavailable, or null when no fallback is permitted."
+        },
+        "deprecation_at": {
+          "type": ["string", "null"],
+          "format": "date-time"
+        },
+        "disabled_replacement_model_id": {
+          "type": ["string", "null"],
+          "pattern": "^[a-zA-Z0-9._:-]{2,128}$"
+        },
+        "disabled_message_key": {
+          "type": ["string", "null"],
+          "pattern": "^[a-z][a-z0-9_.-]{2,127}$"
+        },
+        "sort_order": {
+          "type": "integer",
+          "minimum": 0,
+          "default": 0
+        },
+        "operator_tags": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 40
+          },
+          "uniqueItems": true,
+          "default": []
+        }
+      }
+    }
+  }
+}

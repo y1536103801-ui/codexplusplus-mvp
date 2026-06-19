@@ -1,0 +1,13 @@
+{
+  "code": 0,
+  "status": "success",
+  "message": "Device registered.",
+  "reason": null,
+  "error_code": null,
+  "data": {
+    "device_id": "dev_fixture_windows_001",
+    "status": "active",
+    "message": "Device active.",
+    "snapshot_version": "snap_20260616_0001"
+  }
+}

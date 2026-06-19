@@ -1,0 +1,27 @@
+{
+  email admin@example.com
+}
+
+{$API_DOMAIN} {
+  encode gzip
+
+  header {
+    X-Content-Type-Options nosniff
+    X-Frame-Options DENY
+    Referrer-Policy no-referrer
+  }
+
+  reverse_proxy backend:{$BACKEND_INTERNAL_PORT}
+}
+
+{$ADMIN_DOMAIN} {
+  encode gzip
+
+  header {
+    X-Content-Type-Options nosniff
+    X-Frame-Options DENY
+    Referrer-Policy no-referrer
+  }
+
+  reverse_proxy admin:{$ADMIN_INTERNAL_PORT}
+}

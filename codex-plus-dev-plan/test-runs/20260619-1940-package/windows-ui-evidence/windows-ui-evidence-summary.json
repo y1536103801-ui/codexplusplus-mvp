@@ -1,0 +1,84 @@
+{
+  "manager_process": {
+    "installed_exe": "C:\\Users\\20622\\AppData\\Local\\Programs\\Codex++\\codex-plus-plus-manager.exe",
+    "launch_mode": "RunAsInvoker compatibility layer plus WebView2 remote-debugging port; source/runtime unchanged",
+    "manifest_requires_administrator": true,
+    "note": "DOM text returned by CDP is encoding-skewed for Chinese labels; pass/fail below is based on captured PNG visual evidence plus stable ASCII markers in DOM where available."
+  },
+  "results": {
+    "manager_login": {
+      "result": true,
+      "visual_markers": [
+        "Codex++ Cloud route",
+        "Login binding panel",
+        "browser login action",
+        "compatible account/password login details opened",
+        "email/password fields"
+      ],
+      "evidence": [
+        "manager-login-panel.png",
+        "manager-login-panel-dom.txt"
+      ]
+    },
+    "manager_install_assistant": {
+      "result": true,
+      "visual_markers": [
+        "Installation maintenance route",
+        "check and repair panel",
+        "Codex app row",
+        "silent launcher entry row",
+        "manager entry row",
+        "Watcher row",
+        "Codex app path chooser",
+        "manual launch controls"
+      ],
+      "evidence": [
+        "manager-maintenance-diagnostics.png",
+        "manager-maintenance-dom.txt"
+      ]
+    },
+    "manager_diagnostics": {
+      "result": true,
+      "visual_markers": [
+        "About route",
+        "diagnostics report panel",
+        "regenerate action",
+        "copy report action"
+      ],
+      "evidence": [
+        "manager-diagnostics-report-panel.png",
+        "manager-about-diagnostics-dom.txt"
+      ]
+    },
+    "manager_advanced_configuration": {
+      "result": true,
+      "visual_markers": [
+        "Advanced providers route",
+        "supplier list",
+        "provider configuration switching toggle",
+        "default provider using official login / Responses API / no API file",
+        "Key/config-file route subtitle"
+      ],
+      "evidence": [
+        "manager-advanced-provider.png",
+        "manager-advanced-provider-dom.txt"
+      ]
+    },
+    "missing_codex_first_run": {
+      "result": true,
+      "visual_markers": [
+        "isolated clean profile under evidence directory",
+        "Codex app status shown as missing",
+        "current detection shown as missing",
+        "no saved path",
+        "choose app directory and choose Codex.exe actions"
+      ],
+      "evidence": [
+        "missing-codex-maintenance.png",
+        "missing-codex-maintenance-dom.txt",
+        "missing-codex-summary.json"
+      ],
+      "isolation": "LOCALAPPDATA, APPDATA, USERPROFILE, and CODEX_HOME pointed under missing-codex-profile; profile summary shows no LocalAppData/OpenAI/Codex or LocalAppData/Programs/OpenAI/Codex."
+    }
+  }
+}

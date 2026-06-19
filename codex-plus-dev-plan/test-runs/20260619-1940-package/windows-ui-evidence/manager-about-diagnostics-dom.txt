@@ -1,0 +1,80 @@
+C++
+Codex++
+管理控制台
+Codex++ Cloud
+会话管理
+工具与插件
+安装维护
+高级供应商
+概览
+页面增强
+Zed 远程项目
+脚本市场
+推荐内容
+关于
+设置
+关于
+
+版本信息、项目链接、GitHub Release 更新、日志与诊断
+
+重启 Codex++
+关于 Codex++
+
+本地 Codex 增强、管理工具和安装包维护
+
+Codex++ 版本
+1.2.9
+Codex 版本
+未检测到
+项目地址
+github.com/BigPizzaV3/CodexPlusPlus
+打开项目主页
+反馈问题
+Discord
+Telegram
+GitHub Release 更新
+
+当前版本 1.2.9
+
+状态
+ok
+最新版本
+v1.2.15
+资源
+CodexPlusPlus-1.2.15-windows-x64-setup.exe
+进度
+0%
+检查更新
+下载并运行安装包
+最近日志
+
+C:\Users\20622\.codex-session-delete\codex-plus.log
+
+1
+{"timestamp_ms":1781797071590,"pid":46704,"event":"helper.listening","detail":{"helper_port":57321,"address":"http://127.0.0.1:57321"}}
+2
+{"timestamp_ms":1781797074214,"pid":42296,"event":"manager.start","detail":{"version":"1.2.9"}}
+3
+{"timestamp_ms":1781797087518,"pid":46704,"event":"launcher.packaged_activation_cdp_unready_direct_fallback","detail":{"debug_port":9229,"app_user_model_id":"OpenAI.Codex_2p2nqsd0c76g0!App","process_id":41704,"preexisting_cdp_target_count":0}}
+4
+{"timestamp_ms":1781797405833,"pid":41636,"event":"manager.start","detail":{"version":"1.2.9"}}
+5
+{"timestamp_ms":1781798351873,"pid":4316,"event":"helper.listening","detail":{"helper_port":57321,"address":"http://127.0.0.1:57321"}}
+6
+{"timestamp_ms":1781798352949,"pid":4316,"event":"launcher.update_available","detail":{"current_version":"1.2.9","latest_version":"v1.2.15","asset_name":"CodexPlusPlus-1.2.15-windows-x64-setup.exe","asset_url_present":true}}
+7
+{"timestamp_ms":1781798367879,"pid":4316,"event":"launcher.packaged_activation_cdp_unready_direct_fallback","detail":{"debug_port":9229,"app_user_model_id":"OpenAI.Codex_2p2nqsd0c76g0!App","process_id":44040,"preexisting_cdp_target_count":0}}
+8
+{"timestamp_ms":1781798619063,"pid":27732,"event":"helper.listening","detail":{"helper_port":57321,"address":"http://127.0.0.1:57321"}}
+9
+{"timestamp_ms":1781798620994,"pid":27732,"event":"launcher.update_available","detail":{"current_version":"1.2.9","latest_version":"v1.2.15","asset_name":"CodexPlusPlus-1.2.15-windows-x64-setup.exe","asset_url_present":true}}
+10
+{"timestamp_ms":1781800684194,"pid":46472,"event":"manager.start","detail":{"version":"1.2.9"}}
+刷新
+复制
+诊断报告
+
+包含版本、路径、设置和平台信息
+
+重新生成
+复制报告

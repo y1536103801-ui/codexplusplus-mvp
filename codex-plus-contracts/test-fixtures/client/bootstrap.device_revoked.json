@@ -1,0 +1,84 @@
+{
+  "code": 0,
+  "status": "success",
+  "message": "This device has been revoked.",
+  "reason": null,
+  "error_code": null,
+  "data": {
+    "service": {
+      "status": "device_revoked",
+      "message": "This device cannot use Codex++ Cloud.",
+      "message_key": "service.device_revoked",
+      "action_hint": "contact_support",
+      "retryable": false,
+      "support_url": "https://codex-plus.example/support",
+      "error_code": "CLIENT_DEVICE_REVOKED"
+    },
+    "provider": {
+      "provider_id": "codex-plus-cloud",
+      "display_name": "Codex++ Cloud",
+      "gateway_base_url": "https://api.codex-plus.example/v1",
+      "auth_mode": "user_side_api_key",
+      "api_key": null,
+      "key_summary": {
+        "key_id": "key_fixture_001",
+        "masked_key": "sk-user-...0001",
+        "created_at": "2026-06-16T00:00:00Z",
+        "last_used_at": null
+      },
+      "default_model": ""
+    },
+    "plan": {
+      "plan_id": "starter",
+      "name": "Starter",
+      "status": "active",
+      "expires_at": "2026-07-16T00:00:00Z",
+      "renew_url": "https://codex-plus.example/billing",
+      "commerce_action": {
+        "action_type": "contact_support",
+        "message_key": "plan.starter.device_revoked",
+        "action_copy_key": "action.contact_support",
+        "label": "Contact support",
+        "url": "https://codex-plus.example/support"
+      }
+    },
+    "models": [],
+    "usage": {
+      "balance_display": "Hidden while device is revoked",
+      "low_balance": false,
+      "period_usage_display": "Hidden while device is revoked",
+      "rate_limit_state": "blocked",
+      "renew_action": {
+        "action_type": "contact_support",
+        "message_key": "usage.device_revoked",
+        "action_copy_key": "action.contact_support",
+        "label": "Contact support",
+        "url": "https://codex-plus.example/support"
+      }
+    },
+    "feature_flags": {
+      "advanced_provider_config": false,
+      "install_assistant": true,
+      "new_user_tutorial": false,
+      "model_selector": false,
+      "diagnostic_export": true,
+      "announcements": true,
+      "force_update_prompt": false,
+      "strict_device_enforcement": true
+    },
+    "announcements": [],
+    "version_policy": {
+      "config_version": "cfg_20260616_0001",
+      "snapshot_version": "snap_20260616_device_revoked",
+      "refresh_ttl_seconds": 300,
+      "force_refresh": false,
+      "minimum_client_version": "0.1.0"
+    },
+    "device": {
+      "device_id": "dev_fixture_windows_001",
+      "status": "revoked",
+      "message": "Device revoked by administrator.",
+      "snapshot_version": "snap_20260616_device_revoked"
+    }
+  }
+}

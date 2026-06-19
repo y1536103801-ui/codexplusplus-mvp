@@ -1,0 +1,459 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contracts.codex-plus.local/events/client-events.schema.json",
+  "title": "CodexPlusClientEvent",
+  "type": "object",
+  "required": [
+    "event_id",
+    "event_type",
+    "user_id",
+    "created_at",
+    "redaction_applied"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "event_id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128
+    },
+    "event_type": {
+      "type": "string",
+      "enum": [
+        "bootstrap_requested",
+        "device_registered",
+        "provider_key_created",
+        "provider_key_reused",
+        "usage_viewed",
+        "redeem_attempted",
+        "desktop_login_started",
+        "desktop_login_completed",
+        "desktop_login_polled",
+        "gateway_policy_rejected",
+        "usage_recorded",
+        "local_provider_write_failed"
+      ]
+    },
+    "user_id": {
+      "type": ["string", "null"],
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "device_id": {
+      "type": ["string", "null"],
+      "maxLength": 128
+    },
+    "request_id": {
+      "type": ["string", "null"],
+      "maxLength": 128
+    },
+    "config_version": {
+      "type": ["string", "null"],
+      "maxLength": 128
+    },
+    "snapshot_version": {
+      "type": ["string", "null"],
+      "maxLength": 128
+    },
+    "model_id": {
+      "type": ["string", "null"],
+      "maxLength": 128
+    },
+    "error_code": {
+      "type": ["string", "null"],
+      "maxLength": 128
+    },
+    "service_status": {
+      "type": ["string", "null"],
+      "enum": [
+        "available",
+        "not_authenticated",
+        "not_purchased",
+        "expired",
+        "low_balance",
+        "disabled",
+        "device_revoked",
+        "model_unavailable",
+        "rate_limited",
+        "gateway_unhealthy",
+        "local_codex_missing",
+        "local_config_failed",
+        null
+      ]
+    },
+    "client_action": {
+      "type": ["string", "null"],
+      "enum": [
+        "none",
+        "sign_in",
+        "open_browser_handoff",
+        "wait_for_browser_approval",
+        "restart_desktop_handoff",
+        "purchase",
+        "renew",
+        "recharge",
+        "redeem_code",
+        "choose_available_model",
+        "retry_request",
+        "retry_later",
+        "contact_support",
+        "install_codex",
+        "repair_local_config",
+        null
+      ]
+    },
+    "user_message_source": {
+      "type": ["string", "null"],
+      "enum": [
+        "admin_config_message_key",
+        "contract_message_key",
+        "desktop_local_diagnostic",
+        "support_only_diagnostic",
+        null
+      ]
+    },
+    "http_status": {
+      "type": ["integer", "null"],
+      "minimum": 100,
+      "maximum": 599
+    },
+    "retryable": {
+      "type": ["boolean", "null"]
+    },
+    "handoff_state": {
+      "type": ["string", "null"],
+      "enum": [
+        "created",
+        "poll_pending",
+        "browser_approved",
+        "redeemed",
+        "expired",
+        "consumed",
+        null
+      ]
+    },
+    "provider_key_id": {
+      "type": ["string", "null"],
+      "maxLength": 128
+    },
+    "usage_event_id": {
+      "type": ["string", "null"],
+      "maxLength": 128
+    },
+    "risk_tags": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "maxLength": 64
+      },
+      "maxItems": 16,
+      "default": []
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "redaction_applied": {
+      "type": "boolean"
+    },
+    "metadata": {
+      "$ref": "#/$defs/metadata"
+    }
+  },
+  "$defs": {
+    "shortString": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "nullableShortString": {
+      "type": ["string", "null"],
+      "maxLength": 256
+    },
+    "messageKey": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[a-z0-9_.-]+$"
+    },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "maxProperties": 32,
+      "propertyNames": {
+        "not": {
+          "enum": [
+            "access_token",
+            "refresh_token",
+            "session_token",
+            "poll_token",
+            "api_key",
+            "managed_api_key",
+            "upstream_api_key",
+            "authorization",
+            "prompt",
+            "response",
+            "raw_prompt",
+            "raw_response",
+            "request_body",
+            "response_body"
+          ]
+        }
+      },
+      "properties": {
+        "message_key": {
+          "$ref": "#/$defs/messageKey"
+        },
+        "action_copy_key": {
+          "$ref": "#/$defs/messageKey"
+        },
+        "route_model": {
+          "$ref": "#/$defs/nullableShortString"
+        },
+        "model_group": {
+          "$ref": "#/$defs/nullableShortString"
+        },
+        "plan_id": {
+          "$ref": "#/$defs/nullableShortString"
+        },
+        "publish_scope": {
+          "$ref": "#/$defs/nullableShortString"
+        },
+        "entitlement_state": {
+          "type": ["string", "null"],
+          "enum": ["none", "active", "expired", "disabled", "unknown", null]
+        },
+        "balance_state": {
+          "type": ["string", "null"],
+          "enum": ["ok", "low", "insufficient", "unknown", null]
+        },
+        "device_status": {
+          "type": ["string", "null"],
+          "enum": ["active", "revoked", "blocked", "unknown", null]
+        },
+        "redeem_status": {
+          "type": ["string", "null"],
+          "enum": ["accepted", "invalid", "expired", "already_used", "failed", null]
+        },
+        "disabled_reason_key": {
+          "$ref": "#/$defs/messageKey"
+        },
+        "revoke_reason_key": {
+          "$ref": "#/$defs/messageKey"
+        },
+        "rate_limit_kind": {
+          "type": ["string", "null"],
+          "enum": ["rpm", "tpm", "concurrency", "daily_quota", "unknown", null]
+        },
+        "limit_scope": {
+          "type": ["string", "null"],
+          "enum": ["user", "device", "model", "provider", "global", "unknown", null]
+        },
+        "retry_after_seconds": {
+          "type": ["integer", "null"],
+          "minimum": 0,
+          "maximum": 86400
+        },
+        "handoff_session_hash": {
+          "$ref": "#/$defs/nullableShortString"
+        },
+        "handoff_expires_at": {
+          "type": ["string", "null"],
+          "format": "date-time"
+        },
+        "poll_attempt_count": {
+          "type": ["integer", "null"],
+          "minimum": 0,
+          "maximum": 1000
+        },
+        "policy_decision_id": {
+          "$ref": "#/$defs/nullableShortString"
+        },
+        "provider_route_id": {
+          "$ref": "#/$defs/nullableShortString"
+        },
+        "local_operation": {
+          "$ref": "#/$defs/nullableShortString"
+        },
+        "platform": {
+          "$ref": "#/$defs/nullableShortString"
+        },
+        "client_version": {
+          "$ref": "#/$defs/nullableShortString"
+        },
+        "app_version": {
+          "$ref": "#/$defs/nullableShortString"
+        },
+        "codex_version": {
+          "$ref": "#/$defs/nullableShortString"
+        },
+        "http_method": {
+          "type": ["string", "null"],
+          "enum": ["GET", "POST", "PUT", "PATCH", "DELETE", null]
+        },
+        "http_route": {
+          "$ref": "#/$defs/nullableShortString"
+        },
+        "upstream_status": {
+          "type": ["integer", "null"],
+          "minimum": 100,
+          "maximum": 599
+        },
+        "request_duration_ms": {
+          "type": ["integer", "null"],
+          "minimum": 0
+        },
+        "diagnostics_ref": {
+          "$ref": "#/$defs/nullableShortString"
+        },
+        "support_ticket_id": {
+          "$ref": "#/$defs/nullableShortString"
+        },
+        "redaction_notes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 128
+          },
+          "maxItems": 8,
+          "default": []
+        },
+        "sampled": {
+          "type": ["boolean", "null"]
+        },
+        "idempotency_key_hash": {
+          "$ref": "#/$defs/nullableShortString"
+        },
+        "device_count": {
+          "type": ["integer", "null"],
+          "minimum": 0
+        },
+        "snapshot_age_seconds": {
+          "type": ["integer", "null"],
+          "minimum": 0
+        }
+      },
+      "default": {}
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "event_type": {
+            "const": "desktop_login_started"
+          }
+        },
+        "required": ["event_type"]
+      },
+      "then": {
+        "required": ["handoff_state"],
+        "properties": {
+          "handoff_state": {
+            "const": "created"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "event_type": {
+            "const": "desktop_login_completed"
+          }
+        },
+        "required": ["event_type"]
+      },
+      "then": {
+        "required": ["handoff_state"],
+        "properties": {
+          "user_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "handoff_state": {
+            "const": "browser_approved"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "event_type": {
+            "const": "desktop_login_polled"
+          }
+        },
+        "required": ["event_type"]
+      },
+      "then": {
+        "required": ["handoff_state"],
+        "properties": {
+          "handoff_state": {
+            "enum": ["poll_pending", "redeemed", "expired", "consumed"]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "event_type": {
+            "const": "desktop_login_polled"
+          },
+          "handoff_state": {
+            "enum": ["redeemed", "consumed"]
+          }
+        },
+        "required": ["event_type", "handoff_state"]
+      },
+      "then": {
+        "properties": {
+          "user_id": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "event_type": {
+            "not": {
+              "enum": ["desktop_login_started", "desktop_login_polled"]
+            }
+          }
+        },
+        "required": ["event_type"]
+      },
+      "then": {
+        "properties": {
+          "user_id": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "event_type": {
+            "enum": ["gateway_policy_rejected", "local_provider_write_failed"]
+          }
+        },
+        "required": ["event_type"]
+      },
+      "then": {
+        "required": ["error_code"],
+        "properties": {
+          "error_code": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    }
+  ]
+}

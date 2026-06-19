@@ -1,0 +1,84 @@
+{
+  "code": 0,
+  "status": "success",
+  "message": "No active Codex++ plan.",
+  "reason": null,
+  "error_code": null,
+  "data": {
+    "service": {
+      "status": "not_purchased",
+      "message": "Purchase or redeem a Codex++ plan to continue.",
+      "message_key": "service.not_purchased",
+      "action_hint": "purchase",
+      "retryable": false,
+      "support_url": "https://codex-plus.example/billing",
+      "error_code": "CLIENT_ENTITLEMENT_NOT_PURCHASED"
+    },
+    "provider": {
+      "provider_id": "codex-plus-cloud",
+      "display_name": "Codex++ Cloud",
+      "gateway_base_url": "https://api.codex-plus.example/v1",
+      "auth_mode": "user_side_api_key",
+      "api_key": null,
+      "key_summary": {
+        "key_id": "",
+        "masked_key": "",
+        "created_at": "2026-06-16T00:00:00Z",
+        "last_used_at": null
+      },
+      "default_model": ""
+    },
+    "plan": {
+      "plan_id": "",
+      "name": "",
+      "status": "none",
+      "expires_at": null,
+      "renew_url": "https://codex-plus.example/billing",
+      "commerce_action": {
+        "action_type": "purchase",
+        "message_key": "plan.none.purchase_required",
+        "action_copy_key": "action.choose_plan",
+        "label": "Choose a plan",
+        "url": "https://codex-plus.example/billing"
+      }
+    },
+    "models": [],
+    "usage": {
+      "balance_display": "No active plan",
+      "low_balance": false,
+      "period_usage_display": "No usage",
+      "rate_limit_state": "blocked",
+      "renew_action": {
+        "action_type": "purchase",
+        "message_key": "usage.purchase_required",
+        "action_copy_key": "action.choose_plan",
+        "label": "Choose a plan",
+        "url": "https://codex-plus.example/billing"
+      }
+    },
+    "feature_flags": {
+      "advanced_provider_config": false,
+      "install_assistant": true,
+      "new_user_tutorial": true,
+      "model_selector": false,
+      "diagnostic_export": true,
+      "announcements": true,
+      "force_update_prompt": false,
+      "strict_device_enforcement": false
+    },
+    "announcements": [],
+    "version_policy": {
+      "config_version": "cfg_20260616_0001",
+      "snapshot_version": "snap_20260616_not_purchased",
+      "refresh_ttl_seconds": 300,
+      "force_refresh": false,
+      "minimum_client_version": "0.1.0"
+    },
+    "device": {
+      "device_id": "dev_fixture_windows_001",
+      "status": "active",
+      "message": "Device active.",
+      "snapshot_version": "snap_20260616_not_purchased"
+    }
+  }
+}

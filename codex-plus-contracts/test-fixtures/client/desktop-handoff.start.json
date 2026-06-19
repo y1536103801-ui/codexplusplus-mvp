@@ -1,0 +1,15 @@
+{
+  "code": 0,
+  "status": "success",
+  "message": "success",
+  "reason": null,
+  "error_code": null,
+  "data": {
+    "session_token": "fixture-session-token",
+    "poll_token": "fixture-desktop-private-poll-token",
+    "authorize_url": "https://app.codex-plus.example/auth/desktop/authorize?session_token=fixture-session-token&verification_code=123456",
+    "verification_code": "123456",
+    "expires_at": "2026-06-16T00:15:00Z",
+    "poll_interval_seconds": 2
+  }
+}

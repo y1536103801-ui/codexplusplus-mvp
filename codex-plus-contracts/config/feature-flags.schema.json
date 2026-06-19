@@ -1,0 +1,162 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contracts.codex-plus.local/config/feature-flags.schema.json",
+  "title": "CodexPlusFeatureFlags",
+  "type": "object",
+  "required": [
+    "config_version",
+    "draft_status",
+    "publish_scope",
+    "rollback_from",
+    "updated_by",
+    "updated_at",
+    "change_reason",
+    "flags",
+    "exposure",
+    "copy_keys"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "config_version": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Shared config metadata. Monotonic version for cache keys, audits and rollback references."
+    },
+    "draft_status": {
+      "type": "string",
+      "enum": ["editing", "ready_for_review", "approved", "published", "archived"],
+      "description": "Shared config metadata. Lifecycle state before and after publication."
+    },
+    "publish_scope": {
+      "type": "string",
+      "enum": ["draft", "internal", "canary", "production"],
+      "description": "Shared config metadata. Defines which audience can receive this document."
+    },
+    "rollback_from": {
+      "type": ["string", "null"],
+      "description": "Shared config metadata. Previous config_version when this document is a rollback, otherwise null."
+    },
+    "updated_by": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Shared config metadata. Admin or automation principal that last changed this document."
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Shared config metadata. Last change timestamp."
+    },
+    "change_reason": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500,
+      "description": "Shared config metadata. Human-readable audit reason."
+    },
+    "flags": {
+      "type": "object",
+      "required": [
+        "advanced_provider_config",
+        "install_assistant",
+        "new_user_tutorial",
+        "model_selector",
+        "diagnostic_export",
+        "announcements",
+        "force_update_prompt",
+        "strict_device_enforcement"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "advanced_provider_config": {
+          "type": "boolean",
+          "default": false
+        },
+        "install_assistant": {
+          "type": "boolean",
+          "default": true
+        },
+        "new_user_tutorial": {
+          "type": "boolean",
+          "default": true
+        },
+        "model_selector": {
+          "type": "boolean",
+          "default": true
+        },
+        "diagnostic_export": {
+          "type": "boolean",
+          "default": true
+        },
+        "announcements": {
+          "type": "boolean",
+          "default": true
+        },
+        "force_update_prompt": {
+          "type": "boolean",
+          "default": false
+        },
+        "strict_device_enforcement": {
+          "type": "boolean",
+          "default": false,
+          "description": "Global rollout switch only. Quantitative device limits and revoke behavior are defined in UsagePolicy.device_policy."
+        }
+      }
+    },
+    "exposure": {
+      "type": "object",
+      "required": ["client_visible", "server_only"],
+      "additionalProperties": false,
+      "properties": {
+        "client_visible": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/flagName" },
+          "uniqueItems": true,
+          "description": "Flags that may be exposed in bootstrap snapshots."
+        },
+        "server_only": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/flagName" },
+          "uniqueItems": true,
+          "description": "Flags used by backend or gateway policy only and omitted from client snapshots."
+        }
+      }
+    },
+    "copy_keys": {
+      "type": "object",
+      "required": [
+        "force_update_prompt",
+        "install_assistant_entry",
+        "new_user_tutorial_entry",
+        "diagnostic_export_entry",
+        "announcement_entry"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "force_update_prompt": { "$ref": "#/$defs/copyKey" },
+        "install_assistant_entry": { "$ref": "#/$defs/copyKey" },
+        "new_user_tutorial_entry": { "$ref": "#/$defs/copyKey" },
+        "diagnostic_export_entry": { "$ref": "#/$defs/copyKey" },
+        "announcement_entry": { "$ref": "#/$defs/copyKey" }
+      }
+    }
+  },
+  "$defs": {
+    "flagName": {
+      "type": "string",
+      "enum": [
+        "advanced_provider_config",
+        "install_assistant",
+        "new_user_tutorial",
+        "model_selector",
+        "diagnostic_export",
+        "announcements",
+        "force_update_prompt",
+        "strict_device_enforcement"
+      ]
+    },
+    "copyKey": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_.-]{2,127}$",
+      "description": "Stable localization or action-copy key. Client-facing operator copy must use keys, not raw text."
+    }
+  }
+}

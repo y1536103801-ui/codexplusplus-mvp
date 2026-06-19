@@ -1,0 +1,21 @@
+{
+  "code": 0,
+  "status": "success",
+  "message": "success",
+  "reason": null,
+  "error_code": null,
+  "data": {
+    "status": "completed",
+    "access_token": "REDACTED_DESKTOP_JWT",
+    "refresh_token": "REDACTED_DESKTOP_REFRESH_TOKEN",
+    "expires_in": 3600,
+    "token_type": "Bearer",
+    "user": {
+      "id": "user_42",
+      "email": "buyer@example.com",
+      "username": "buyer",
+      "display_name": "Buyer Example",
+      "role": "user"
+    }
+  }
+}

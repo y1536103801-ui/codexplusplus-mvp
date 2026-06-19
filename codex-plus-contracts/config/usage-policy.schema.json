@@ -1,0 +1,269 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contracts.codex-plus.local/config/usage-policy.schema.json",
+  "title": "CodexPlusUsagePolicy",
+  "type": "object",
+  "required": [
+    "config_version",
+    "draft_status",
+    "publish_scope",
+    "rollback_from",
+    "updated_by",
+    "updated_at",
+    "change_reason",
+    "policies"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "config_version": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Shared config metadata. Monotonic version for cache keys, audits and rollback references."
+    },
+    "draft_status": {
+      "type": "string",
+      "enum": ["editing", "ready_for_review", "approved", "published", "archived"],
+      "description": "Shared config metadata. Lifecycle state before and after publication."
+    },
+    "publish_scope": {
+      "type": "string",
+      "enum": ["draft", "internal", "canary", "production"],
+      "description": "Shared config metadata. Defines which audience can receive this document."
+    },
+    "rollback_from": {
+      "type": ["string", "null"],
+      "description": "Shared config metadata. Previous config_version when this document is a rollback, otherwise null."
+    },
+    "updated_by": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Shared config metadata. Admin or automation principal that last changed this document."
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Shared config metadata. Last change timestamp."
+    },
+    "change_reason": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500,
+      "description": "Shared config metadata. Human-readable audit reason."
+    },
+    "policies": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/policy" }
+    }
+  },
+  "$defs": {
+    "copyKey": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_.-]{2,127}$",
+      "description": "Stable localization or action-copy key. Client-facing operator copy must use keys, not raw text."
+    },
+    "policy": {
+      "type": "object",
+      "required": [
+        "policy_id",
+        "applies_to",
+        "low_balance_threshold",
+        "daily_quota",
+        "monthly_quota",
+        "concurrency_limit",
+        "rpm_limit",
+        "tpm_limit",
+        "burst_limit",
+        "rate_limit_window_seconds",
+        "expired_behavior",
+        "grace_period_hours",
+        "overage_behavior",
+        "copy_keys",
+        "device_policy"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "policy_id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_-]{1,63}$"
+        },
+        "applies_to": {
+          "type": "object",
+          "required": ["plan_ids", "model_groups", "user_segments"],
+          "additionalProperties": false,
+          "properties": {
+            "plan_ids": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9_-]{1,63}$"
+              },
+              "uniqueItems": true
+            },
+            "model_groups": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9_-]{1,63}$"
+              },
+              "uniqueItems": true
+            },
+            "user_segments": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9_-]{1,63}$"
+              },
+              "uniqueItems": true
+            }
+          }
+        },
+        "low_balance_threshold": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Backend-computed low-balance threshold. Clients only consume the resulting snapshot flag."
+        },
+        "daily_quota": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "monthly_quota": {
+          "type": ["integer", "null"],
+          "minimum": 0
+        },
+        "concurrency_limit": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "rpm_limit": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "tpm_limit": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "burst_limit": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "rate_limit_window_seconds": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "expired_behavior": {
+          "type": "string",
+          "enum": ["block", "degrade", "allow_grace_period"]
+        },
+        "grace_period_hours": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "overage_behavior": {
+          "type": "string",
+          "enum": ["block", "degrade", "allow_paid_overage"]
+        },
+        "copy_keys": {
+          "type": "object",
+          "required": [
+            "low_balance_message",
+            "insufficient_balance_message",
+            "rate_limited_message",
+            "expired_message",
+            "renew_action",
+            "purchase_action",
+            "device_revoked_message"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "low_balance_message": { "$ref": "#/$defs/copyKey" },
+            "insufficient_balance_message": { "$ref": "#/$defs/copyKey" },
+            "rate_limited_message": { "$ref": "#/$defs/copyKey" },
+            "expired_message": { "$ref": "#/$defs/copyKey" },
+            "renew_action": { "$ref": "#/$defs/copyKey" },
+            "purchase_action": { "$ref": "#/$defs/copyKey" },
+            "device_revoked_message": { "$ref": "#/$defs/copyKey" }
+          }
+        },
+        "device_policy": { "$ref": "#/$defs/devicePolicy" }
+      }
+    },
+    "devicePolicy": {
+      "type": "object",
+      "required": [
+        "registration_required",
+        "max_devices_per_user",
+        "allow_self_service_replacement",
+        "replacement_cooldown_hours",
+        "strict_enforcement_default",
+        "revoke_reason_taxonomy",
+        "support_unlock_policy",
+        "revoked_behavior",
+        "message_keys"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "registration_required": {
+          "type": "boolean"
+        },
+        "max_devices_per_user": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "allow_self_service_replacement": {
+          "type": "boolean"
+        },
+        "replacement_cooldown_hours": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "strict_enforcement_default": {
+          "type": "boolean",
+          "description": "Default enforcement decision. FeatureFlags.strict_device_enforcement can disable enforcement globally during rollout."
+        },
+        "revoke_reason_taxonomy": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "enum": [
+              "user_requested",
+              "admin_revoked",
+              "device_limit_exceeded",
+              "risk_control",
+              "inactive",
+              "compromised",
+              "support_unlock",
+              "unknown"
+            ]
+          },
+          "uniqueItems": true
+        },
+        "support_unlock_policy": {
+          "type": "string",
+          "enum": ["disabled", "support_only", "admin_or_support"]
+        },
+        "revoked_behavior": {
+          "type": "string",
+          "enum": ["block_bootstrap", "allow_usage_view_only"]
+        },
+        "message_keys": {
+          "type": "object",
+          "required": [
+            "limit_reached",
+            "replacement_cooldown",
+            "revoked",
+            "support_unlock_required"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "limit_reached": { "$ref": "#/$defs/copyKey" },
+            "replacement_cooldown": { "$ref": "#/$defs/copyKey" },
+            "revoked": { "$ref": "#/$defs/copyKey" },
+            "support_unlock_required": { "$ref": "#/$defs/copyKey" }
+          }
+        }
+      }
+    }
+  }
+}
