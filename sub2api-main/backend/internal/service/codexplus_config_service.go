@@ -257,6 +257,7 @@ func (s *CodexPlusConfigService) Get(ctx context.Context) (*CodexPlusConfig, err
 	if err != nil {
 		return nil, err
 	}
+	normalizeCodexPlusStoredConfigForRead(cfg)
 	if err := ValidateCodexPlusConfig(cfg); err != nil {
 		return nil, err
 	}
@@ -364,6 +365,18 @@ func NormalizeCodexPlusConfig(cfg *CodexPlusConfig, now time.Time, actor, reason
 	normalizeCodexPlusModelCatalogMeta(&cfg.ModelCatalog, *cfg)
 	normalizeCodexPlusUsagePolicyMeta(&cfg.UsagePolicy, *cfg)
 	normalizeCodexPlusFeatureFlagsMeta(&cfg.FeatureFlags, *cfg)
+}
+
+func normalizeCodexPlusStoredConfigForRead(cfg *CodexPlusConfig) {
+	if cfg == nil {
+		return
+	}
+	for i := range cfg.ModelCatalog.Models {
+		model := &cfg.ModelCatalog.Models[i]
+		if model.IsDefault && model.IsEnabled && model.IsHidden {
+			model.IsHidden = false
+		}
+	}
 }
 
 func ValidateCodexPlusConfig(cfg *CodexPlusConfig) error {
@@ -1004,8 +1017,8 @@ func codexPlusPlanCopyKeysForRegistry(keys CodexPlusPlanCopyKeys) configregistry
 func codexPlusUsageCopyKeysForRegistry(policy CodexPlusUsageRule) configregistry.UsagePolicyCopyKeys {
 	return configregistry.UsagePolicyCopyKeys{
 		LowBalanceMessage:          codexPlusFallbackString(policy.CopyKeys.LowBalanceMessage, "usage.low_balance"),
-		InsufficientBalanceMessage: codexPlusFallbackString(policy.CopyKeys.InsufficientBalanceMessage, codexPlusFallbackString(policy.InsufficientBalanceMessage, "usage.insufficient_balance")),
-		RateLimitedMessage:         codexPlusFallbackString(policy.CopyKeys.RateLimitedMessage, codexPlusFallbackString(policy.RateLimitedMessage, "usage.rate_limited")),
+		InsufficientBalanceMessage: codexPlusFallbackString(policy.CopyKeys.InsufficientBalanceMessage, "usage.insufficient_balance"),
+		RateLimitedMessage:         codexPlusFallbackString(policy.CopyKeys.RateLimitedMessage, "usage.rate_limited"),
 		ExpiredMessage:             codexPlusFallbackString(policy.CopyKeys.ExpiredMessage, "usage.expired"),
 		RenewAction:                codexPlusFallbackString(policy.CopyKeys.RenewAction, "usage.renew_action"),
 		PurchaseAction:             codexPlusFallbackString(policy.CopyKeys.PurchaseAction, "usage.purchase_action"),

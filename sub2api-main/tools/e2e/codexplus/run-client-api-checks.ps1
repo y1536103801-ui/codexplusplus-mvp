@@ -33,8 +33,6 @@ if ([string]::IsNullOrWhiteSpace($EvidenceDir)) {
 
 $EvidencePath = [System.IO.Path]::GetFullPath($EvidenceDir)
 New-Item -ItemType Directory -Force -Path $EvidencePath | Out-Null
-$ScratchLogPath = Join-Path (Split-Path -Parent $EvidencePath) ("_scratch-logs\" + (Split-Path -Leaf $EvidencePath))
-New-Item -ItemType Directory -Force -Path $ScratchLogPath | Out-Null
 
 $results = New-Object System.Collections.Generic.List[object]
 $observations = New-Object System.Collections.Generic.List[object]
@@ -260,7 +258,7 @@ function Write-MarkdownTable {
     $lines.Add("| Scenario | Method | Path | HTTP | Service status | Envelope | Reason | Error code | Snapshot | Result | Note |")
     $lines.Add("| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |")
     foreach ($row in $Rows) {
-        $lines.Add("| $($row.Scenario) | $($row.Method) | $($row.Path) | $($row.HttpStatus) | $($row.ServiceStatus) | $($row.EnvelopeStatus) | $($row.Reason) | $($row.ErrorCode) | $($row.SnapshotVersion) | $($row.Result) | $($row.Note) |")
+        $lines.Add("| $($row.Scenario) | $($row.Method) | `$($row.Path)` | $($row.HttpStatus) | $($row.ServiceStatus) | $($row.EnvelopeStatus) | $($row.Reason) | $($row.ErrorCode) | $($row.SnapshotVersion) | $($row.Result) | $($row.Note) |")
     }
     return ($lines -join [Environment]::NewLine)
 }
@@ -303,7 +301,7 @@ $table
 
 Run folder: $(Split-Path -Leaf $EvidencePath)
 Status: executed
-Result: $scopeResult
+Result: fail
 
 ## Scope
 
@@ -323,7 +321,7 @@ $table
 
 Run folder: $(Split-Path -Leaf $EvidencePath)
 Status: executed
-Result: $scopeResult
+Result: fail
 
 ## Scope
 
@@ -390,10 +388,9 @@ if (-not $FixtureMode -and -not $SkipReadiness) {
     if ($AllowProduction) { $readinessArgs += "-AllowProduction" }
     if ($ProbeHttp) { $readinessArgs += "-ProbeHttp" }
     if ($EndpointPreflight) { $readinessArgs += "-EndpointPreflight" }
-    $readinessLogPath = Join-Path $ScratchLogPath "client-api-readiness.log"
-    & powershell -NoProfile -ExecutionPolicy Bypass -File $ReadinessScript @readinessArgs *> $readinessLogPath
+    & powershell -NoProfile -ExecutionPolicy Bypass -File $ReadinessScript @readinessArgs *> (Join-Path $EvidencePath "client-api-readiness.log")
     $readinessPassed = ($LASTEXITCODE -eq 0)
-    Add-Result "readiness-verifier" $readinessPassed "verify-07-e2e-readiness.ps1 exit=$LASTEXITCODE; log stored outside release evidence at _scratch-logs."
+    Add-Result "readiness-verifier" $readinessPassed "verify-07-e2e-readiness.ps1 exit=$LASTEXITCODE; log=client-api-readiness.log"
 }
 
 $personas = @(

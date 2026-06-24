@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"testing"
 	"time"
@@ -87,6 +88,29 @@ func TestCodexPlusConfigServiceEnsureDefault(t *testing.T) {
 	}
 	if _, ok := repo.values[CodexPlusConfigSettingKey]; !ok {
 		t.Fatalf("default config was not persisted")
+	}
+}
+
+func TestCodexPlusConfigServiceGetRepairsHiddenDefaultModel(t *testing.T) {
+	repo := newFakeCodexPlusSettingRepo()
+	cfg := DefaultCodexPlusConfig(time.Date(2026, 6, 16, 0, 0, 0, 0, time.UTC))
+	cfg.ModelCatalog.Models[0].IsHidden = true
+	cfg.UsagePolicy.Policies[0].CopyKeys = CodexPlusUsagePolicyCopyKeys{}
+	cfg.UsagePolicy.Policies[0].InsufficientBalanceMessage = "Codex++ entitlement is not active."
+	cfg.UsagePolicy.Policies[0].RateLimitedMessage = "Codex++ usage is temporarily limited."
+	raw, err := json.Marshal(cfg)
+	if err != nil {
+		t.Fatalf("Marshal() error = %v", err)
+	}
+	repo.values[CodexPlusConfigSettingKey] = string(raw)
+
+	svc := NewCodexPlusConfigService(repo)
+	got, err := svc.Get(context.Background())
+	if err != nil {
+		t.Fatalf("Get() error = %v", err)
+	}
+	if got.ModelCatalog.Models[0].IsHidden {
+		t.Fatalf("default model remained hidden")
 	}
 }
 

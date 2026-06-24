@@ -497,7 +497,7 @@ async function checkServiceAndReload() {
       })
       if (response.ok) {
         // Service is back, reload page
-        window.location.reload()
+        reloadWhenVisible()
         return
       }
     } catch {
@@ -510,6 +510,11 @@ async function checkServiceAndReload() {
   }
 
   // After retries, reload anyway
+  reloadWhenVisible()
+}
+
+function reloadWhenVisible() {
+  if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return
   window.location.reload()
 }
 

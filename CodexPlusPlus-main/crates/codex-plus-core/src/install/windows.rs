@@ -31,11 +31,11 @@ pub fn build_windows_entrypoint_plan(options: &InstallOptions) -> WindowsEntrypo
     let icon_path = default_icon_path();
     WindowsEntrypointPlan {
         silent_shortcut: install_root
-            .join("Codex++.lnk")
+            .join(format!("{SILENT_NAME}.lnk"))
             .to_string_lossy()
             .to_string(),
         manager_shortcut: install_root
-            .join("Codex++ 管理工具.lnk")
+            .join(format!("{MANAGER_NAME}.lnk"))
             .to_string_lossy()
             .to_string(),
         install_root: install_root.to_string_lossy().to_string(),
@@ -55,16 +55,11 @@ pub fn install_shortcuts(options: &InstallOptions) -> anyhow::Result<()> {
     let plan = build_windows_entrypoint_plan(options);
     let install_root = PathBuf::from(&plan.install_root);
     std::fs::create_dir_all(&install_root)?;
-    create_entrypoint_shortcut(
-        PathBuf::from(&plan.silent_shortcut),
-        PathBuf::from(&plan.launcher_path),
-        "Launch Codex++ silently",
-        PathBuf::from(&plan.silent_icon_path),
-    )?;
+    remove_retired_shortcuts(&plan);
     create_entrypoint_shortcut(
         PathBuf::from(&plan.manager_shortcut),
         PathBuf::from(&plan.manager_path),
-        "Open Codex++ management tool",
+        "Open Codex++",
         PathBuf::from(&plan.manager_icon_path),
     )?;
     write_uninstall_registration(&plan)?;
@@ -76,6 +71,7 @@ pub fn uninstall_shortcuts(options: &InstallOptions) -> anyhow::Result<()> {
     let plan = build_windows_entrypoint_plan(options);
     let _ = std::fs::remove_file(&plan.silent_shortcut);
     let _ = std::fs::remove_file(&plan.manager_shortcut);
+    remove_retired_shortcuts(&plan);
     let _ = crate::windows_integration::delete_current_user_key(LEGACY_UNINSTALL_SUBKEY);
     let _ = crate::windows_integration::delete_current_user_key(UNINSTALL_SUBKEY);
     Ok(())
@@ -131,6 +127,17 @@ fn write_uninstall_registration(plan: &WindowsEntrypointPlan) -> anyhow::Result<
         crate::windows_integration::set_current_user_string_value(UNINSTALL_SUBKEY, name, &value)?;
     }
     Ok(())
+}
+
+#[cfg(windows)]
+fn remove_retired_shortcuts(plan: &WindowsEntrypointPlan) {
+    let install_root = Path::new(&plan.install_root);
+    for path in [
+        PathBuf::from(&plan.silent_shortcut),
+        install_root.join("Codex++ 管理工具.lnk"),
+    ] {
+        let _ = std::fs::remove_file(path);
+    }
 }
 
 fn default_icon_path() -> PathBuf {

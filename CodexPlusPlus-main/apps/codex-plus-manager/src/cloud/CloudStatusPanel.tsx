@@ -25,29 +25,29 @@ const statusLabels: Record<string, string> = {
   disabled: "服务停用",
   device_revoked: "设备停用",
   model_unavailable: "模型不可用",
-  rate_limited: "限流中",
-  gateway_unhealthy: "网关异常",
+  rate_limited: "繁忙",
+  gateway_unhealthy: "暂不可用",
   local_codex_missing: "未找到 Codex",
-  local_config_failed: "本地配置失败",
-  stale_snapshot: "快照过期",
+  local_config_failed: "准备失败",
+  stale_snapshot: "需要刷新",
   unknown: "状态未知",
 };
 
 const statusFallbacks: Record<string, string> = {
-  available: "Codex++ Cloud 已可用。",
-  not_authenticated: "请先登录 Codex++ Cloud。",
+  available: "Codex++ 服务已可用。",
+  not_authenticated: "请先登录 Codex++ 账户。",
   not_purchased: "当前账号尚未开通服务。",
   expired: "当前套餐已过期。",
-  low_balance: "服务端提示余额需要关注。",
-  disabled: "服务端当前停用了云服务。",
-  device_revoked: "本机设备不可继续使用云服务。",
+  low_balance: "余额需要关注。",
+  disabled: "服务当前不可用。",
+  device_revoked: "本机设备不可继续使用。",
   model_unavailable: "默认模型当前不可用。",
-  rate_limited: "当前请求受到服务端限流。",
-  gateway_unhealthy: "模型网关暂不可用。",
+  rate_limited: "当前使用人数较多，请稍后重试。",
+  gateway_unhealthy: "服务暂时不可用，请稍后重试。",
   local_codex_missing: "本机 Codex 安装状态需要处理。",
-  local_config_failed: "本地托管供应商配置写入失败。",
-  stale_snapshot: "本地云配置快照需要刷新。",
-  unknown: "正在读取云服务状态。",
+  local_config_failed: "Codex 准备失败，请刷新或联系管理员。",
+  stale_snapshot: "状态可能不是最新，请刷新。",
+  unknown: "正在读取服务状态。",
 };
 
 function statusTone(status: string | undefined) {
@@ -155,8 +155,8 @@ export function CloudStatusPanel({
     <Card className={`cloud-panel cloud-status-panel tone-${statusTone(status)}`}>
       <CardHeader className="cloud-panel-head">
         <div>
-          <CardTitle>Codex++ Cloud</CardTitle>
-          <CardDescription>当前账号、设备和托管供应商状态。</CardDescription>
+          <CardTitle>Codex++ 服务</CardTitle>
+          <CardDescription>当前账号、套餐和本机状态。</CardDescription>
         </div>
         <span className={`cloud-status-icon ${statusTone(status)}`}>{statusIcon(status)}</span>
       </CardHeader>
@@ -173,7 +173,7 @@ export function CloudStatusPanel({
             </Button>
             <Button disabled={pending === "applyProvider" || !canApply} onClick={() => void onApplyProvider()}>
               <Cloud className="h-4 w-4" />
-              配置云服务
+              准备启动
             </Button>
             <Button disabled={pending === "repairProvider"} onClick={() => void onRepairProvider()} variant="secondary">
               <Wrench className="h-4 w-4" />
@@ -194,11 +194,8 @@ export function CloudStatusPanel({
           <CloudStatusCell title="今日/本期用量" value={safeText(data?.usage.period_usage_display)} />
           <CloudStatusCell title="默认模型" value={safeText(defaultModel)} mono />
           <CloudStatusCell title="设备" value={safeText(data?.device.message || data?.device.status)} />
-          <CloudStatusCell title="供应商" value={state?.managedProvider.active ? "已配置 Codex++ Cloud" : "尚未写入托管配置"} />
-          <CloudStatusCell title="限流状态" value={safeText(data?.usage.rate_limit_state)} />
-          <CloudStatusCell title="配置版本" value={safeText(data?.version_policy.config_version)} mono />
-          <CloudStatusCell title="快照版本" value={safeText(data?.version_policy.snapshot_version)} mono />
-          <CloudStatusCell title="Key 状态" value={state?.managedProvider.hasApiKey ? safeText(state.managedProvider.maskedKey) : "未下发"} mono />
+          <CloudStatusCell title="本机授权" value={state?.managedProvider.active ? "已完成" : "未完成"} />
+          <CloudStatusCell title="使用状态" value={safeText(data?.usage.rate_limit_state, "正常")} />
         </div>
         {service?.error_code ? <div className="cloud-error-line">{service.error_code}</div> : null}
         <div className="cloud-secondary-actions">
@@ -213,7 +210,7 @@ export function CloudStatusPanel({
           ))}
           {data?.feature_flags.advanced_provider_config ? (
             <Button onClick={onOpenAdvancedProviders} variant="ghost">
-              高级供应商配置
+              高级模式
             </Button>
           ) : null}
         </div>

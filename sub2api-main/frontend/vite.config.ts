@@ -96,6 +96,41 @@ export default defineConfig(({ mode }) => {
               return 'vendor-i18n'
             }
 
+            if (id.includes('/axios/')) {
+              return 'vendor-axios'
+            }
+
+            if (id.includes('/driver.js/')) {
+              return 'vendor-driver'
+            }
+
+            if (id.includes('/dompurify/') || id.includes('/marked/')) {
+              return 'vendor-markdown'
+            }
+
+            if (id.includes('/qrcode/')) {
+              return 'vendor-qrcode'
+            }
+
+            if (id.includes('/file-saver/')) {
+              return 'vendor-file'
+            }
+
+            if (
+              id.includes('/@airwallex/') ||
+              id.includes('/@stripe/')
+            ) {
+              return 'vendor-payments'
+            }
+
+            if (id.includes('/@lobehub/')) {
+              return 'vendor-icons'
+            }
+
+            if (id.includes('/vue-draggable-plus/') || id.includes('/@tanstack/')) {
+              return 'vendor-interactions'
+            }
+
             // 其他小型第三方库合并
             return 'vendor-misc'
           }

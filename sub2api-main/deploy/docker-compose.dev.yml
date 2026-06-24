@@ -16,9 +16,6 @@ services:
     build:
       context: ..
       dockerfile: Dockerfile
-      args:
-        GOPROXY: "${GOPROXY:-https://goproxy.cn|https://proxy.golang.org|direct}"
-        GOSUMDB: "${GOSUMDB:-sum.golang.google.cn}"
     container_name: ${SUB2API_DEV_APP_CONTAINER:-sub2api-codexplus-local}
     restart: unless-stopped
     ports:
@@ -26,7 +23,7 @@ services:
     volumes:
       - ${SUB2API_DEV_DATA_ROOT:-./.codexplus-local}/app:/app/data
     environment:
-      - AUTO_SETUP=true
+      - AUTO_SETUP=${AUTO_SETUP:-false}
       - SERVER_HOST=0.0.0.0
       - SERVER_PORT=8080
       - SERVER_MODE=debug

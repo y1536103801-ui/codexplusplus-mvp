@@ -15,6 +15,14 @@ function safe(value: string | null | undefined, fallback = "未知") {
   return value && value.trim() ? value : fallback;
 }
 
+function usageState(value: string | null | undefined) {
+  const text = (value || "").trim().toLowerCase();
+  if (!text || text === "ok" || text === "normal" || text === "none") return "正常";
+  if (text === "limited" || text === "rate_limited") return "繁忙";
+  if (text === "blocked") return "不可用";
+  return value || "正常";
+}
+
 function formatDate(value: string | null | undefined) {
   if (!value) return "未返回";
   const date = new Date(value);
@@ -60,7 +68,7 @@ export function CloudUsagePanel({ state, pending, onRefreshUsage, onOpenActionUr
   const operationActions = uniqueActions([usage?.renew_action, data?.plan.commerce_action]);
   const models = data?.models?.length ? data.models : fallbackDefaultModel(state) ? [fallbackDefaultModel(state)!] : [];
   const defaultModel = models.find((model) => model.is_default) || fallbackDefaultModel(state);
-  const planName = data?.plan.name || data?.plan.status || "";
+  const planName = data?.plan.name || "";
   const usageNotice =
     usage?.low_balance ||
     data?.service.status === "rate_limited" ||
@@ -101,7 +109,7 @@ export function CloudUsagePanel({ state, pending, onRefreshUsage, onOpenActionUr
           </div>
           <div className="cloud-usage-card">
             <span>限流状态</span>
-            <strong>{safe(usage?.rate_limit_state)}</strong>
+            <strong>{usageState(usage?.rate_limit_state)}</strong>
           </div>
           <div className="cloud-usage-card">
             <span>默认模型</span>
@@ -117,7 +125,6 @@ export function CloudUsagePanel({ state, pending, onRefreshUsage, onOpenActionUr
                   <strong>{model.label || model.model_id}</strong>
                   <span>
                     {model.is_default ? "默认模型" : "可用模型"}
-                    {model.route_model ? ` · ${model.route_model}` : ""}
                   </span>
                 </div>
                 <em className={model.is_available ? "good" : "bad"}>

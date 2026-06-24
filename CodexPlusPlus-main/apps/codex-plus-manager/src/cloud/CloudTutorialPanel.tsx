@@ -211,9 +211,9 @@ export function CloudTutorialPanel({ state, onLaunch, onRefreshUsage, onRepairPr
 
   const steps = useMemo(
     () => [
-      { title: "登录并配置云服务", done: status !== "not_authenticated" },
+      { title: "登录账户", done: status !== "not_authenticated" },
       { title: "确认权益和设备状态", done: status === "available" || status === "low_balance" || status === "model_unavailable" },
-      { title: "写入 Codex++ Cloud", done: providerActive },
+      { title: "准备 Codex", done: providerActive },
       { title: "启动 Codex 后选择项目目录", done: false, action: onLaunch },
       { title: "刷新用量，失败先修复再看诊断", done: false, action: onRefreshUsage },
     ],

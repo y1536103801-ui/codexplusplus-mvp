@@ -11,7 +11,6 @@ These scripts are Module I prep-mode helpers for the `07-integration-release` ga
 - `run-admin-audit-checks.ps1`: reads admin-visible Codex++ event rows for success/rejection personas and writes sanitized usage/audit correlation evidence, including matched gateway `request_id` values from `05-gateway-policy-e2e.md`, but only when `-AllowAdminAuditReads` is supplied.
 - `start-local-dev-compose.ps1`: starts the isolated `docker-compose.dev.yml` local source stack with the fixed `sub2api-codexplus-local` project name, then probes the 07 routes.
 - `start-local-source-service.ps1`: builds or probes a current-source local Sub2API image and checks that the 07 client/admin/desktop/gateway routes return auth or validation responses instead of 404.
-- `start-local-mock-openai-upstream.ps1`: starts or probes the local OpenAI-compatible mock upstream used by isolated gateway policy E2E runs. It writes only local PID/log files and never stores real provider credentials.
 
 ## Local Source Runtime
 
@@ -34,21 +33,6 @@ docker compose --env-file .env.codexplus-local -p sub2api-codexplus-local -f doc
 
 The default local source URL is `http://127.0.0.1:8081`, with app/postgres/redis data isolated under `deploy/.codexplus-local`. The example env file contains valid local-only 64-hex `JWT_SECRET` and `TOTP_ENCRYPTION_KEY` values so a copied file can boot; replace both before any shared, long-lived, or production-like use. The generated `.env.codexplus-local` and `.codexplus-local/` directory are ignored by git.
 
-If Docker build fails while downloading Go modules from the default proxy, rerun with an explicit fallback proxy list. Pipe separators let Go fall back after transient proxy errors:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File sub2api-main/tools/e2e/codexplus/start-local-dev-compose.ps1 -Root (Resolve-Path .) -GoProxy 'https://goproxy.cn|https://proxy.golang.org|direct'
-```
-
-The compose file forwards `GOPROXY` and `GOSUMDB` as Docker build arguments, so CI can provide those values through environment variables without editing source files.
-
-For local gateway policy runs that should avoid paid upstream requests, start the mock OpenAI-compatible upstream before seeding gateway fixtures:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File sub2api-main/tools/e2e/codexplus/start-local-mock-openai-upstream.ps1
-powershell -NoProfile -ExecutionPolicy Bypass -File sub2api-main/tools/e2e/codexplus/start-local-mock-openai-upstream.ps1 -ProbeOnly
-```
-
 After the service is running, probe the 07 routes without rebuilding:
 
 ```powershell
@@ -60,8 +44,6 @@ If `8081` is already occupied, set `SUB2API_DEV_HOST_PORT=8082` in `.env.codexpl
 ## Required Environment
 
 Optionally run `codex-plus-dev-plan/tools/new-07-e2e-env-template.ps1` first. It creates `test-runs/YYYYMMDD-HHMM-e2e-env/e2e-env.template.ps1` and `e2e-env-checklist.md`, fills detected local URLs and Manager build candidate paths, and marks token, key and model values that must be filled manually.
-
-For manual credential collection, start from `sub2api-main/tools/e2e/codexplus/e2e-credentials.example.ps1` or the current `codex-plus-dev-plan/test-runs/*-e2e-unblock/01-e2e-credential-env.template.ps1`. Copy one of these files to a local uncommitted `e2e-env.local.ps1`, fill values locally, and pass it with `-EnvFile`. Do not paste real tokens, JWTs, gateway keys, browser auth tokens, redeem codes or admin credentials into chat or reports. Keep the matching `*-e2e-unblock/04-authorization-checklist.md` approval record updated before running browser completion, gateway requests, admin audit reads, desktop provider writes or payment/entitlement mutations.
 
 For the isolated local source service on `8081`, generate a template with explicit local URLs:
 
@@ -80,17 +62,6 @@ powershell -NoProfile -ExecutionPolicy Bypass -File codex-plus-dev-plan/tools/ve
 Run full readiness without `-EndpointPreflightOnly` when real test tokens, model names and gateway keys have been filled. With generated placeholder values, full readiness must fail; use `-OutputPath` if you want that failure captured as a prep diagnostic.
 
 The runner checks token presence but does not print token values. Production-looking URLs require the explicit `-AllowProduction` override. HTTP probing remains opt-in.
-
-For release E2E, supplement the generated template with the numeric admin-audit user IDs. The readiness verifier requires these values in addition to the token and gateway-key inputs:
-
-- `CODEXPLUS_07_E2E_USER_ACTIVE_ID`
-- `CODEXPLUS_07_E2E_USER_NOT_PURCHASED_ID`
-- `CODEXPLUS_07_E2E_USER_EXPIRED_ID`
-- `CODEXPLUS_07_E2E_USER_LOW_BALANCE_ID`
-- `CODEXPLUS_07_E2E_USER_DEVICE_REVOKED_ID`
-- `CODEXPLUS_07_E2E_USER_MODEL_DENIED_ID`
-
-Each ID must be the numeric user ID for the matching test persona so `run-admin-audit-checks.ps1` can correlate gateway `request_id` values with admin-visible usage and policy-rejection rows.
 
 ## Boundary
 

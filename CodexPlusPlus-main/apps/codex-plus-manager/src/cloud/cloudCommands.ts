@@ -130,11 +130,6 @@ type CloudDiagnosticsCommandPayload = {
   lines: number;
 };
 
-function shouldUseFixture(error: unknown): boolean {
-  const text = error instanceof Error ? error.message : String(error);
-  return /not implemented|not_implemented|unknown command|command not found|not found|ipc|__TAURI__|reading 'invoke'/i.test(text);
-}
-
 function hasTauriRuntime(): boolean {
   if (typeof window === "undefined") return false;
   const runtime = window as Window & {
@@ -145,6 +140,50 @@ function hasTauriRuntime(): boolean {
     typeof runtime.__TAURI_INTERNALS__?.invoke === "function" ||
       typeof runtime.__TAURI__?.core?.invoke === "function" ||
       typeof runtime.__TAURI__?.invoke === "function",
+  );
+}
+
+export function normalizeCloudMessage(message: string | undefined): string {
+  const text = (message || "").trim();
+  if (!text) return "操作失败，请稍后重试。";
+  if (/已打开浏览器/.test(text)) return text;
+  if (/Cloud state loaded/i.test(text)) return "状态已刷新。";
+  if (/Cloud bootstrap refreshed/i.test(text)) return "状态已刷新。";
+  if (/Cloud browser login checked/i.test(text)) return "已检查登录状态。";
+  if (/Cloud browser login cancelled/i.test(text)) return "已取消浏览器登录。";
+  if (/Cloud login completed/i.test(text)) return "登录成功。";
+  if (/Cloud 2FA login completed/i.test(text)) return "验证完成。";
+  if (/Cloud session cleared/i.test(text)) return "已退出登录。";
+  if (/Cloud endpoint configured/i.test(text)) return "服务已初始化。";
+  if (/Cloud device registered/i.test(text)) return "本机已登记。";
+  if (/Codex\+\+ Cloud provider applied/i.test(text)) return "已准备好 Codex。";
+  if (/Codex\+\+ Cloud provider repaired/i.test(text)) return "已修复 Codex 配置。";
+  if (/Cloud redeem completed/i.test(text)) return "兑换成功。";
+  if (/Cloud usage loaded/i.test(text)) return "用量已刷新。";
+  if (/Cloud diagnostics loaded/i.test(text)) return "诊断信息已读取。";
+  if (/Please sign in again|sign in again|session expired|token has expired|access token has expired|invalid token/i.test(text)) {
+    return "登录已失效，请重新登录。";
+  }
+  if (/Backend mode is active|Only admin login is allowed|self-service auth flows are disabled/i.test(text)) {
+    return "当前无法自行登录，请联系管理员确认客户端登录已开启。";
+  }
+  if (/(HTTP\s*404|404|not found|Not Found)/i.test(text) && /(desktop|browser|handoff|auth\/desktop|Cloud browser login)/i.test(text)) {
+    return "当前版本暂不支持客户端登录，请联系管理员更新。";
+  }
+  if (/(Unable to connect|connection refused|actively refused|operation timed out|timed out|无法连接|远程服务器|Network Error|fetch failed)/i.test(text)) {
+    return "无法连接 Codex++，请稍后重试或联系管理员。";
+  }
+  if (/(open_external_url|Plugin not found|not allowed)/i.test(text)) {
+    return "无法打开浏览器，请重启 Codex++ 或联系管理员。";
+  }
+  return (
+    text
+      .replace(/^Cloud browser login check failed:\s*/i, "")
+      .replace(/^Cloud browser login failed:\s*/i, "")
+      .replace(/^Cloud .* failed:\s*/i, "")
+      .replace(/Please sign in again\./i, "登录已失效，请重新登录。")
+      .replace(/Codex\+\+ Cloud/gi, "Codex++")
+      .trim() || "操作失败，请稍后重试。"
   );
 }
 
@@ -159,8 +198,8 @@ async function invokeOrFixture<TRaw, TOut>(
     const result = await invoke<TauriCommandResult<TRaw>>(command, args);
     return runtime(result);
   } catch (error) {
-    if (shouldUseFixture(error)) return fixture();
-    throw error;
+    const message = error instanceof Error ? error.message : String(error);
+    throw new Error(normalizeCloudMessage(message));
   }
 }
 
@@ -223,7 +262,7 @@ function diagnosticsFromCore(core: CoreRuntimeState, status = "ok", message = "D
   ].join("\n");
   return {
     status,
-    message,
+    message: normalizeCloudMessage(message),
     report,
     updatedAt: core.diagnostics?.lastBootstrapAt || new Date().toISOString(),
   };
@@ -240,9 +279,11 @@ function toCloudRuntimeState(result: TauriCommandResult<CloudStateCommandPayload
   const actionType = core.entitlement?.actionType || core.usage?.actionType || "open_url";
   const actionCopyKey = core.entitlement?.actionCopyKey || core.usage?.actionCopyKey || null;
   const providerId = core.provider?.managedProviderId || "codex-plus-cloud";
-  const providerName = core.provider?.displayName || "Codex++ Cloud";
+  const providerName = core.provider?.displayName || "Codex++ 服务";
   const defaultModel = core.provider?.defaultModel || "";
   const hasApiKey = Boolean(core.provider?.hasApiKey);
+  const displayMessage = normalizeCloudMessage(result.message || core.entitlement?.message);
+  const serviceMessage = normalizeCloudMessage(core.entitlement?.message || result.message);
 
   return {
     connection: {
@@ -260,12 +301,12 @@ function toCloudRuntimeState(result: TauriCommandResult<CloudStateCommandPayload
     },
     bootstrap: {
       status: commandBootstrapStatus(result.status, serviceStatus, authenticated),
-      message: result.message || core.entitlement?.message || "Codex++ Cloud state loaded.",
+      message: displayMessage,
       error_code: core.diagnostics?.lastErrorCode || null,
       data: {
         service: {
           status: serviceStatus,
-          message: core.entitlement?.message || result.message || "Codex++ Cloud state loaded.",
+          message: serviceMessage,
           message_key: core.entitlement?.messageKey || null,
           action_hint: core.entitlement?.actionHint || "none",
           retryable: core.entitlement?.retryable !== false,
@@ -280,7 +321,7 @@ function toCloudRuntimeState(result: TauriCommandResult<CloudStateCommandPayload
           api_key: null,
           key_summary: {
             key_id: hasApiKey ? providerId : "",
-            masked_key: hasApiKey ? "configured" : "",
+            masked_key: hasApiKey ? "已下发" : "",
             created_at: null,
             last_used_at: null,
           },
@@ -342,12 +383,12 @@ function toCloudRuntimeState(result: TauriCommandResult<CloudStateCommandPayload
       active: Boolean(core.provider?.active),
       hasApiKey,
       displayName: providerName,
-      maskedKey: hasApiKey ? "configured" : "",
+      maskedKey: hasApiKey ? "已下发" : "",
       defaultModel,
       lastAppliedAt: core.diagnostics?.lastBootstrapAt || null,
-      errorMessage: core.diagnostics?.lastErrorMessage || null,
+      errorMessage: core.diagnostics?.lastErrorMessage ? normalizeCloudMessage(core.diagnostics.lastErrorMessage) : null,
     },
-    diagnostics: diagnosticsFromCore(core, result.status, result.message),
+    diagnostics: diagnosticsFromCore(core, result.status, displayMessage),
     cachedAt: core.diagnostics?.lastBootstrapAt || new Date().toISOString(),
     source: "tauri",
   };
@@ -356,7 +397,7 @@ function toCloudRuntimeState(result: TauriCommandResult<CloudStateCommandPayload
 function toCloudDiagnostics(result: TauriCommandResult<CloudDiagnosticsCommandPayload>): CloudDiagnostics {
   return {
     status: result.status,
-    message: result.message,
+    message: normalizeCloudMessage(result.message),
     report: result.text || "",
     updatedAt: new Date().toISOString(),
   };

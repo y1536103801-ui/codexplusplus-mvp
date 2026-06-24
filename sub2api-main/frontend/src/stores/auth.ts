@@ -18,6 +18,11 @@ const TOKEN_REFRESH_BUFFER = 120 * 1000 // 120 seconds before expiry to refresh 
 
 type PendingAuthTokenField = 'pending_auth_token' | 'pending_oauth_token'
 
+function isPageInactive(): boolean {
+  if (typeof document === 'undefined') return false
+  return document.visibilityState === 'hidden' || !document.hasFocus()
+}
+
 interface PendingAuthSessionSummary {
   token: string
   token_field: PendingAuthTokenField
@@ -143,6 +148,9 @@ export const useAuthStore = defineStore('auth', () => {
     stopAutoRefresh()
 
     refreshIntervalId = setInterval(() => {
+      if (isPageInactive()) {
+        return
+      }
       if (token.value) {
         refreshUser().catch((error) => {
           console.error('Auto-refresh user failed:', error)

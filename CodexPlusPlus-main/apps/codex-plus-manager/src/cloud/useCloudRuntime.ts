@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { cloudCommands } from "./cloudCommands";
+import { cloudCommands, normalizeCloudMessage } from "./cloudCommands";
 import type {
   CloudDiagnostics,
   CloudBrowserHandoffRequest,
@@ -35,8 +35,8 @@ type UseCloudRuntimeOptions = {
 };
 
 function cloudErrorMessage(error: unknown): string {
-  if (error instanceof Error) return error.message;
-  return String(error);
+  if (error instanceof Error) return normalizeCloudMessage(error.message);
+  return normalizeCloudMessage(String(error));
 }
 
 export function useCloudRuntime(options: UseCloudRuntimeOptions = {}) {
@@ -54,7 +54,7 @@ export function useCloudRuntime(options: UseCloudRuntimeOptions = {}) {
         setState(result);
         const status = result.bootstrap.status === "error" ? "failed" : "ok";
         if (!silentSuccess) {
-          onNotice?.(title, result.bootstrap.message || "Codex++ Cloud 状态已更新。", status);
+          onNotice?.(title, result.bootstrap.message || "Codex++ 服务状态已更新。", status);
         }
         return result;
       } catch (error) {
@@ -70,18 +70,18 @@ export function useCloudRuntime(options: UseCloudRuntimeOptions = {}) {
   );
 
   const load = useCallback(
-    (silent = true) => runState("load", "Codex++ Cloud", cloudCommands.loadState, silent),
+    (silent = true) => runState("load", "Codex++ 服务", cloudCommands.loadState, silent),
     [runState],
   );
 
   const configureEndpoint = useCallback(
     (request: CloudEndpointRequest) =>
-      runState("configureEndpoint", "服务地址", () => cloudCommands.configureEndpoint(request)),
+      runState("configureEndpoint", "服务配置", () => cloudCommands.configureEndpoint(request)),
     [runState],
   );
 
   const login = useCallback(
-    (request: CloudLoginRequest) => runState("login", "登录 Codex++ Cloud", () => cloudCommands.login(request)),
+    (request: CloudLoginRequest) => runState("login", "登录 Codex++", () => cloudCommands.login(request)),
     [runState],
   );
 
@@ -113,7 +113,7 @@ export function useCloudRuntime(options: UseCloudRuntimeOptions = {}) {
   );
 
   const refresh = useCallback(
-    (silent = false) => runState("refresh", "刷新云服务", cloudCommands.refreshBootstrap, silent),
+    (silent = false) => runState("refresh", "刷新状态", cloudCommands.refreshBootstrap, silent),
     [runState],
   );
 
@@ -123,17 +123,17 @@ export function useCloudRuntime(options: UseCloudRuntimeOptions = {}) {
   );
 
   const applyProvider = useCallback(
-    () => runState("applyProvider", "配置 Codex++ Cloud", cloudCommands.applyManagedProvider),
+    () => runState("applyProvider", "准备 Codex", cloudCommands.applyManagedProvider),
     [runState],
   );
 
   const repairProvider = useCallback(
-    () => runState("repairProvider", "修复 Codex++ Cloud", cloudCommands.repairManagedProvider),
+    () => runState("repairProvider", "修复 Codex", cloudCommands.repairManagedProvider),
     [runState],
   );
 
   const redeem = useCallback(
-    (request: CloudRedeemRequest) => runState("redeem", "兑换激活码", () => cloudCommands.redeem(request)),
+    (request: CloudRedeemRequest) => runState("redeem", "账户操作", () => cloudCommands.redeem(request)),
     [runState],
   );
 
@@ -161,7 +161,7 @@ export function useCloudRuntime(options: UseCloudRuntimeOptions = {}) {
   }, [onNotice]);
 
   const showNextFixtureState = useCallback(
-    () => runState("fixture", "Mock 状态", cloudCommands.nextFixtureState),
+    () => runState("fixture", "演示状态", cloudCommands.nextFixtureState),
     [runState],
   );
 

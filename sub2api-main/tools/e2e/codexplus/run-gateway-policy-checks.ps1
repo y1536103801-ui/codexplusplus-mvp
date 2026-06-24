@@ -280,32 +280,14 @@ function Invoke-GatewayRequest {
             Text = Redact-Text ([string]$response.Content)
         }
     } catch {
-        $caught = $_
         $statusCode = 0
-        $text = $caught.Exception.Message
+        $text = $_.Exception.Message
         $headers = $null
-        if ($null -ne $caught.ErrorDetails -and -not [string]::IsNullOrWhiteSpace($caught.ErrorDetails.Message)) {
-            $text = [string]$caught.ErrorDetails.Message
-        }
-        if ($null -ne $caught.Exception.Response) {
-            $statusCode = [int]$caught.Exception.Response.StatusCode
-            $headers = $caught.Exception.Response.Headers
-            try {
-                if ($caught.Exception.Response.PSObject.Methods.Name -contains "GetResponseStream") {
-                    $reader = New-Object System.IO.StreamReader($caught.Exception.Response.GetResponseStream())
-                    $streamText = $reader.ReadToEnd()
-                    if (-not [string]::IsNullOrWhiteSpace($streamText)) {
-                        $text = $streamText
-                    }
-                } elseif ($null -ne $caught.Exception.Response.Content) {
-                    $contentText = $caught.Exception.Response.Content.ReadAsStringAsync().GetAwaiter().GetResult()
-                    if (-not [string]::IsNullOrWhiteSpace($contentText)) {
-                        $text = $contentText
-                    }
-                }
-            } catch {
-                # Preserve ErrorDetails.Message or exception text when the response stream is unavailable.
-            }
+        if ($null -ne $_.Exception.Response) {
+            $statusCode = [int]$_.Exception.Response.StatusCode
+            $headers = $_.Exception.Response.Headers
+            $reader = New-Object System.IO.StreamReader($_.Exception.Response.GetResponseStream())
+            $text = $reader.ReadToEnd()
         }
         $json = $null
         $parseStatus = "json"
@@ -421,7 +403,7 @@ if ($FixtureMode) {
 } elseif (-not $AllowGatewayRequests) {
     Add-Result "gateway-requests-opt-in" $false "Supply -AllowGatewayRequests only in an approved low-cost test environment."
     $summary = "not-run"
-    Add-Observation "gateway-policy" "" 0 "explicit opt-in" $summary "" "" "" "" "not-run" "not-run" "fail" "Gateway requests were not sent because -AllowGatewayRequests was not supplied."
+    Add-Observation "gateway-policy" "" 0 "explicit opt-in" $summary "fail" "Gateway requests were not sent because -AllowGatewayRequests was not supplied."
 } else {
     Add-Result "env:GATEWAY_BASE_URL" (-not [string]::IsNullOrWhiteSpace($gatewayBaseUrl)) "$($EnvPrefix)GATEWAY_BASE_URL must be set."
     Add-Result "env:GATEWAY_BASE_URL-safe" ($AllowProduction -or (Test-SafeUrl $gatewayBaseUrl)) "$($EnvPrefix)GATEWAY_BASE_URL must be local/dev/test/staging/sandbox/qa unless -AllowProduction is supplied."

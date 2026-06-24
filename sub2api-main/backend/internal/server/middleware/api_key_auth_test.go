@@ -177,85 +177,6 @@ func TestSimpleModeBypassesQuotaCheck(t *testing.T) {
 	})
 }
 
-func TestCodexPlusGatewayPolicyRequestBypassesLegacyBilling(t *testing.T) {
-	gin.SetMode(gin.TestMode)
-
-	group := &service.Group{
-		ID:               42,
-		Name:             "codex-plus-subscription",
-		Status:           service.StatusActive,
-		Hydrated:         true,
-		SubscriptionType: service.SubscriptionTypeSubscription,
-	}
-	user := &service.User{
-		ID:          7,
-		Role:        service.RoleUser,
-		Status:      service.StatusActive,
-		Balance:     0,
-		Concurrency: 3,
-	}
-	apiKey := &service.APIKey{
-		ID:     100,
-		UserID: user.ID,
-		Key:    "test-key",
-		Status: service.StatusActive,
-		User:   user,
-		Group:  group,
-	}
-	apiKey.GroupID = &group.ID
-
-	apiKeyRepo := &stubApiKeyRepo{
-		getByKey: func(ctx context.Context, key string) (*service.APIKey, error) {
-			if key != apiKey.Key {
-				return nil, service.ErrAPIKeyNotFound
-			}
-			clone := *apiKey
-			return &clone, nil
-		},
-	}
-	cfg := &config.Config{RunMode: config.RunModeStandard}
-	apiKeyService := service.NewAPIKeyService(apiKeyRepo, nil, nil, nil, nil, nil, cfg)
-
-	expiredSub := service.UserSubscription{
-		ID:        55,
-		UserID:    user.ID,
-		GroupID:   group.ID,
-		Status:    service.SubscriptionStatusExpired,
-		StartsAt:  time.Now().Add(-48 * time.Hour),
-		ExpiresAt: time.Now().Add(-24 * time.Hour),
-		UpdatedAt: time.Now(),
-	}
-	subscriptionRepo := &stubUserSubscriptionRepo{
-		getActive: func(ctx context.Context, userID, groupID int64) (*service.UserSubscription, error) {
-			return nil, service.ErrSubscriptionNotFound
-		},
-		listByUser: func(ctx context.Context, userID int64) ([]service.UserSubscription, error) {
-			if userID != user.ID {
-				return nil, service.ErrSubscriptionNotFound
-			}
-			return []service.UserSubscription{expiredSub}, nil
-		},
-	}
-	subscriptionService := service.NewSubscriptionService(nil, subscriptionRepo, nil, nil, cfg)
-
-	router := gin.New()
-	router.Use(gin.HandlerFunc(NewAPIKeyAuthMiddleware(apiKeyService, subscriptionService, cfg)))
-	router.POST("/v1/responses", func(c *gin.Context) {
-		sub, ok := GetSubscriptionFromContext(c)
-		require.True(t, ok)
-		require.Equal(t, service.SubscriptionStatusExpired, sub.Status)
-		c.JSON(http.StatusOK, gin.H{"ok": true})
-	})
-
-	w := httptest.NewRecorder()
-	req := httptest.NewRequest(http.MethodPost, "/v1/responses", nil)
-	req.Header.Set("x-api-key", apiKey.Key)
-	req.Header.Set("X-CodexPlus-Device-Id", "dev-1")
-	router.ServeHTTP(w, req)
-
-	require.Equal(t, http.StatusOK, w.Code)
-}
-
 func TestAPIKeyAuthSetsGroupContext(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
@@ -1094,7 +1015,6 @@ func (r *stubApiKeyRepo) GetRateLimitData(ctx context.Context, id int64) (*servi
 
 type stubUserSubscriptionRepo struct {
 	getActive      func(ctx context.Context, userID, groupID int64) (*service.UserSubscription, error)
-	listByUser     func(ctx context.Context, userID int64) ([]service.UserSubscription, error)
 	updateStatus   func(ctx context.Context, subscriptionID int64, status string) error
 	activateWindow func(ctx context.Context, id int64, start time.Time) error
 	resetDaily     func(ctx context.Context, id int64, start time.Time) error
@@ -1165,9 +1085,6 @@ func (r *stubUserSubscriptionRepo) Delete(ctx context.Context, id int64) error {
 }
 
 func (r *stubUserSubscriptionRepo) ListByUserID(ctx context.Context, userID int64) ([]service.UserSubscription, error) {
-	if r.listByUser != nil {
-		return r.listByUser(ctx, userID)
-	}
 	return nil, errors.New("not implemented")
 }
 

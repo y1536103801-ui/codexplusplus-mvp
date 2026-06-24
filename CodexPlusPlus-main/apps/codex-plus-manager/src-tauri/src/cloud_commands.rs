@@ -32,7 +32,7 @@ pub struct CloudDiagnosticsPayload {
 #[tauri::command]
 pub fn codexplus_cloud_load_state() -> CommandResult<CloudStatePayload> {
     ok(
-        "Cloud state loaded.",
+        "账户状态已刷新。",
         CloudStatePayload {
             state: codex_plus_core::codexplus_cloud::load_state(),
         },
@@ -42,8 +42,8 @@ pub fn codexplus_cloud_load_state() -> CommandResult<CloudStatePayload> {
 #[tauri::command]
 pub fn codexplus_cloud_configure_endpoint(base_url: String) -> CommandResult<CloudStatePayload> {
     match codex_plus_core::codexplus_cloud::configure_endpoint(&base_url) {
-        Ok(state) => ok("Cloud endpoint configured.", CloudStatePayload { state }),
-        Err(error) => failed_state("Cloud endpoint configuration failed.", error),
+        Ok(state) => ok("客户端已连接。", CloudStatePayload { state }),
+        Err(error) => failed_state("客户端连接失败。", error),
     }
 }
 
@@ -54,16 +54,16 @@ pub async fn codexplus_cloud_login(
     password: String,
 ) -> CommandResult<CloudStatePayload> {
     match codex_plus_core::codexplus_cloud::login(&base_url, &email, &password).await {
-        Ok(state) => ok("Cloud login completed.", CloudStatePayload { state }),
-        Err(error) => failed_state("Cloud login failed.", error),
+        Ok(state) => ok("登录成功。", CloudStatePayload { state }),
+        Err(error) => failed_state("登录失败。", error),
     }
 }
 
 #[tauri::command]
 pub async fn codexplus_cloud_login_2fa(totp_code: String) -> CommandResult<CloudStatePayload> {
     match codex_plus_core::codexplus_cloud::complete_login_2fa(&totp_code).await {
-        Ok(state) => ok("Cloud 2FA login completed.", CloudStatePayload { state }),
-        Err(error) => failed_state("Cloud 2FA login failed.", error),
+        Ok(state) => ok("验证完成。", CloudStatePayload { state }),
+        Err(error) => failed_state("验证失败。", error),
     }
 }
 
@@ -71,17 +71,36 @@ pub async fn codexplus_cloud_login_2fa(totp_code: String) -> CommandResult<Cloud
 pub async fn codexplus_cloud_start_browser_handoff(
     base_url: String,
 ) -> CommandResult<CloudStatePayload> {
+    let current_state = codex_plus_core::codexplus_cloud::load_state();
+    if current_state.connection.pending_browser_handoff {
+        return ok(
+            "请在浏览器完成登录，完成后回到这里检查状态。",
+            CloudStatePayload {
+                state: current_state,
+            },
+        );
+    }
     match codex_plus_core::codexplus_cloud::start_browser_handoff(&base_url).await {
-        Ok(state) => ok("Cloud browser login started.", CloudStatePayload { state }),
-        Err(error) => failed_state("Cloud browser login failed.", error),
+        Ok(state) => {
+            if let Some(url) = state.connection.browser_handoff_authorize_url.as_deref() {
+                if let Err(error) = open_browser_login_url(url) {
+                    return failed(
+                        &format!("无法打开浏览器，请稍后重试：{}", redact_error(error)),
+                        CloudStatePayload { state },
+                    );
+                }
+            }
+            ok("已打开浏览器，请完成登录。", CloudStatePayload { state })
+        }
+        Err(error) => failed_state("浏览器登录失败。", error),
     }
 }
 
 #[tauri::command]
 pub async fn codexplus_cloud_poll_browser_handoff() -> CommandResult<CloudStatePayload> {
     match codex_plus_core::codexplus_cloud::poll_browser_handoff().await {
-        Ok(state) => ok("Cloud browser login checked.", CloudStatePayload { state }),
-        Err(error) => failed_state("Cloud browser login check failed.", error),
+        Ok(state) => ok("已检查登录状态。", CloudStatePayload { state }),
+        Err(error) => failed_state("检查登录状态失败。", error),
     }
 }
 
@@ -89,26 +108,26 @@ pub async fn codexplus_cloud_poll_browser_handoff() -> CommandResult<CloudStateP
 pub fn codexplus_cloud_cancel_browser_handoff() -> CommandResult<CloudStatePayload> {
     match codex_plus_core::codexplus_cloud::cancel_browser_handoff() {
         Ok(state) => ok(
-            "Cloud browser login cancelled.",
+            "已取消浏览器登录。",
             CloudStatePayload { state },
         ),
-        Err(error) => failed_state("Cloud browser login cancel failed.", error),
+        Err(error) => failed_state("取消浏览器登录失败。", error),
     }
 }
 
 #[tauri::command]
 pub fn codexplus_cloud_logout() -> CommandResult<CloudStatePayload> {
     match codex_plus_core::codexplus_cloud::logout() {
-        Ok(state) => ok("Cloud session cleared.", CloudStatePayload { state }),
-        Err(error) => failed_state("Cloud logout failed.", error),
+        Ok(state) => ok("已退出登录。", CloudStatePayload { state }),
+        Err(error) => failed_state("退出登录失败。", error),
     }
 }
 
 #[tauri::command]
 pub async fn codexplus_cloud_refresh_bootstrap() -> CommandResult<CloudStatePayload> {
     match codex_plus_core::codexplus_cloud::refresh_bootstrap().await {
-        Ok(state) => ok("Cloud bootstrap refreshed.", CloudStatePayload { state }),
-        Err(error) => failed_state("Cloud bootstrap refresh failed.", error),
+        Ok(state) => ok("状态已刷新。", CloudStatePayload { state }),
+        Err(error) => failed_state("刷新状态失败。", error),
     }
 }
 
@@ -117,8 +136,8 @@ pub async fn codexplus_cloud_register_device(
     device_name: Option<String>,
 ) -> CommandResult<CloudStatePayload> {
     match codex_plus_core::codexplus_cloud::register_device(device_name.as_deref()).await {
-        Ok(state) => ok("Cloud device registered.", CloudStatePayload { state }),
-        Err(error) => failed_state("Cloud device registration failed.", error),
+        Ok(state) => ok("本机已登记。", CloudStatePayload { state }),
+        Err(error) => failed_state("本机登记失败。", error),
     }
 }
 
@@ -126,13 +145,13 @@ pub async fn codexplus_cloud_register_device(
 pub fn codexplus_cloud_apply_managed_provider() -> CommandResult<CloudApplyPayload> {
     match codex_plus_core::codexplus_cloud::apply_managed_provider() {
         Ok((state, apply_result)) => ok(
-            "Codex++ Cloud provider applied.",
+            "Codex 已准备好。",
             CloudApplyPayload {
                 state,
                 apply_result: Some(apply_result),
             },
         ),
-        Err(error) => failed_apply("Codex++ Cloud provider apply failed.", error),
+        Err(error) => failed_apply("Codex 准备失败。", error),
     }
 }
 
@@ -140,22 +159,22 @@ pub fn codexplus_cloud_apply_managed_provider() -> CommandResult<CloudApplyPaylo
 pub fn codexplus_cloud_repair_managed_provider() -> CommandResult<CloudApplyPayload> {
     match codex_plus_core::codexplus_cloud::repair_managed_provider() {
         Ok((state, apply_result)) => ok(
-            "Codex++ Cloud provider repaired.",
+            "Codex 配置已修复。",
             CloudApplyPayload {
                 state,
                 apply_result: Some(apply_result),
             },
         ),
-        Err(error) => failed_apply("Codex++ Cloud provider repair failed.", error),
+        Err(error) => failed_apply("Codex 修复失败。", error),
     }
 }
 
 #[tauri::command]
 pub async fn codexplus_cloud_redeem(code: String) -> CommandResult<CloudRedeemPayload> {
     match codex_plus_core::codexplus_cloud::redeem(&code).await {
-        Ok(payload) => ok("Cloud redeem completed.", payload),
+        Ok(payload) => ok("操作成功。", payload),
         Err(error) => failed(
-            &format!("Cloud redeem failed: {}", redact_error(error)),
+            &format!("账户操作失败：{}", redact_error(error)),
             CloudRedeemPayload {
                 result: None,
                 state: codex_plus_core::codexplus_cloud::load_state(),
@@ -167,9 +186,9 @@ pub async fn codexplus_cloud_redeem(code: String) -> CommandResult<CloudRedeemPa
 #[tauri::command]
 pub async fn codexplus_cloud_load_usage() -> CommandResult<CloudUsagePayload> {
     match codex_plus_core::codexplus_cloud::load_usage().await {
-        Ok(payload) => ok("Cloud usage loaded.", payload),
+        Ok(payload) => ok("用量已刷新。", payload),
         Err(error) => failed(
-            &format!("Cloud usage load failed: {}", redact_error(error)),
+            &format!("用量刷新失败：{}", redact_error(error)),
             CloudUsagePayload {
                 usage: None,
                 state: codex_plus_core::codexplus_cloud::load_state(),
@@ -188,7 +207,7 @@ pub fn codexplus_cloud_read_redacted_diagnostics(
         .clamp(1, 1000);
     match read_redacted_tail(&path, lines) {
         Ok(text) => ok(
-            "Cloud diagnostics loaded.",
+            "诊断信息已读取。",
             CloudDiagnosticsPayload {
                 path: path.to_string_lossy().to_string(),
                 text,
@@ -197,7 +216,7 @@ pub fn codexplus_cloud_read_redacted_diagnostics(
         ),
         Err(error) => failed(
             &format!(
-                "Cloud diagnostics load failed: {}",
+                "读取诊断信息失败：{}",
                 redact_error(anyhow::Error::from(error))
             ),
             CloudDiagnosticsPayload {
@@ -228,6 +247,24 @@ fn failed_apply(message: &str, error: anyhow::Error) -> CommandResult<CloudApply
     )
 }
 
+fn open_browser_login_url(url: &str) -> anyhow::Result<()> {
+    if !(url.starts_with("https://") || url.starts_with("http://")) {
+        anyhow::bail!("登录地址无效");
+    }
+    #[cfg(windows)]
+    {
+        codex_plus_core::windows_open_url(url)
+    }
+    #[cfg(not(windows))]
+    {
+        std::process::Command::new("open")
+            .arg(url)
+            .spawn()
+            .map(|_| ())
+            .map_err(|error| anyhow::anyhow!("启动系统浏览器失败：{error}"))
+    }
+}
+
 fn read_redacted_tail(path: &Path, max_lines: usize) -> std::io::Result<String> {
     let contents = fs::read_to_string(path)?;
     let mut lines = contents.lines().rev().take(max_lines).collect::<Vec<_>>();
@@ -240,7 +277,37 @@ fn read_redacted_tail(path: &Path, max_lines: usize) -> std::io::Result<String> 
 }
 
 fn redact_error(error: anyhow::Error) -> String {
-    codex_plus_core::codexplus_cloud::redaction::redact_string(&error.to_string())
+    let text = codex_plus_core::codexplus_cloud::redaction::redact_string(&error.to_string());
+    let lower = text.to_ascii_lowercase();
+    if lower.contains("please sign in again")
+        || lower.contains("session expired")
+        || lower.contains("token has expired")
+        || lower.contains("access token has expired")
+        || lower.contains("invalid token")
+    {
+        return "登录已失效，请重新登录。".to_string();
+    }
+    if lower.contains("open_external_url")
+        || lower.contains("plugin not found")
+        || lower.contains("not allowed")
+    {
+        return "无法打开浏览器，请重启 Codex++ 或联系管理员。".to_string();
+    }
+    if lower.contains("backend mode is active")
+        || lower.contains("only admin login is allowed")
+        || lower.contains("self-service auth flows are disabled")
+    {
+        return "当前无法自行登录，请联系管理员确认客户端登录已开启。".to_string();
+    }
+    if lower.contains("connection refused")
+        || lower.contains("actively refused")
+        || lower.contains("timed out")
+        || lower.contains("network error")
+        || lower.contains("fetch failed")
+    {
+        return "无法连接 Codex++，请稍后重试或联系管理员。".to_string();
+    }
+    text
 }
 
 fn ok<T: Serialize>(message: &str, payload: T) -> CommandResult<T> {

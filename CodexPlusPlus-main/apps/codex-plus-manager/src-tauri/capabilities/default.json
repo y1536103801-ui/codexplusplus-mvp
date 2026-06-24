@@ -1,8 +1,17 @@
 {
   "identifier": "default",
-  "description": "Default permissions for the Codex++ Manager main window. Grants the dialog plugin's default permission set so the file/folder picker can be opened from settings (fixes #345).",
+  "description": "Default permissions for the Codex++ main window. Grants the app IPC and dialog permissions needed by the user and advanced workspaces.",
   "windows": ["main"],
+  "remote": {
+    "urls": [
+      "http://127.0.0.1:1420",
+      "http://127.0.0.1:1420/*",
+      "http://localhost:1420",
+      "http://localhost:1420/*"
+    ]
+  },
   "permissions": [
+    "main-window-commands",
     "core:default",
     "dialog:default"
   ]

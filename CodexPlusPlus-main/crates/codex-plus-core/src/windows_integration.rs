@@ -35,7 +35,7 @@ use windows::Win32::UI::Shell::{
     FOLDERID_Desktop, IShellLinkW, KF_FLAG_DEFAULT, SHGetKnownFolderPath, ShellExecuteW, ShellLink,
 };
 #[cfg(windows)]
-use windows::Win32::UI::WindowsAndMessaging::SW_SHOWMINNOACTIVE;
+use windows::Win32::UI::WindowsAndMessaging::{SW_SHOWMINNOACTIVE, SW_SHOWNOACTIVATE};
 #[cfg(windows)]
 use windows::Win32::UI::WindowsAndMessaging::{
     EnumWindows, GetWindowThreadProcessId, IsIconic, IsWindowVisible, SW_RESTORE,
@@ -152,7 +152,7 @@ pub fn open_url(url: &str) -> anyhow::Result<()> {
             PCWSTR(file.as_ptr()),
             PCWSTR::null(),
             PCWSTR::null(),
-            SW_SHOWMINNOACTIVE,
+            SW_SHOWNOACTIVATE,
         )
     };
     let code = result.0 as isize;

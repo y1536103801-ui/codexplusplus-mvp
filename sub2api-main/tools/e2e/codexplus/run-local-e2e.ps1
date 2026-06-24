@@ -17,9 +17,6 @@ param(
     [switch]$AllowGatewayRequests,
     [switch]$RunAdminAudit,
     [switch]$AllowAdminAuditReads,
-    [switch]$StartMockOpenAI,
-    [switch]$ReplaceMockOpenAI,
-    [int]$MockOpenAIPort = 18081,
     [switch]$AllowRedeem,
     [switch]$Force
 )
@@ -38,7 +35,6 @@ $ClientRunner = Join-Path $PSScriptRoot "run-client-api-checks.ps1"
 $BrowserHandoffRunner = Join-Path $PSScriptRoot "run-browser-handoff-checks.ps1"
 $GatewayRunner = Join-Path $PSScriptRoot "run-gateway-policy-checks.ps1"
 $AdminAuditRunner = Join-Path $PSScriptRoot "run-admin-audit-checks.ps1"
-$MockOpenAIRunner = Join-Path $PSScriptRoot "start-local-mock-openai-upstream.ps1"
 
 if ([string]::IsNullOrWhiteSpace($OutputRoot)) {
     $OutputRoot = Join-Path $PlanRoot "test-runs"
@@ -59,15 +55,6 @@ if ($Timestamp -match "^\d{8}-\d{4}-e2e$") {
 }
 
 $runPath = Join-Path $OutputRoot $runName
-
-if ($StartMockOpenAI) {
-    $mockArgs = @("-Port", [string]$MockOpenAIPort)
-    if ($ReplaceMockOpenAI) { $mockArgs += "-ReplaceExisting" }
-    & powershell -NoProfile -ExecutionPolicy Bypass -File $MockOpenAIRunner @mockArgs
-    if ($LASTEXITCODE -ne 0) {
-        exit $LASTEXITCODE
-    }
-}
 
 $generatorArgs = @("-Root", $Root, "-OutputRoot", $OutputRoot, "-Timestamp", $Timestamp)
 if ($Force) { $generatorArgs += "-Force" }

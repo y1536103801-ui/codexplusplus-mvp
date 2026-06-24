@@ -274,18 +274,7 @@ Browser handoff subset result: $result
 
 $fixtureNote
 
-This runner covers desktop start, pre-complete desktop poll, authenticated browser complete, and completed desktop poll. It does not validate Manager UI rendering, Turnstile UI completion, provider write, Codex launch, package install, compatibility migration or payment.
-
-Paths exercised:
-- `/api/v1/auth/desktop/start`
-- `/api/v1/auth/desktop/complete`
-- `/api/v1/auth/desktop/poll`
-
-Safety checks:
-- poll_token not in authorize_url
-- verification_code is 6 digit code
-- complete response never returns a desktop access token
-- completed desktop poll token values are redacted from evidence
+This runner covers desktop start, pending desktop poll, optional authenticated browser complete, and completed desktop poll. It does not validate Manager UI rendering, Turnstile UI completion, provider write, Codex launch, package install, compatibility migration or payment.
 
 ## Browser Handoff Observations
 
@@ -369,7 +358,7 @@ if ($null -ne $startResponse) {
         $passed = ($startResponse.StatusCode -eq 200 -and -not [string]::IsNullOrWhiteSpace($sessionToken) -and -not [string]::IsNullOrWhiteSpace($pollToken) -and -not $authorizeUrlHasPollToken -and $authorizeUrlHasSessionToken -and $verificationCodeOk)
         $observationResult = if ($passed) { "pass" } else { "fail" }
         Add-Result "browser-handoff:start" $passed "http=$($startResponse.StatusCode); authorize_url redacted=$(Redact-Text $authorizeUrl); poll_token not in authorize_url=$(-not $authorizeUrlHasPollToken); verification_code_6_digit=$verificationCodeOk"
-        Add-Observation "desktop-start" $startResponse.StatusCode "session-created" $observationResult "authorize_url query secrets redacted; poll_token not in authorize_url=$(-not $authorizeUrlHasPollToken)."
+        Add-Observation "desktop-start" $startResponse.StatusCode "pending-session-created" $observationResult "authorize_url query secrets redacted; poll_token not in authorize_url=$(-not $authorizeUrlHasPollToken)."
     } else {
         Add-Result "browser-handoff:start" $false "No data object returned by desktop start."
         Add-Observation "desktop-start" $startResponse.StatusCode "missing-data" "fail" "No token values printed."
@@ -389,8 +378,7 @@ if (-not [string]::IsNullOrWhiteSpace($sessionToken) -and -not [string]::IsNullO
     $pendingPassed = ($pendingResponse.StatusCode -eq 200 -and $pendingStatus -eq "pending")
     $pendingObservationResult = if ($pendingPassed) { "pass" } else { "fail" }
     Add-Result "browser-handoff:pending-poll" $pendingPassed "http=$($pendingResponse.StatusCode); status=$pendingStatus"
-    $pendingObservationStatus = if ($pendingStatus -eq "pending") { "pre-complete" } else { $pendingStatus }
-    Add-Observation "desktop-poll-before-complete" $pendingResponse.StatusCode $pendingObservationStatus $pendingObservationResult "Pre-complete poll returned no desktop tokens."
+    Add-Observation "desktop-poll-before-complete" $pendingResponse.StatusCode $pendingStatus $pendingObservationResult "Pending poll returned no desktop tokens."
 }
 
 if ($FixtureMode) {

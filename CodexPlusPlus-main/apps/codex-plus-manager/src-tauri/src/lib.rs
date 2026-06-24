@@ -17,13 +17,8 @@ pub fn run() {
     let run_result = tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .setup(move |app| {
-            let url = if show_update {
-                "index.html?showUpdate=1"
-            } else {
-                "index.html"
-            };
-            tauri::WebviewWindowBuilder::new(app, "main", tauri::WebviewUrl::App(url.into()))
-                .title("Codex++ 管理工具")
+            tauri::WebviewWindowBuilder::new(app, "main", manager_webview_url(show_update))
+                .title("Codex++")
                 .inner_size(1180.0, 820.0)
                 .min_inner_size(960.0, 720.0)
                 .build()?;
@@ -106,6 +101,34 @@ pub fn run() {
                 "error": error.to_string()
             }),
         );
+    }
+}
+
+fn manager_webview_url(show_update: bool) -> tauri::WebviewUrl {
+    #[cfg(debug_assertions)]
+    {
+        if let Ok(dev_url) = std::env::var("CODEXPLUS_MANAGER_DEV_URL") {
+            if !dev_url.trim().is_empty() {
+                let suffix = if show_update { "?showUpdate=1" } else { "" };
+                let url = format!("{}{}", dev_url.trim().trim_end_matches('/'), suffix);
+                return tauri::WebviewUrl::External(url.parse().expect("valid manager dev URL"));
+            }
+        }
+        let app_path = if show_update {
+            "index.html?showUpdate=1"
+        } else {
+            "index.html"
+        };
+        tauri::WebviewUrl::App(app_path.into())
+    }
+    #[cfg(not(debug_assertions))]
+    {
+        let app_path = if show_update {
+            "index.html?showUpdate=1"
+        } else {
+            "index.html"
+        };
+        tauri::WebviewUrl::App(app_path.into())
     }
 }
 

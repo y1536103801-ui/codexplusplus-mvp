@@ -118,15 +118,15 @@ verify_app() {
 }
 
 prepare_icon
-create_app "Codex++" "CodexPlusPlus" "$BINARY_DIR/codex-plus-plus" "com.bigpizzav3.codexplusplus" "true"
-create_app "Codex++ 管理工具" "CodexPlusPlusManager" "$BINARY_DIR/codex-plus-plus-manager" "com.bigpizzav3.codexplusplus.manager" "false"
+create_app "Codex++ 静默启动" "CodexPlusPlus" "$BINARY_DIR/codex-plus-plus" "com.bigpizzav3.codexplusplus" "true"
+create_app "Codex++" "CodexPlusPlusManager" "$BINARY_DIR/codex-plus-plus-manager" "com.bigpizzav3.codexplusplus.manager" "false"
 ln -s /Applications "$STAGE/Applications"
 
+sign_app "$STAGE/Codex++ 静默启动.app"
 sign_app "$STAGE/Codex++.app"
-sign_app "$STAGE/Codex++ 管理工具.app"
 
+verify_app "$STAGE/Codex++ 静默启动.app"
 verify_app "$STAGE/Codex++.app"
-verify_app "$STAGE/Codex++ 管理工具.app"
 
 hdiutil create -volname "Codex++" -srcfolder "$STAGE" -ov -format UDZO "$DMG"
 echo "$DMG"

@@ -38,8 +38,7 @@ const sidebarCollapsed = computed(() => appStore.sidebarCollapsed)
 const isAdmin = computed(() => authStore.user?.role === 'admin')
 
 const { replayTour } = useOnboardingTour({
-  storageKey: isAdmin.value ? 'admin_guide' : 'user_guide',
-  autoStart: true
+  storageKey: isAdmin.value ? 'admin_guide' : 'user_guide'
 })
 
 const onboardingStore = useOnboardingStore()

@@ -85,17 +85,6 @@ pub struct CodexContextEntries {
 }
 
 pub fn default_codex_home_dir() -> PathBuf {
-    if let Some(codex_home) = std::env::var_os("CODEX_HOME").map(PathBuf::from) {
-        return codex_home;
-    }
-
-    if let Some(home_dir) = std::env::var_os("USERPROFILE")
-        .or_else(|| std::env::var_os("HOME"))
-        .map(PathBuf::from)
-    {
-        return home_dir.join(".codex");
-    }
-
     directories::BaseDirs::new()
         .map(|dirs| dirs.home_dir().join(".codex"))
         .unwrap_or_else(|| PathBuf::from(".codex"))
@@ -2239,61 +2228,6 @@ fn account_label_from_jwt(token: &str) -> Option<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    fn restore_env(name: &str, previous: Option<std::ffi::OsString>) {
-        match previous {
-            Some(value) => set_env(name, value),
-            None => remove_env(name),
-        }
-    }
-
-    fn set_env<K: AsRef<std::ffi::OsStr>, V: AsRef<std::ffi::OsStr>>(key: K, value: V) {
-        unsafe { std::env::set_var(key, value) };
-    }
-
-    fn remove_env<K: AsRef<std::ffi::OsStr>>(key: K) {
-        unsafe { std::env::remove_var(key) };
-    }
-
-    #[test]
-    fn default_codex_home_dir_honors_explicit_codex_home() {
-        let previous_codex_home = std::env::var_os("CODEX_HOME");
-        let previous_userprofile = std::env::var_os("USERPROFILE");
-        let previous_home = std::env::var_os("HOME");
-        let temp = tempfile::tempdir().unwrap();
-        let codex_home = temp.path().join("codex-home");
-
-        set_env("CODEX_HOME", &codex_home);
-        set_env("USERPROFILE", temp.path().join("profile"));
-        set_env("HOME", temp.path().join("home"));
-        let resolved = default_codex_home_dir();
-
-        restore_env("CODEX_HOME", previous_codex_home);
-        restore_env("USERPROFILE", previous_userprofile);
-        restore_env("HOME", previous_home);
-
-        assert_eq!(resolved, codex_home);
-    }
-
-    #[test]
-    fn default_codex_home_dir_honors_isolated_userprofile() {
-        let previous_codex_home = std::env::var_os("CODEX_HOME");
-        let previous_userprofile = std::env::var_os("USERPROFILE");
-        let previous_home = std::env::var_os("HOME");
-        let temp = tempfile::tempdir().unwrap();
-        let profile = temp.path().join("isolated-profile");
-
-        remove_env("CODEX_HOME");
-        set_env("USERPROFILE", &profile);
-        remove_env("HOME");
-        let resolved = default_codex_home_dir();
-
-        restore_env("CODEX_HOME", previous_codex_home);
-        restore_env("USERPROFILE", previous_userprofile);
-        restore_env("HOME", previous_home);
-
-        assert_eq!(resolved, profile.join(".codex"));
-    }
 
     #[test]
     fn backfill_relay_profile_from_home_with_common_restores_template_provider_id() {

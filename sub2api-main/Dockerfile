@@ -17,11 +17,15 @@ ARG GOSUMDB=sum.golang.google.cn
 # Stage 1: Frontend Builder
 # -----------------------------------------------------------------------------
 FROM ${NODE_IMAGE} AS frontend-builder
+ARG NPM_REGISTRY=https://registry.npmmirror.com
+
+ENV COREPACK_NPM_REGISTRY=${NPM_REGISTRY}
+ENV npm_config_registry=${NPM_REGISTRY}
 
 WORKDIR /app/frontend
 
 # Install pnpm (pinned to v9 to match CI and keep builds reproducible)
-RUN corepack enable && corepack prepare pnpm@9 --activate
+RUN npm config set registry "${NPM_REGISTRY}" && corepack enable && corepack prepare pnpm@9 --activate
 
 # Install dependencies first (better caching)
 COPY frontend/package.json frontend/pnpm-lock.yaml ./
@@ -43,12 +47,15 @@ ARG COMMIT=docker
 ARG DATE
 ARG GOPROXY
 ARG GOSUMDB
+ARG APK_MIRROR=http://mirrors.aliyun.com/alpine
 
 ENV GOPROXY=${GOPROXY}
 ENV GOSUMDB=${GOSUMDB}
 
 # Install build dependencies
-RUN apk add --no-cache git ca-certificates tzdata
+RUN sed -i "s#https://dl-cdn.alpinelinux.org/alpine#${APK_MIRROR}#g" /etc/apk/repositories && \
+    sed -i "s#http://dl-cdn.alpinelinux.org/alpine#${APK_MIRROR}#g" /etc/apk/repositories && \
+    apk add --no-cache git ca-certificates tzdata
 
 WORKDIR /app/backend
 
@@ -83,6 +90,7 @@ FROM ${POSTGRES_IMAGE} AS pg-client
 # Stage 4: Final Runtime Image
 # -----------------------------------------------------------------------------
 FROM ${ALPINE_IMAGE}
+ARG APK_MIRROR=http://mirrors.aliyun.com/alpine
 
 # Labels
 LABEL maintainer="Wei-Shaw <github.com/Wei-Shaw>"
@@ -90,7 +98,9 @@ LABEL description="Sub2API - AI API Gateway Platform"
 LABEL org.opencontainers.image.source="https://github.com/Wei-Shaw/sub2api"
 
 # Install runtime dependencies
-RUN apk add --no-cache \
+RUN sed -i "s#https://dl-cdn.alpinelinux.org/alpine#${APK_MIRROR}#g" /etc/apk/repositories && \
+    sed -i "s#http://dl-cdn.alpinelinux.org/alpine#${APK_MIRROR}#g" /etc/apk/repositories && \
+    apk add --no-cache \
     ca-certificates \
     tzdata \
     su-exec \

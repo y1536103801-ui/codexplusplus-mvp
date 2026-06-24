@@ -14,6 +14,11 @@ const CACHE_TTL_MS = 60_000
 // Request generation counter to invalidate stale in-flight responses
 let requestGeneration = 0
 
+function isPageInactive(): boolean {
+  if (typeof document === 'undefined') return false
+  return document.visibilityState === 'hidden' || !document.hasFocus()
+}
+
 export const useSubscriptionStore = defineStore('subscriptions', () => {
   // State
   const activeSubscriptions = ref<UserSubscription[]>([])
@@ -89,6 +94,9 @@ export const useSubscriptionStore = defineStore('subscriptions', () => {
     if (pollerInterval) return
 
     pollerInterval = setInterval(() => {
+      if (isPageInactive()) {
+        return
+      }
       fetchActiveSubscriptions(true).catch((error) => {
         console.error('Subscription polling failed:', error)
       })

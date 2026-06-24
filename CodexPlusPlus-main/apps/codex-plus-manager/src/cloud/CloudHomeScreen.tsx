@@ -1,10 +1,8 @@
-import { Cloud, ExternalLink, Play, RefreshCw, RotateCw, Wrench } from "lucide-react";
-import { useCallback, useEffect } from "react";
+import { Cloud, ExternalLink, Info, LogOut, Play, RefreshCw, SlidersHorizontal, UserRound } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { CloudDiagnosticsPanel } from "./CloudDiagnosticsPanel";
 import { CloudInstallAssistant } from "./CloudInstallAssistant";
-import { CloudLoginPanel } from "./CloudLoginPanel";
 import { CloudStatusPanel } from "./CloudStatusPanel";
 import { CloudTutorialPanel } from "./CloudTutorialPanel";
 import { CloudUsagePanel } from "./CloudUsagePanel";
@@ -76,19 +74,36 @@ function mergedInstallState(overview: OverviewLike, settings: SettingsLike, watc
 
 function cloudSummary(stateStatus: string | undefined) {
   if (stateStatus === "available") return "已就绪，可以启动 Codex。";
-  if (stateStatus === "not_authenticated") return "登录后自动配置 Codex++ Cloud。";
+  if (stateStatus === "not_authenticated") return "登录后即可查看权益和余额。";
   if (stateStatus === "not_purchased") return "账号有效，但服务尚未开通。";
-  if (stateStatus === "expired") return "服务期已结束，请使用服务端提供的操作入口。";
-  if (stateStatus === "disabled") return "云服务当前不可用，请查看服务端提示。";
-  if (stateStatus === "low_balance") return "用量状态需要关注，仍可按服务端策略继续。";
+  if (stateStatus === "expired") return "服务期已结束，请续费后继续使用。";
+  if (stateStatus === "disabled") return "服务当前不可用，请联系管理员。";
+  if (stateStatus === "low_balance") return "余额偏低，仍可继续使用。";
   if (stateStatus === "device_revoked") return "本机设备已被停用，请联系管理员。";
   if (stateStatus === "model_unavailable") return "默认模型暂不可用，请刷新或按提示处理。";
-  if (stateStatus === "rate_limited") return "当前请求受到限流，请按服务端提示稍后重试。";
-  if (stateStatus === "gateway_unhealthy") return "云服务可达，但模型网关暂不可用。";
+  if (stateStatus === "rate_limited") return "当前使用人数较多，请稍后重试。";
+  if (stateStatus === "gateway_unhealthy") return "服务暂时不可用，请稍后重试。";
   if (stateStatus === "local_codex_missing") return "尚未找到本机 Codex，请先完成安装配置。";
-  if (stateStatus === "local_config_failed") return "云账号正常，本地 Codex 配置写入失败。";
-  if (stateStatus === "stale_snapshot") return "本地配置快照已过期，请刷新云状态。";
-  return "正在读取云服务状态。";
+  if (stateStatus === "local_config_failed") return "Codex 准备失败，请刷新或联系管理员。";
+  if (stateStatus === "stale_snapshot") return "状态可能不是最新，请刷新。";
+  return "正在读取账户状态。";
+}
+
+function serviceStatusLabel(stateStatus: string | undefined) {
+  if (stateStatus === "available") return "已就绪";
+  if (stateStatus === "low_balance") return "余额提醒";
+  if (stateStatus === "not_authenticated") return "未登录";
+  if (stateStatus === "not_purchased") return "未开通";
+  if (stateStatus === "expired") return "已过期";
+  if (stateStatus === "disabled") return "不可用";
+  if (stateStatus === "device_revoked") return "设备停用";
+  if (stateStatus === "model_unavailable") return "模型不可用";
+  if (stateStatus === "rate_limited") return "繁忙";
+  if (stateStatus === "gateway_unhealthy") return "暂不可用";
+  if (stateStatus === "local_codex_missing") return "未检测到 Codex";
+  if (stateStatus === "local_config_failed") return "准备失败";
+  if (stateStatus === "stale_snapshot") return "需刷新";
+  return "读取中";
 }
 
 function safeText(value: string | null | undefined, fallback = "未返回") {
@@ -124,12 +139,7 @@ export function CloudHomeScreen({ overview, settings, watcher, actions, onOpenAd
   const showTutorial = featureFlags?.new_user_tutorial !== false;
   const showDiagnostics = featureFlags?.diagnostic_export !== false;
   const showAnnouncements = featureFlags?.announcements !== false;
-  const defaultModel =
-    data?.models.find((model) => model.is_default)?.label ||
-    data?.provider.default_model ||
-    cloud.state?.managedProvider.defaultModel ||
-    "";
-  const planName = data?.plan.name || data?.plan.status || "";
+  const planName = data?.plan.name || "";
   const connectionLabel = cloud.state?.connection?.authenticated
     ? safeText(cloud.state.connection.userLabel, "已登录")
     : "未登录";
@@ -138,6 +148,23 @@ export function CloudHomeScreen({ overview, settings, watcher, actions, onOpenAd
   const actionLabel = action?.label || "打开操作页面";
   const canLaunch = Boolean(cloud.state?.managedProvider.active && (status === "available" || status === "low_balance"));
   const announcements = showAnnouncements ? data?.announcements ?? [] : [];
+  const authenticated = Boolean(cloud.state?.connection?.authenticated);
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const [launchDetailOpen, setLaunchDetailOpen] = useState(false);
+  const savedEndpoint = cloud.state?.connection?.baseUrl?.trim() || "";
+  const realEndpointReady = Boolean(savedEndpoint && !savedEndpoint.startsWith("mock://") && cloud.state?.source !== "fixture");
+  const pendingBrowserHandoff = !authenticated && Boolean(cloud.state?.connection?.pendingBrowserHandoff);
+  const loginDisabled = !pendingBrowserHandoff && (cloud.pending === "startBrowserHandoff" || !realEndpointReady);
+  const launchTone = canLaunch || status === "available" || status === "low_balance" ? "ready" : "warn";
+  const launchTitle = canLaunch
+    ? "启动 Codex"
+    : status === "available"
+      ? "准备 Codex"
+      : cloudSummary(status);
+  const launchDetail = data?.service.message || cloud.state?.bootstrap.message || "刷新后会读取权益、余额和本机状态。";
+  const launchActionLabel = canLaunch ? "启动 Codex" : status === "available" ? "准备 Codex" : "刷新状态";
+  const launchAction = canLaunch ? actions.launch : status === "available" ? cloud.applyProvider : cloud.refresh;
+  const serviceLabel = serviceStatusLabel(status);
 
   useEffect(() => {
     if (refreshSignal === undefined) return;
@@ -153,150 +180,222 @@ export function CloudHomeScreen({ overview, settings, watcher, actions, onOpenAd
     }
   };
 
+  const handleSimpleLogin = async () => {
+    if (pendingBrowserHandoff) {
+      await cloud.pollBrowserHandoff();
+      return;
+    }
+    if (!realEndpointReady) {
+      await actions.showMessage("无法登录", "客户端尚未连接，请联系管理员处理。", "failed");
+      return;
+    }
+    await cloud.startBrowserHandoff({ endpoint: savedEndpoint });
+  };
+
+  if (!authenticated) {
+    return (
+      <div className="cloud-home cloud-user-home">
+        <section className="cloud-auth-stage">
+          <div className="cloud-simple-login-card">
+            <span className="cloud-auth-mark">
+              <UserRound className="h-7 w-7" />
+            </span>
+            <div className="cloud-auth-copy">
+              <span>Codex++</span>
+              <h1>登录账户</h1>
+              <p>
+                {pendingBrowserHandoff
+                  ? "请在浏览器完成登录，完成后回到这里。"
+                  : realEndpointReady
+                    ? "登录后查看权益、余额并启动 Codex。"
+                    : "客户端尚未连接，请联系管理员。"}
+              </p>
+            </div>
+            <div className="cloud-simple-login-actions">
+              <Button
+                disabled={loginDisabled || cloud.pending === "pollBrowserHandoff"}
+                onClick={() => void handleSimpleLogin()}
+              >
+                {pendingBrowserHandoff ? <RefreshCw className="h-4 w-4" /> : <ExternalLink className="h-4 w-4" />}
+                {pendingBrowserHandoff ? "我已完成" : realEndpointReady ? "登录 Codex++" : "暂不可登录"}
+              </Button>
+            </div>
+            {!realEndpointReady && !pendingBrowserHandoff ? (
+              <p className="cloud-simple-login-note">客户端未连接，请联系管理员。</p>
+            ) : null}
+            {cloud.lastError ? <p className="cloud-login-error">{cloud.lastError}</p> : null}
+            <AdvancedModeButton onClick={onOpenAdvancedProviders} />
+          </div>
+        </section>
+      </div>
+    );
+  }
+
   return (
-    <div className="cloud-home">
-      <Card className="cloud-hero">
-        <CardContent>
-          <div className="cloud-hero-layout">
-            <div className="cloud-hero-mark">
-              <Cloud className="h-6 w-6" />
-            </div>
+    <div className="cloud-home cloud-user-home">
+      <section className="cloud-simple-workbench">
+        <header className="cloud-simple-titlebar">
+          <div className="cloud-simple-title-main">
             <div>
-              <span className="cloud-kicker">Codex++ Cloud</span>
-              <h2>{cloudSummary(status)}</h2>
-              <p>{data?.service.message || cloud.state?.bootstrap.message || "打开 Manager 后会先检查登录、权益、安装和托管供应商状态。"}</p>
-            </div>
-            <div className="cloud-hero-actions">
-              <Button disabled={!canLaunch} onClick={() => void actions.launch()}>
-                <Play className="h-4 w-4" />
-                启动 Codex
-              </Button>
-              <Button disabled={cloud.pending === "refresh"} onClick={() => void cloud.refresh()} variant="secondary">
-                <RefreshCw className="h-4 w-4" />
-                刷新云状态
-              </Button>
-              <Button onClick={() => void actions.checkHealth()} variant="outline">
-                <RotateCw className="h-4 w-4" />
-                检查本机
-              </Button>
-              <Button onClick={onOpenMaintenance} variant="outline">
-                <Wrench className="h-4 w-4" />
-                诊断/修复
-              </Button>
-              {actionUrl ? (
-                <Button onClick={() => void actions.openExternalUrl(actionUrl)} variant="outline">
-                  <ExternalLink className="h-4 w-4" />
-                  {actionLabel}
-                </Button>
-              ) : null}
-              {cloud.state?.source === "fixture" ? (
-                <Button disabled={cloud.pending === "fixture"} onClick={() => void cloud.showNextFixtureState()} variant="ghost">
-                  切换 Mock 状态
-                </Button>
-              ) : null}
+              <span>Codex++</span>
+              <h1>{connectionLabel}</h1>
             </div>
           </div>
-          <div className="cloud-status-grid">
-            <HomeSummaryCell title="登录状态" value={connectionLabel} />
-            <HomeSummaryCell title="套餐" value={safeText(planName)} />
-            <HomeSummaryCell title="到期时间" value={formatDate(data?.plan.expires_at)} />
-            <HomeSummaryCell title="余额" value={safeText(data?.usage.balance_display)} />
-            <HomeSummaryCell title="今日/本期用量" value={safeText(data?.usage.period_usage_display)} />
-            <HomeSummaryCell title="默认模型" value={safeText(defaultModel)} mono />
+          <div className="cloud-simple-title-actions">
+            <AdvancedModeButton onClick={onOpenAdvancedProviders} />
+            <Button onClick={() => void cloud.logout()} variant="outline">
+              <LogOut className="h-4 w-4" />
+              退出
+            </Button>
           </div>
-          {cloud.lastError ? <div className="cloud-error-line">{cloud.lastError}</div> : null}
-          {announcements.length ? (
-            <div className="cloud-model-list">
-              {announcements.map((announcement) => (
-                <div className="cloud-model-row" key={announcement.id}>
-                  <div>
-                    <strong>{safeText(announcement.severity, "公告")}</strong>
-                    <span>{announcement.message}</span>
+        </header>
+
+        <section className={"cloud-simple-launch tone-" + launchTone}>
+          <span className="cloud-simple-launch-icon">
+            <Cloud className="h-6 w-6" />
+          </span>
+          <button
+            aria-expanded={launchDetailOpen}
+            className={"cloud-simple-launch-copy" + (launchDetailOpen ? " is-open" : "")}
+            onClick={() => setLaunchDetailOpen((open) => !open)}
+            title={launchDetail}
+            type="button"
+          >
+            <span>快捷启动</span>
+            <h2>{launchTitle}</h2>
+            <small className="cloud-launch-popover">{launchDetail}</small>
+          </button>
+          <div className="cloud-simple-launch-actions">
+            <Button disabled={cloud.pending === "applyProvider" || cloud.pending === "refresh"} onClick={() => void launchAction()}>
+              {canLaunch ? <Play className="h-4 w-4" /> : <RefreshCw className="h-4 w-4" />}
+              {launchActionLabel}
+            </Button>
+            <Button aria-expanded={detailsOpen} onClick={() => setDetailsOpen((open) => !open)} variant="outline">
+              <Info className="h-4 w-4" />
+              详情
+            </Button>
+            {actionUrl ? (
+              <Button className="cloud-simple-secondary-action" onClick={() => void actions.openExternalUrl(actionUrl)} variant="outline">
+                <ExternalLink className="h-4 w-4" />
+                {actionLabel}
+              </Button>
+            ) : null}
+          </div>
+        </section>
+
+        <div className="cloud-simple-status-strip">
+          <CompactStatusItem detail="当前登录账号" label="账户" value={connectionLabel} />
+          <CompactStatusItem detail={`到期：${formatDate(data?.plan.expires_at)}`} value={safeText(planName)} />
+          <CompactStatusItem detail={`本期用量：${safeText(data?.usage.period_usage_display)}`} label="余额" tone="good" value={safeText(data?.usage.balance_display)} />
+          <CompactStatusItem detail={cloudSummary(status)} label="状态" tone={launchTone === "ready" ? "good" : "warn"} value={serviceLabel} />
+        </div>
+
+        {cloud.lastError ? <div className="cloud-error-line">{cloud.lastError}</div> : null}
+
+        {detailsOpen ? (
+          <div className="cloud-details-stack">
+            {announcements.length ? (
+              <div className="cloud-model-list">
+                {announcements.map((announcement) => (
+                  <div className="cloud-model-row" key={announcement.id}>
+                    <div>
+                      <strong>{safeText(announcement.severity, "公告")}</strong>
+                      <span>{announcement.message}</span>
+                    </div>
+                    {announcement.url ? (
+                      <Button onClick={() => void actions.openExternalUrl(announcement.url || "")} size="sm" variant="outline">
+                        <ExternalLink className="h-4 w-4" />
+                        查看
+                      </Button>
+                    ) : null}
                   </div>
-                  {announcement.url ? (
-                    <Button onClick={() => void actions.openExternalUrl(announcement.url || "")} size="sm" variant="outline">
-                      <ExternalLink className="h-4 w-4" />
-                      查看
-                    </Button>
-                  ) : null}
-                </div>
-              ))}
-            </div>
-          ) : null}
-        </CardContent>
-      </Card>
-      <div className="cloud-grid primary">
-        <CloudStatusPanel
-          state={cloud.state}
-          pending={cloud.pending}
-          onRefresh={() => cloud.refresh()}
-          onRegisterDevice={cloud.registerDevice}
-          onApplyProvider={cloud.applyProvider}
-          onRepairProvider={cloud.repairProvider}
-          onLaunch={actions.launch}
-          onOpenActionUrl={actions.openExternalUrl}
-          onOpenAdvancedProviders={onOpenAdvancedProviders}
-        />
-        <CloudLoginPanel
-          state={cloud.state}
-          pending={cloud.pending}
-          onConfigureEndpoint={(endpoint) => cloud.configureEndpoint({ endpoint })}
-          onStartBrowserHandoff={cloud.startBrowserHandoff}
-          onPollBrowserHandoff={cloud.pollBrowserHandoff}
-          onCancelBrowserHandoff={cloud.cancelBrowserHandoff}
-          onOpenExternalUrl={actions.openExternalUrl}
-          onLogin={cloud.login}
-          onLogin2FA={cloud.login2FA}
-          onRedeem={(code) => cloud.redeem({ code })}
-          onLogout={cloud.logout}
-        />
-      </div>
-      <div className="cloud-grid">
-        <CloudUsagePanel
-          state={cloud.state}
-          pending={cloud.pending}
-          onRefreshUsage={cloud.refreshUsage}
-          onOpenActionUrl={actions.openExternalUrl}
-        />
-        {showInstallAssistant ? (
-          <CloudInstallAssistant
-            install={install}
-            onCheck={actions.checkHealth}
-            onRepairShortcuts={actions.repairShortcuts}
-            onRepairBackend={actions.repairBackend}
-            onChooseCodexAppPath={actions.chooseCodexAppPath}
-            onOpenMaintenance={onOpenMaintenance}
-          />
+                ))}
+              </div>
+            ) : null}
+            <CloudStatusPanel
+              state={cloud.state}
+              pending={cloud.pending}
+              onRefresh={() => cloud.refresh()}
+              onRegisterDevice={cloud.registerDevice}
+              onApplyProvider={cloud.applyProvider}
+              onRepairProvider={cloud.repairProvider}
+              onLaunch={actions.launch}
+              onOpenActionUrl={actions.openExternalUrl}
+              onOpenAdvancedProviders={onOpenAdvancedProviders}
+            />
+            <CloudUsagePanel
+              state={cloud.state}
+              pending={cloud.pending}
+              onRefreshUsage={cloud.refreshUsage}
+              onOpenActionUrl={actions.openExternalUrl}
+            />
+            {showInstallAssistant ? (
+              <CloudInstallAssistant
+                install={install}
+                onCheck={actions.checkHealth}
+                onRepairShortcuts={actions.repairShortcuts}
+                onRepairBackend={actions.repairBackend}
+                onChooseCodexAppPath={actions.chooseCodexAppPath}
+                onOpenMaintenance={onOpenMaintenance}
+              />
+            ) : null}
+            {showTutorial ? (
+              <CloudTutorialPanel
+                state={cloud.state}
+                onLaunch={actions.launch}
+                onRefreshUsage={cloud.refreshUsage}
+                onRepairProvider={cloud.repairProvider}
+              />
+            ) : null}
+            {showDiagnostics ? (
+              <CloudDiagnosticsPanel
+                state={cloud.state}
+                pending={cloud.pending}
+                lastError={cloud.lastError}
+                onReadDiagnostics={cloud.readDiagnostics}
+                onCopy={copyText}
+              />
+            ) : null}
+          </div>
         ) : null}
-      </div>
-      <div className="cloud-grid">
-        {showTutorial ? (
-          <CloudTutorialPanel
-            state={cloud.state}
-            onLaunch={actions.launch}
-            onRefreshUsage={cloud.refreshUsage}
-            onRepairProvider={cloud.repairProvider}
-          />
-        ) : null}
-        {showDiagnostics ? (
-          <CloudDiagnosticsPanel
-            state={cloud.state}
-            pending={cloud.pending}
-            lastError={cloud.lastError}
-            onReadDiagnostics={cloud.readDiagnostics}
-            onCopy={copyText}
-          />
-        ) : null}
-      </div>
+      </section>
     </div>
   );
 }
 
-function HomeSummaryCell({ title, value, mono = false }: { title: string; value: string; mono?: boolean }) {
+function AdvancedModeButton({ onClick }: { onClick: () => void }) {
   return (
-    <div className="cloud-status-cell">
-      <span>{title}</span>
-      <strong className={mono ? "cloud-mono" : undefined}>{value}</strong>
-    </div>
+    <Button className="cloud-advanced-entry" onClick={onClick} title="进入高级模式工作台" variant="outline">
+      <SlidersHorizontal className="h-4 w-4" />
+      高级模式
+    </Button>
+  );
+}
+
+function CompactStatusItem({
+  detail,
+  label,
+  tone,
+  value,
+}: {
+  detail: string;
+  label?: string;
+  tone?: "good" | "warn";
+  value: string;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <button
+      aria-expanded={open}
+      aria-label={label ? `${label}：${value}` : value}
+      className={"cloud-simple-status-item" + (tone ? " tone-" + tone : "") + (open ? " is-open" : "")}
+      onClick={() => setOpen((current) => !current)}
+      title={detail}
+      type="button"
+    >
+      {label ? <span>{label}</span> : null}
+      <strong>{value}</strong>
+      <small className="cloud-launch-popover">{detail}</small>
+    </button>
   );
 }

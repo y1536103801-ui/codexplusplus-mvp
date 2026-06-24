@@ -25,12 +25,11 @@ const PREFETCH_ADJACENCY: Record<string, string[]> = {
   '/admin/accounts': ['/admin/dashboard', '/admin/users'],
   '/admin/users': ['/admin/groups', '/admin/dashboard'],
   '/admin/groups': ['/admin/subscriptions', '/admin/users'],
-  '/admin/subscriptions': ['/admin/groups', '/admin/redeem'],
+  '/admin/subscriptions': ['/admin/groups', '/admin/users'],
   // User routes
   '/dashboard': ['/keys', '/usage'],
   '/keys': ['/dashboard', '/usage'],
-  '/usage': ['/keys', '/redeem'],
-  '/redeem': ['/usage', '/profile'],
+  '/usage': ['/keys', '/profile'],
   '/profile': ['/dashboard', '/keys']
 }
 
@@ -129,6 +128,7 @@ export function useRoutePrefetch(router?: Router) {
    */
   const triggerPrefetch = (route: RouteLocationNormalized): void => {
     cancelPendingPrefetch()
+    if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return
 
     const prefetchPaths = getPrefetchPaths(route)
     if (prefetchPaths.length === 0) return
@@ -136,6 +136,7 @@ export function useRoutePrefetch(router?: Router) {
     pendingPrefetchHandle.value = scheduleIdleCallback(
       () => {
         pendingPrefetchHandle.value = null
+        if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return
 
         const routePath = route.path
         if (prefetchedRoutes.value.has(routePath)) return

@@ -9,51 +9,9 @@ import (
 	"github.com/Wei-Shaw/sub2api/internal/pkg/ctxkey"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/ip"
 	"github.com/Wei-Shaw/sub2api/internal/service"
+
 	"github.com/gin-gonic/gin"
 )
-
-func isCodexPlusGatewayPolicyRequest(c *gin.Context) bool {
-	if c == nil || c.Request == nil || c.Request.URL == nil {
-		return false
-	}
-	deviceID := strings.TrimSpace(c.GetHeader("X-CodexPlus-Device-Id"))
-	if deviceID == "" {
-		deviceID = strings.TrimSpace(c.GetHeader("X-CodexPlus-Device-ID"))
-	}
-	if deviceID == "" {
-		deviceID = strings.TrimSpace(c.GetHeader("X-Codex-Device-ID"))
-	}
-	if deviceID == "" {
-		return false
-	}
-	switch c.Request.URL.Path {
-	case "/v1/responses", "/v1/messages", "/v1/messages/count_tokens", "/v1/chat/completions", "/v1/embeddings":
-		return true
-	default:
-		return strings.HasPrefix(c.Request.URL.Path, "/v1beta/models/")
-	}
-}
-
-func latestCodexPlusGatewaySubscription(ctx context.Context, subscriptionService *service.SubscriptionService, userID, groupID int64) *service.UserSubscription {
-	if subscriptionService == nil || userID <= 0 || groupID <= 0 {
-		return nil
-	}
-	subs, err := subscriptionService.ListUserSubscriptions(ctx, userID)
-	if err != nil {
-		return nil
-	}
-	var selected *service.UserSubscription
-	for i := range subs {
-		if subs[i].GroupID != groupID {
-			continue
-		}
-		candidate := subs[i]
-		if selected == nil || candidate.UpdatedAt.After(selected.UpdatedAt) || candidate.ExpiresAt.After(selected.ExpiresAt) {
-			selected = &candidate
-		}
-	}
-	return selected
-}
 
 // NewAPIKeyAuthMiddleware 创建 API Key 认证中间件
 func NewAPIKeyAuthMiddleware(apiKeyService *service.APIKeyService, subscriptionService *service.SubscriptionService, cfg *config.Config) APIKeyAuthMiddleware {
@@ -182,12 +140,8 @@ func apiKeyAuthWithSubscription(apiKeyService *service.APIKeyService, subscripti
 
 		// ── 5. 加载订阅（订阅模式时始终加载） ───────────────────────
 
-		// skipBilling: /v1/usage 只需鉴权，跳过所有计费执行。
-		// Codex++ managed gateway traffic must reach the handler-level policy service so
-		// it can emit the structured GATEWAY_POLICY_* rejection and audit events instead
-		// of being intercepted by legacy balance/subscription checks here.
-		codexPlusPolicyRequest := isCodexPlusGatewayPolicyRequest(c)
-		skipBilling := c.Request.URL.Path == "/v1/usage" || codexPlusPolicyRequest
+		// skipBilling: /v1/usage 只需鉴权，跳过所有计费执行
+		skipBilling := c.Request.URL.Path == "/v1/usage"
 
 		var subscription *service.UserSubscription
 		isSubscriptionType := apiKey.Group != nil && apiKey.Group.IsSubscriptionType()
@@ -199,10 +153,7 @@ func apiKeyAuthWithSubscription(apiKeyService *service.APIKeyService, subscripti
 				apiKey.Group.ID,
 			)
 			if subErr != nil {
-				if codexPlusPolicyRequest {
-					subscription = latestCodexPlusGatewaySubscription(c.Request.Context(), subscriptionService, apiKey.User.ID, apiKey.Group.ID)
-				}
-				if subscription == nil && !skipBilling {
+				if !skipBilling {
 					AbortWithError(c, 403, "SUBSCRIPTION_NOT_FOUND", "No active subscription found for this group")
 					return
 				}

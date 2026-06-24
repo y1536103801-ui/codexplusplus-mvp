@@ -168,10 +168,6 @@ func (h *AuthHandler) CompleteDesktopLogin(c *gin.Context) {
 		response.ErrorFrom(c, err)
 		return
 	}
-	if err := h.ensureBackendModeAllowsUser(c.Request.Context(), user); err != nil {
-		response.ErrorFrom(c, err)
-		return
-	}
 
 	pendingSvc, err := h.pendingIdentityService()
 	if err != nil {
@@ -270,10 +266,6 @@ func (h *AuthHandler) PollDesktopLogin(c *gin.Context) {
 		return
 	}
 	if err := ensureLoginUserActive(user); err != nil {
-		response.ErrorFrom(c, err)
-		return
-	}
-	if err := h.ensureBackendModeAllowsUser(c.Request.Context(), user); err != nil {
 		response.ErrorFrom(c, err)
 		return
 	}

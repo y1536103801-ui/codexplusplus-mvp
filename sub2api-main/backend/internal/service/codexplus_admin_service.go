@@ -141,20 +141,9 @@ type CodexPlusDeviceSummary struct {
 }
 
 type CodexPlusEventSummary struct {
-	ID               int64    `json:"id,omitempty"`
-	EventType        string   `json:"event_type"`
-	Severity         string   `json:"severity,omitempty"`
-	UserID           *int64   `json:"user_id,omitempty"`
-	DeviceID         *string  `json:"device_id,omitempty"`
-	RequestID        *string  `json:"request_id,omitempty"`
-	ConfigVersion    *string  `json:"config_version,omitempty"`
-	ModelID          string   `json:"model_id,omitempty"`
-	ErrorCode        string   `json:"error_code,omitempty"`
-	ServiceStatus    string   `json:"service_status,omitempty"`
-	RiskTags         []string `json:"risk_tags,omitempty"`
-	RedactionApplied bool     `json:"redaction_applied,omitempty"`
-	CreatedAt        string   `json:"created_at"`
-	Summary          string   `json:"summary"`
+	EventType string `json:"event_type"`
+	CreatedAt string `json:"created_at"`
+	Summary   string `json:"summary"`
 }
 
 func NewCodexPlusAdminService(
@@ -648,11 +637,9 @@ func deviceSummaryFromService(device CodexPlusDevice) CodexPlusDeviceSummary {
 }
 
 func eventSummaryFromService(event CodexPlusEvent) CodexPlusEventSummary {
-	payload := NormalizeCodexPlusAuditRiskPayload(event.EventType, codexPlusAuditCloneMap(event.Payload))
-	metadata, _ := payload["metadata"].(map[string]any)
-	summary := codexPlusPayloadString(payload, "summary")
+	summary := codexPlusPayloadString(event.Payload, "summary")
 	if summary == "" {
-		if metadata != nil {
+		if metadata, ok := event.Payload["metadata"].(map[string]any); ok {
 			summary = codexPlusPayloadString(metadata, "reason")
 			if summary == "" {
 				summary = codexPlusPayloadString(metadata, "service_status")
@@ -665,25 +652,10 @@ func eventSummaryFromService(event CodexPlusEvent) CodexPlusEventSummary {
 	if summary == "" {
 		summary = event.EventType
 	}
-	serviceStatus := codexPlusPayloadString(payload, "service_status")
-	if serviceStatus == "" && metadata != nil {
-		serviceStatus = codexPlusPayloadString(metadata, "service_status")
-	}
 	return CodexPlusEventSummary{
-		ID:               event.ID,
-		EventType:        codexPlusAuditEventType(event.EventType),
-		Severity:         codexPlusAuditSeverity(event.Severity),
-		UserID:           event.UserID,
-		DeviceID:         event.DeviceID,
-		RequestID:        event.RequestID,
-		ConfigVersion:    event.ConfigVersion,
-		ModelID:          codexPlusPayloadString(payload, "model_id"),
-		ErrorCode:        codexPlusPayloadString(payload, "error_code"),
-		ServiceStatus:    serviceStatus,
-		RiskTags:         NormalizeCodexPlusAuditRiskTags(codexPlusAuditPayloadStringSlice(payload, "risk_tags")),
-		RedactionApplied: codexPlusPayloadBool(payload, "redaction_applied"),
-		CreatedAt:        event.CreatedAt.UTC().Format(time.RFC3339),
-		Summary:          summary,
+		EventType: event.EventType,
+		CreatedAt: event.CreatedAt.UTC().Format(time.RFC3339),
+		Summary:   summary,
 	}
 }
 
@@ -702,25 +674,5 @@ func codexPlusPayloadString(payload map[string]any, key string) string {
 		return strings.TrimSpace(typed.String())
 	default:
 		return strings.TrimSpace(fmt.Sprint(typed))
-	}
-}
-
-func codexPlusPayloadBool(payload map[string]any, key string) bool {
-	if len(payload) == 0 {
-		return false
-	}
-	value, ok := payload[key]
-	if !ok || value == nil {
-		return false
-	}
-	switch typed := value.(type) {
-	case bool:
-		return typed
-	case string:
-		return strings.EqualFold(strings.TrimSpace(typed), "true")
-	case fmt.Stringer:
-		return strings.EqualFold(strings.TrimSpace(typed.String()), "true")
-	default:
-		return strings.EqualFold(strings.TrimSpace(fmt.Sprint(typed)), "true")
 	}
 }

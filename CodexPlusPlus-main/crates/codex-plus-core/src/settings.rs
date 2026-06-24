@@ -464,10 +464,8 @@ impl SettingsStore {
             }
         };
 
-        let raw = serde_json::from_str::<Value>(strip_utf8_bom(&contents)).unwrap_or_default();
         Ok(normalize_settings_config_sections(
-            serde_json::from_value(Value::Object(settings_object_from_raw_value(raw)))
-                .unwrap_or_default(),
+            serde_json::from_str(&contents).unwrap_or_default(),
         ))
     }
 
@@ -513,26 +511,10 @@ impl SettingsStore {
             }
         };
 
-        match serde_json::from_str::<Value>(strip_utf8_bom(&contents)) {
-            Ok(value) => Ok(settings_object_from_raw_value(value)),
-            Err(_) => Ok(settings_to_object(&BackendSettings::default())),
+        match serde_json::from_str::<Value>(&contents) {
+            Ok(Value::Object(map)) => Ok(map),
+            Ok(_) | Err(_) => Ok(settings_to_object(&BackendSettings::default())),
         }
-    }
-}
-
-fn strip_utf8_bom(contents: &str) -> &str {
-    contents.strip_prefix('\u{feff}').unwrap_or(contents)
-}
-
-fn settings_object_from_raw_value(value: Value) -> Map<String, Value> {
-    let Value::Object(mut map) = value else {
-        return settings_to_object(&BackendSettings::default());
-    };
-
-    if let Some(Value::Object(settings)) = map.remove("settings") {
-        settings
-    } else {
-        map
     }
 }
 
@@ -1364,99 +1346,6 @@ experimental_bearer_token = "sk-existing""#
         let store = SettingsStore::new(path);
 
         assert_eq!(store.load().unwrap(), BackendSettings::default());
-    }
-
-    #[test]
-    fn settings_store_loads_legacy_nested_settings_object() {
-        let dir = temp_dir();
-        let path = dir.join("settings.json");
-        std::fs::write(
-            &path,
-            r#"{
-              "settings": {
-                "relayProfiles": [
-                  {
-                    "id": "manual-e2e",
-                    "name": "manual-e2e",
-                    "configContents": "model_provider = \"manual-e2e\"\n\n[model_providers.manual-e2e]\nbase_url = \"https://manual-provider.invalid/v1\"\n",
-                    "authContents": "{}"
-                  }
-                ],
-                "activeRelayId": "manual-e2e"
-              }
-            }"#,
-        )
-        .unwrap();
-        let store = SettingsStore::new(path);
-
-        let settings = store.load().unwrap();
-
-        assert_eq!(settings.active_relay_id, "manual-e2e");
-        assert_eq!(settings.relay_profiles.len(), 1);
-        assert_eq!(settings.relay_profiles[0].id, "manual-e2e");
-        assert_eq!(settings.relay_profiles[0].name, "manual-e2e");
-        assert!(
-            settings.relay_profiles[0]
-                .config_contents
-                .contains("[model_providers.manual-e2e]")
-        );
-    }
-
-    #[test]
-    fn settings_store_loads_legacy_nested_settings_object_with_api_fields() {
-        let dir = temp_dir();
-        let path = dir.join("settings.json");
-        std::fs::write(
-            &path,
-            r#"{
-              "settings": {
-                "relayProfiles": [
-                  {
-                    "id": "manual-e2e",
-                    "name": "manual-e2e",
-                    "baseUrl": "https://manual-provider.invalid/v1",
-                    "apiKey": "redacted-manual-provider-key-for-hash-only"
-                  }
-                ],
-                "activeRelayId": "manual-e2e"
-              }
-            }"#,
-        )
-        .unwrap();
-        let store = SettingsStore::new(path);
-
-        let settings = store.load().unwrap();
-
-        assert_eq!(settings.active_relay_id, "manual-e2e");
-        assert_eq!(settings.relay_profiles.len(), 1);
-        assert_eq!(settings.relay_profiles[0].id, "manual-e2e");
-        assert_eq!(settings.relay_profiles[0].name, "manual-e2e");
-        assert_eq!(
-            settings.relay_profiles[0].base_url,
-            "https://manual-provider.invalid/v1"
-        );
-        assert_eq!(
-            settings.relay_profiles[0].api_key,
-            "redacted-manual-provider-key-for-hash-only"
-        );
-    }
-
-    #[test]
-    fn settings_store_loads_windows_utf8_bom_settings() {
-        let dir = temp_dir();
-        let path = dir.join("settings.json");
-        std::fs::write(
-            &path,
-            "\u{feff}{\"settings\":{\"activeRelayId\":\"manual-e2e\",\"relayProfiles\":[{\"id\":\"manual-e2e\",\"name\":\"manual-e2e\"}]}}",
-        )
-        .unwrap();
-        let store = SettingsStore::new(path);
-
-        let settings = store.load().unwrap();
-
-        assert_eq!(settings.active_relay_id, "manual-e2e");
-        assert_eq!(settings.relay_profiles.len(), 1);
-        assert_eq!(settings.relay_profiles[0].id, "manual-e2e");
     }
 
     #[test]

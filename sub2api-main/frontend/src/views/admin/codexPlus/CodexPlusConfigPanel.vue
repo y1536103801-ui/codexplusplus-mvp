@@ -2,43 +2,43 @@
   <section class="space-y-4">
     <div class="grid gap-4 md:grid-cols-4">
       <label class="space-y-1">
-        <span class="text-xs font-medium text-gray-500">Scope</span>
+        <span class="text-xs font-medium text-gray-500">发布范围</span>
         <select v-model="draft.publish_scope" class="input">
-          <option value="draft">draft</option>
-          <option value="internal">internal</option>
-          <option value="canary">canary</option>
-          <option value="production">production</option>
+          <option value="draft">草稿</option>
+          <option value="internal">内部测试</option>
+          <option value="canary">小范围灰度</option>
+          <option value="production">正式发布</option>
         </select>
       </label>
       <label class="space-y-1 md:col-span-3">
-        <span class="text-xs font-medium text-gray-500">Change reason</span>
-        <input v-model="reason" class="input" placeholder="Short operational note for audit history" />
+        <span class="text-xs font-medium text-gray-500">本次修改说明</span>
+        <input v-model="reason" class="input" placeholder="例如：调整团队套餐额度，方便后续追踪" />
       </label>
     </div>
 
     <div class="grid gap-3 md:grid-cols-4">
       <div class="metric">
-        <span>Plans</span>
+        <span>套餐</span>
         <strong>{{ draft.plan_catalog.plans.length }}</strong>
       </div>
       <div class="metric">
-        <span>Models</span>
+        <span>模型</span>
         <strong>{{ draft.model_catalog.models.length }}</strong>
       </div>
       <div class="metric">
-        <span>Policies</span>
+        <span>用量规则</span>
         <strong>{{ draft.usage_policy.policies.length }}</strong>
       </div>
       <div class="metric">
-        <span>Enabled flags</span>
+        <span>已开启功能</span>
         <strong>{{ enabledFlagCount }}</strong>
       </div>
     </div>
 
     <div class="text-sm text-gray-600 dark:text-gray-300">
-      Current version <code>{{ currentVersion }}</code>. Last update:
-      <code>{{ draft.updated_at || 'not published' }}</code> by
-      <code>{{ draft.updated_by || 'unknown' }}</code>.
+      当前版本 <code>{{ currentVersion }}</code>。上次更新：
+      <code>{{ draft.updated_at || '尚未发布' }}</code>，操作人：
+      <code>{{ draft.updated_by || '未知' }}</code>。
     </div>
   </section>
 </template>
@@ -61,7 +61,7 @@ const reason = computed({
   set: (value: string) => emit('update:changeReason', value)
 })
 
-const currentVersion = computed(() => props.draft.config_version || 'unversioned')
+const currentVersion = computed(() => props.draft.config_version || '未生成版本')
 const enabledFlagCount = computed(() => Object.values(props.draft.feature_flags.flags).filter(Boolean).length)
 </script>
 

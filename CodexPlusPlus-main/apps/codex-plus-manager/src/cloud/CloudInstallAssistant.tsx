@@ -66,15 +66,14 @@ export function CloudInstallAssistant({
       <CardHeader className="cloud-panel-head">
         <div>
           <CardTitle>安装辅助</CardTitle>
-          <CardDescription>只检查本机 Codex 可用性、保存路径、入口和 Watcher 状态。</CardDescription>
+          <CardDescription>只检查本机 Codex 可用性、保存路径、桌面入口和 Watcher 状态。</CardDescription>
         </div>
       </CardHeader>
       <CardContent>
         <div className="cloud-check-list">
           <InstallRow title="Codex 是否已安装" status={install.codexApp.status} detail={codexAppDetail(install)} />
           <InstallRow title="保存路径" status={savedPathStatus} detail={install.savedAppPath || "未保存；会使用本机自动探测结果。"} />
-          <InstallRow title="静默启动入口" status={install.silentShortcut.status} detail={install.silentShortcut.path || "未找到入口时可使用“修复入口”重新创建。"} />
-          <InstallRow title="管理入口" status={install.managementShortcut.status} detail={install.managementShortcut.path || "未找到管理入口时可使用“修复入口”重新创建。"} />
+          <InstallRow title="桌面入口" status={install.managementShortcut.status} detail={install.managementShortcut.path || "未找到入口时可使用“修复入口”重新创建。"} />
           <InstallRow title="Watcher 状态" status={watcherStatus(install)} detail={watcherDetail(install)} />
           <InstallRow title={summary.title} status={summary.status} detail={summary.detail} />
           <InstallRow title="权限提示" status="info" detail={platformHelpText()} />
@@ -129,7 +128,7 @@ function watcherStatus(install: CloudInstallState) {
 
 function watcherDetail(install: CloudInstallState) {
   if (install.watcherDetail) return install.watcherDetail;
-  if (install.watcherEnabled === true) return "已启用，静默启动会保持本地接管状态。";
+  if (install.watcherEnabled === true) return "已启用，会保持本地接管状态。";
   if (install.watcherEnabled === false) return "当前未启用；可进入更多维护处理 Watcher。";
   return "尚未检查 Watcher 状态。";
 }
@@ -150,7 +149,7 @@ function buildInstallSummary(install: CloudInstallState) {
     return {
       status: "not_checked",
       title: "下一步",
-      detail: "先点击“检查本机”读取 Codex 应用、静默启动入口、管理入口和 Watcher 状态。",
+      detail: "先点击“检查本机”读取 Codex 应用、桌面入口和 Watcher 状态。",
     };
   }
   if (!isOk(install.codexApp.status)) {
@@ -167,18 +166,18 @@ function buildInstallSummary(install: CloudInstallState) {
       detail: "请先通过官方渠道安装 Codex；免安装或解包版可直接选择应用目录。本页不会自动下载或静默安装第三方软件。",
     };
   }
-  if (isNotChecked(install.silentShortcut.status) || isNotChecked(install.managementShortcut.status)) {
+  if (isNotChecked(install.managementShortcut.status)) {
     return {
       status: "not_checked",
       title: "入口尚未检查",
-      detail: "Codex 已识别；继续点击“检查本机”确认静默启动入口和管理入口是否存在。",
+      detail: "Codex 已识别；继续点击“检查本机”确认桌面入口是否存在。",
     };
   }
-  if (!isOk(install.silentShortcut.status) || !isOk(install.managementShortcut.status)) {
+  if (!isOk(install.managementShortcut.status)) {
     return {
       status: "missing",
       title: "入口需要修复",
-      detail: "Codex 已识别，但静默启动入口或管理入口缺失。点击“修复入口”后再检查本机。",
+      detail: "Codex 已识别，但桌面入口缺失。点击“修复入口”后再检查本机。",
     };
   }
   if (install.watcherEnabled === null) {
@@ -198,7 +197,7 @@ function buildInstallSummary(install: CloudInstallState) {
   return {
     status: "ok",
     title: "本地 Codex 已就绪",
-    detail: "Codex 应用、保存路径、静默启动入口、管理入口和 Watcher 状态已完成检查。",
+    detail: "Codex 应用、保存路径、桌面入口和 Watcher 状态已完成检查。",
   };
 }
 

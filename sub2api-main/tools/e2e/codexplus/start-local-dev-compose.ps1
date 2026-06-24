@@ -8,8 +8,6 @@ param(
     [string]$RedisContainerName = "sub2api-codexplus-redis",
     [string]$BindHost = "127.0.0.1",
     [int]$HostPort = 8081,
-    [string]$GoProxy = "",
-    [string]$GoSumDb = "",
     [switch]$InitEnv,
     [switch]$SkipBuild,
     [switch]$ReplaceExisting,
@@ -212,14 +210,6 @@ $env:SUB2API_DEV_IMAGE = $ImageTag
 $env:SUB2API_DEV_APP_CONTAINER = $AppContainerName
 $env:SUB2API_DEV_POSTGRES_CONTAINER = $PostgresContainerName
 $env:SUB2API_DEV_REDIS_CONTAINER = $RedisContainerName
-if (-not [string]::IsNullOrWhiteSpace($GoProxy)) {
-    $env:GOPROXY = $GoProxy
-}
-if (-not [string]::IsNullOrWhiteSpace($GoSumDb)) {
-    $env:GOSUMDB = $GoSumDb
-}
-Add-Check "build-arg:goproxy-configurable" $true "GOPROXY is supplied by -GoProxy, process env, env file or Dockerfile default; value not printed."
-Add-Check "build-arg:gosumdb-configurable" $true "GOSUMDB is supplied by -GoSumDb, process env, env file or Dockerfile default; value not printed."
 
 if ($DryRun) {
     Add-Check "dry-run:compose-command" $true "Would run docker compose --env-file $EnvFile -p $ProjectName -f $ComposeFile up -d$(if ($SkipBuild) { '' } else { ' --build' }) and probe $BaseUrl."

@@ -199,6 +199,18 @@ func TestBackendModeAuthGuard(t *testing.T) {
 			wantStatus: http.StatusOK,
 		},
 		{
+			name:       "enabled_allows_desktop_start",
+			enabled:    "true",
+			path:       "/api/v1/auth/desktop/start",
+			wantStatus: http.StatusOK,
+		},
+		{
+			name:       "enabled_allows_desktop_poll",
+			enabled:    "true",
+			path:       "/api/v1/auth/desktop/poll",
+			wantStatus: http.StatusOK,
+		},
+		{
 			name:       "enabled_blocks_linuxdo_oauth_start",
 			enabled:    "true",
 			path:       "/api/v1/auth/oauth/linuxdo/start",

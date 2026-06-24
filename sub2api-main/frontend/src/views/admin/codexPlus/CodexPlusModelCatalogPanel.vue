@@ -3,22 +3,22 @@
     <div class="flex flex-wrap items-start justify-between gap-2">
       <div class="space-y-1">
         <p class="text-sm text-gray-600 dark:text-gray-300">
-          Candidate models come from group/account model sources. Billing multipliers stay server-side.
+          管理用户可选择的模型。默认模型必须可用且可见，否则客户端无法正常启动。
         </p>
         <div class="flex flex-wrap gap-2 text-xs text-gray-500 dark:text-gray-400">
-          <span class="stat">Total {{ models.length }}</span>
-          <span class="stat">Visible {{ visibleCount }}</span>
-          <span class="stat">Enabled {{ enabledCount }}</span>
-          <span class="stat">Default {{ defaultModelLabel }}</span>
+          <span class="stat">总数 {{ models.length }}</span>
+          <span class="stat">可见 {{ visibleCount }}</span>
+          <span class="stat">可用 {{ enabledCount }}</span>
+          <span class="stat">默认 {{ defaultModelLabel }}</span>
         </div>
       </div>
-      <button class="btn-primary" type="button" @click="addModel">Add model</button>
+      <button class="btn-primary" type="button" @click="addModel">新增模型</button>
     </div>
 
     <div class="guard" :class="defaultWarning ? 'guard-warn' : 'guard-ok'">
       <div>
-        <span class="font-medium">Default guard:</span>
-        {{ defaultWarning || 'Exactly one enabled, visible model is marked as default.' }}
+        <span class="font-medium">默认模型检查：</span>
+        {{ defaultWarning || '已设置一个可用且可见的默认模型。' }}
       </div>
       <button
         v-if="defaultWarning && firstEffectiveIndex >= 0"
@@ -26,7 +26,7 @@
         type="button"
         @click="setDefault(firstEffectiveIndex)"
       >
-        Use first active model
+        使用第一个可用模型
       </button>
     </div>
 
@@ -34,12 +34,12 @@
       <table class="admin-table">
         <thead>
           <tr>
-            <th>Model</th>
-            <th>Route</th>
-            <th>Group and badge</th>
-            <th>Limits</th>
-            <th>State</th>
-            <th>Disabled / delisted reason</th>
+            <th>模型</th>
+            <th>实际路由</th>
+            <th>分组和标签</th>
+            <th>容量和计费</th>
+            <th>状态</th>
+            <th>停用说明</th>
             <th></th>
           </tr>
         </thead>
@@ -51,14 +51,14 @@
           >
             <td>
               <input v-model.trim="model.model_id" class="input mb-1" placeholder="codex-standard" list="codex-model-candidates" />
-              <input v-model.trim="model.display_name" class="input" placeholder="Codex Standard" maxlength="80" />
+              <input v-model.trim="model.display_name" class="input" placeholder="标准模型" maxlength="80" />
             </td>
             <td>
-              <input v-model.trim="model.route_model" class="input mb-1" placeholder="upstream model id" list="codex-route-candidates" />
+              <input v-model.trim="model.route_model" class="input mb-1" placeholder="上游模型编号" list="codex-route-candidates" />
               <input
                 :value="model.fallback_model_id || ''"
                 class="input"
-                placeholder="fallback model id"
+                placeholder="备用模型"
                 list="codex-configured-models"
                 @input="model.fallback_model_id = nullableInput(($event.target as HTMLInputElement).value)"
               />
@@ -68,53 +68,53 @@
               <input
                 :value="(model.operator_tags || []).join(', ')"
                 class="input"
-                placeholder="badges: default, premium"
+                placeholder="标签：默认，高级"
                 @input="model.operator_tags = splitList(($event.target as HTMLInputElement).value)"
               />
             </td>
             <td>
               <div class="grid grid-cols-2 gap-1">
                 <label class="field-label">
-                  <span>Context</span>
+                  <span>上下文</span>
                   <input v-model.number="model.context_window" class="input" type="number" min="1024" step="1024" />
                 </label>
                 <label class="field-label">
-                  <span>Multiplier</span>
+                  <span>倍率</span>
                   <input v-model.number="model.billing_multiplier" class="input" type="number" min="0.01" step="0.01" />
                 </label>
               </div>
               <label class="field-label mt-1">
-                <span>Sort</span>
+                <span>排序</span>
                 <input v-model.number="model.sort_order" class="input" type="number" min="0" step="1" />
               </label>
             </td>
             <td>
               <select :value="modelStatus(model)" class="input mb-1" @change="setModelStatus(model, index, ($event.target as HTMLSelectElement).value as ModelStatus)">
-                <option value="active">active</option>
-                <option value="hidden">hidden</option>
-                <option value="disabled">disabled</option>
-                <option value="delisted">delisted</option>
+                <option value="active">可用</option>
+                <option value="hidden">隐藏</option>
+                <option value="disabled">停用</option>
+                <option value="delisted">下架</option>
               </select>
               <div class="mb-1 flex flex-wrap gap-1">
                 <span class="status-pill" :class="statusClass(model)">{{ statusLabel(model) }}</span>
-                <span v-if="model.is_default" class="status-pill default-pill">default</span>
+                <span v-if="model.is_default" class="status-pill default-pill">默认</span>
               </div>
               <label class="check">
                 <input :checked="model.is_default" type="radio" name="default-model" @change="setDefault(index)" />
-                default
+                设为默认
               </label>
               <div class="grid grid-cols-2 gap-1">
                 <select v-model="model.rollout_channel" class="input">
-                  <option value="internal">internal</option>
-                  <option value="canary">canary</option>
-                  <option value="stable">stable</option>
-                  <option value="deprecated">deprecated</option>
+                  <option value="internal">内部</option>
+                  <option value="canary">灰度</option>
+                  <option value="stable">稳定</option>
+                  <option value="deprecated">即将停用</option>
                 </select>
                 <select v-model="model.quality_tier" class="input">
-                  <option value="standard">standard</option>
-                  <option value="premium">premium</option>
-                  <option value="experimental">experimental</option>
-                  <option value="legacy">legacy</option>
+                  <option value="standard">标准</option>
+                  <option value="premium">高级</option>
+                  <option value="experimental">实验</option>
+                  <option value="legacy">旧版</option>
                 </select>
               </div>
             </td>
@@ -123,33 +123,33 @@
                 :value="model.disabled_reason || ''"
                 class="input min-h-[64px] resize-y"
                 maxlength="160"
-                placeholder="Required when disabled or delisted"
+                placeholder="停用或下架时填写给管理员看的原因"
                 @input="model.disabled_reason = nullableInput(($event.target as HTMLTextAreaElement).value)"
               />
               <div class="mt-1 grid grid-cols-2 gap-1">
                 <input
                   :value="model.disabled_replacement_model_id || ''"
                   class="input"
-                  placeholder="replacement"
+                  placeholder="替代模型"
                   list="codex-configured-models"
                   @input="model.disabled_replacement_model_id = nullableInput(($event.target as HTMLInputElement).value)"
                 />
                 <input
                   :value="model.disabled_message_key || ''"
                   class="input"
-                  placeholder="message key"
+                  placeholder="提示标识"
                   @input="model.disabled_message_key = nullableInput(($event.target as HTMLInputElement).value)"
                 />
               </div>
               <input
                 :value="model.deprecation_at || ''"
                 class="input mt-1"
-                placeholder="deprecated at RFC3339"
+                placeholder="计划停用时间"
                 @input="model.deprecation_at = nullableInput(($event.target as HTMLInputElement).value)"
               />
             </td>
             <td>
-              <button class="btn-danger" type="button" @click="removeModel(index)">Remove</button>
+              <button class="btn-danger" type="button" @click="removeModel(index)">删除</button>
             </td>
           </tr>
         </tbody>
@@ -194,14 +194,14 @@ const defaultModels = computed(() => props.models.filter(model => model.is_defau
 const firstEffectiveIndex = computed(() => props.models.findIndex(isEffectiveModel))
 
 const defaultModelLabel = computed(() => {
-  if (defaultModels.value.length !== 1) return defaultModels.value.length === 0 ? 'missing' : 'duplicate'
-  return defaultModels.value[0].model_id || '(new)'
+  if (defaultModels.value.length !== 1) return defaultModels.value.length === 0 ? '未设置' : '重复'
+  return defaultModels.value[0].display_name || defaultModels.value[0].model_id || '新模型'
 })
 
 const defaultWarning = computed(() => {
-  if (defaultModels.value.length === 0) return 'No default model is selected. Pick one active model before publishing.'
-  if (defaultModels.value.length > 1) return 'Multiple defaults are marked. Choosing a default here will clear the rest.'
-  if (!isEffectiveModel(defaultModels.value[0])) return 'The default model must be enabled and visible. The backend will reject hidden or disabled defaults.'
+  if (defaultModels.value.length === 0) return '还没有默认模型。发布前请选择一个可用模型。'
+  if (defaultModels.value.length > 1) return '存在多个默认模型。重新选择一个默认模型会自动清除其它默认标记。'
+  if (!isEffectiveModel(defaultModels.value[0])) return '默认模型必须可用且可见，隐藏或停用的模型不能作为默认模型。'
   return ''
 })
 
@@ -209,7 +209,7 @@ function addModel() {
   const nextIndex = props.models.length + 1
   props.models.push({
     model_id: `codex-model-${nextIndex}`,
-    display_name: 'New model',
+    display_name: '新模型',
     route_model: 'codex-default',
     model_group: 'codex',
     context_window: 8192,
@@ -274,7 +274,13 @@ function modelStatus(model: CodexPlusModel): ModelStatus {
 }
 
 function statusLabel(model: CodexPlusModel): string {
-  return modelStatus(model)
+  const labels: Record<ModelStatus, string> = {
+    active: '可用',
+    hidden: '隐藏',
+    disabled: '停用',
+    delisted: '下架'
+  }
+  return labels[modelStatus(model)]
 }
 
 function statusClass(model: CodexPlusModel): string {
@@ -297,7 +303,7 @@ function isEffectiveModel(model: CodexPlusModel): boolean {
 function normalizeDisabledFields(model: CodexPlusModel) {
   if (model.is_enabled) return
   if (!model.disabled_reason?.trim()) {
-    model.disabled_reason = 'Disabled by admin'
+    model.disabled_reason = '管理员停用'
   }
   if (!model.disabled_message_key?.trim()) {
     model.disabled_message_key = 'model.disabled'

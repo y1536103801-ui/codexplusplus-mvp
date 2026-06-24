@@ -1383,6 +1383,7 @@
 
               <!-- Email Verification -->
               <div
+                v-if="showLegacyPlatformFeatures"
                 class="flex items-center justify-between border-t border-gray-100 pt-4 dark:border-dark-700"
               >
                 <div>
@@ -3685,7 +3686,7 @@
               </p>
             </div>
             <div class="p-6">
-              <div>
+              <div v-if="showLegacyPlatformFeatures">
                 <label
                   class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
                 >
@@ -3725,7 +3726,7 @@
           </div>
 
           <!-- Gateway Scheduling Settings -->
-          <div class="card">
+          <div v-if="showLegacyPlatformFeatures" class="card">
             <div
               class="border-b border-gray-100 px-6 py-4 dark:border-dark-700"
             >
@@ -4400,7 +4401,7 @@
           </div>
 
         <!-- Usage Records Settings -->
-        <div class="card">
+        <div v-if="showLegacyPlatformFeatures" class="card">
           <div class="border-b border-gray-100 px-6 py-4 dark:border-dark-700">
             <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
               {{ t('admin.settings.usageRecords.title') }}
@@ -5533,7 +5534,7 @@
 
         <!-- Affiliate add/edit modal -->
         <div
-          v-if="affiliateModal.open"
+          v-if="showLegacyPlatformFeatures && affiliateModal.open"
           class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
           @click.self="closeAffiliateModal"
         >
@@ -5658,7 +5659,7 @@
 
         <!-- Affiliate batch rate modal -->
         <div
-          v-if="affiliateBatchModal.open"
+          v-if="showLegacyPlatformFeatures && affiliateBatchModal.open"
           class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
           @click.self="affiliateBatchModal.open = false"
         >
@@ -5704,7 +5705,7 @@
 
         <!-- Tab: Email -->
         <!-- Tab: Payment -->
-        <div v-show="activeTab === 'payment'" class="space-y-6">
+        <div v-if="showLegacyPlatformFeatures" v-show="activeTab === 'payment'" class="space-y-6">
           <!-- Payment System Settings -->
           <div class="card">
             <div
@@ -6784,6 +6785,7 @@ type SettingsTab =
   | "email"
   | "backup";
 const activeTab = ref<SettingsTab>("general");
+const showLegacyPlatformFeatures = false;
 const settingsTabs = [
   { key: "general" as SettingsTab, icon: "home" as const },
   { key: "agreement" as SettingsTab, icon: "document" as const },
@@ -6791,7 +6793,7 @@ const settingsTabs = [
   { key: "security" as SettingsTab, icon: "shield" as const },
   { key: "users" as SettingsTab, icon: "user" as const },
   { key: "gateway" as SettingsTab, icon: "server" as const },
-  { key: "payment" as SettingsTab, icon: "creditCard" as const },
+  ...(showLegacyPlatformFeatures ? [{ key: "payment" as SettingsTab, icon: "creditCard" as const }] : []),
   { key: "email" as SettingsTab, icon: "mail" as const },
   { key: "backup" as SettingsTab, icon: "database" as const },
 ];

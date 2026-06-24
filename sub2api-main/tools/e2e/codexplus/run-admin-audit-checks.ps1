@@ -349,16 +349,10 @@ function Test-EventRequestIdMatched {
         [object[]]$Events,
         [string]$ExpectedRequestId
     )
-    $candidates = @($ExpectedRequestId -split "[,;\s]+" | ForEach-Object { $_.Trim() } | Where-Object { $_ -ne "" })
-    if ($candidates.Count -eq 0) {
+    if ([string]::IsNullOrWhiteSpace($ExpectedRequestId)) {
         return $false
     }
-    foreach ($candidate in $candidates) {
-        if (Test-EventHasValue $Events @("request_id", "requestId") ("^" + [regex]::Escape($candidate) + "$")) {
-            return $true
-        }
-    }
-    return $false
+    return (Test-EventHasValue $Events @("request_id", "requestId") ("^" + [regex]::Escape($ExpectedRequestId) + "$"))
 }
 
 function Invoke-AdminEventsRequest {
@@ -477,8 +471,8 @@ $table
 
 ## Structured Signals Required
 
-- Success path: usage_recorded, matching gateway request_id from 05-gateway-policy-e2e.md, config_version, matching test device ID when supplied, and redaction_applied.
-- Rejection paths: gateway_policy_rejected, GATEWAY_POLICY_* error code, service status, matching gateway request_id from 05-gateway-policy-e2e.md, config_version, matching test device ID when supplied, and redaction_applied.
+- Success path: `usage_recorded`, matching gateway `request_id` from `05-gateway-policy-e2e.md`, `config_version`, matching test device ID when supplied, and `redaction_applied`.
+- Rejection paths: `gateway_policy_rejected`, `GATEWAY_POLICY_*` error code, service status, matching gateway `request_id` from `05-gateway-policy-e2e.md`, `config_version`, matching test device ID when supplied, and `redaction_applied`.
 
 ## Redaction
 

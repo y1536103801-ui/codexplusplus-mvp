@@ -3,13 +3,13 @@
     <div class="flex flex-wrap items-start justify-between gap-3">
       <div>
         <p class="text-sm text-gray-600 dark:text-gray-300">
-          Runtime limits are published here, but entitlement and gateway enforcement remain server-side.
+          设置用户使用 Codex++ 时的额度、并发和限速规则。发布后由服务端统一执行。
         </p>
         <p class="mt-1 text-xs text-gray-500">
-          Plan overrides should point plans at a usage_policy_id; scope fields are kept for backend policy metadata.
+          套餐会通过“用量规则编号”关联到这里。普通场景只需要维护默认规则。
         </p>
       </div>
-      <button class="btn-primary" type="button" @click="addPolicy">Add policy</button>
+      <button class="btn-primary" type="button" @click="addPolicy">新增规则</button>
     </div>
 
     <div v-if="copyKeyWarnings.length" class="warning-strip">
@@ -20,21 +20,21 @@
       <table class="admin-table">
         <thead>
           <tr>
-            <th>Policy and scope</th>
-            <th>Quota</th>
-            <th>Rate limits</th>
-            <th>Expiry</th>
-            <th>Messages</th>
+            <th>规则和适用范围</th>
+            <th>额度</th>
+            <th>速度限制</th>
+            <th>过期处理</th>
+            <th>提示文案</th>
             <th></th>
           </tr>
         </thead>
         <tbody>
           <tr v-for="(policy, index) in policies" :key="policy.policy_id || index">
             <td class="min-w-[260px]">
-              <label class="field-label">policy_id</label>
+              <label class="field-label">规则编号</label>
               <input v-model.trim="policy.policy_id" class="input mb-2" placeholder="default" />
 
-              <label class="field-label">plan_ids</label>
+              <label class="field-label">适用套餐</label>
               <input
                 :value="formatList(policy.applies_to?.plan_ids)"
                 class="input mb-1"
@@ -43,7 +43,7 @@
               />
               <div class="grid grid-cols-2 gap-1">
                 <div>
-                  <label class="field-label">model groups</label>
+                  <label class="field-label">模型分组</label>
                   <input
                     :value="formatList(policy.applies_to?.model_groups)"
                     class="input"
@@ -52,7 +52,7 @@
                   />
                 </div>
                 <div>
-                  <label class="field-label">segments</label>
+                  <label class="field-label">用户分层</label>
                   <input
                     :value="formatList(policy.applies_to?.user_segments)"
                     class="input"
@@ -66,44 +66,44 @@
             <td class="min-w-[190px]">
               <div class="grid grid-cols-2 gap-1">
                 <div>
-                  <label class="field-label">low balance</label>
+                  <label class="field-label">低余额提醒</label>
                   <input v-model.number="policy.low_balance_threshold" class="input" type="number" min="0" />
                 </div>
                 <div>
-                  <label class="field-label">daily</label>
+                  <label class="field-label">每日额度</label>
                   <input v-model.number="policy.daily_quota" class="input" type="number" min="0" />
                 </div>
               </div>
-              <label class="field-label mt-2">monthly</label>
+              <label class="field-label mt-2">每月额度</label>
               <input
                 :value="policy.monthly_quota ?? ''"
                 class="input"
                 type="number"
                 min="0"
-                placeholder="optional"
+                placeholder="不限制"
                 @input="updateNullableNumber(policy, 'monthly_quota', ($event.target as HTMLInputElement).value)"
               />
-              <p class="hint">Use 0 for no quota in this draft.</p>
+              <p class="hint">填 0 表示当前规则不限制该项。</p>
             </td>
 
             <td class="min-w-[220px]">
               <div class="grid grid-cols-3 gap-1">
                 <div>
-                  <label class="field-label">concur</label>
+                  <label class="field-label">并发</label>
                   <input v-model.number="policy.concurrency_limit" class="input" type="number" min="1" />
                 </div>
                 <div>
-                  <label class="field-label">RPM</label>
+                  <label class="field-label">每分钟请求</label>
                   <input v-model.number="policy.rpm_limit" class="input" type="number" min="1" />
                 </div>
                 <div>
-                  <label class="field-label">TPM</label>
+                  <label class="field-label">每分钟令牌</label>
                   <input v-model.number="policy.tpm_limit" class="input" type="number" min="1" />
                 </div>
               </div>
               <div class="mt-2 grid grid-cols-2 gap-1">
                 <div>
-                  <label class="field-label">burst</label>
+                  <label class="field-label">突发上限</label>
                   <input
                     :value="policy.burst_limit ?? policy.rpm_limit"
                     class="input"
@@ -113,7 +113,7 @@
                   />
                 </div>
                 <div>
-                  <label class="field-label">window sec</label>
+                  <label class="field-label">统计秒数</label>
                   <input
                     :value="policy.rate_limit_window_seconds ?? 60"
                     class="input"
@@ -126,36 +126,36 @@
             </td>
 
             <td class="min-w-[200px]">
-              <label class="field-label">expired behavior</label>
+              <label class="field-label">套餐过期后</label>
               <select v-model="policy.expired_behavior" class="input mb-2">
-                <option value="block">block</option>
-                <option value="degrade">degrade</option>
-                <option value="allow_grace_period">allow_grace_period</option>
+                <option value="block">停止使用</option>
+                <option value="degrade">降级使用</option>
+                <option value="allow_grace_period">允许宽限期</option>
               </select>
               <div class="grid grid-cols-2 gap-1">
                 <div>
-                  <label class="field-label">grace hrs</label>
+                  <label class="field-label">宽限小时</label>
                   <input v-model.number="policy.grace_period_hours" class="input" type="number" min="0" />
                 </div>
                 <div>
-                  <label class="field-label">overage</label>
+                  <label class="field-label">超额后</label>
                   <select v-model="policy.overage_behavior" class="input">
-                    <option value="block">block</option>
-                    <option value="degrade">degrade</option>
-                    <option value="allow_paid_overage">paid</option>
+                    <option value="block">停止使用</option>
+                    <option value="degrade">降级使用</option>
+                    <option value="allow_paid_overage">允许付费超额</option>
                   </select>
                 </div>
               </div>
             </td>
 
             <td class="min-w-[280px]">
-              <label class="field-label">insufficient balance message / key</label>
+              <label class="field-label">余额不足提示</label>
               <input v-model.trim="policy.insufficient_balance_message" class="input mb-1" />
-              <label class="field-label">rate limited message / key</label>
+              <label class="field-label">触发限速提示</label>
               <input v-model.trim="policy.rate_limited_message" class="input" />
 
               <details class="mt-2">
-                <summary class="copy-summary">Copy keys</summary>
+                <summary class="copy-summary">高级文案标识</summary>
                 <div class="mt-2 grid grid-cols-2 gap-1">
                   <input
                     :value="policy.copy_keys?.low_balance_message || ''"
@@ -201,13 +201,13 @@
                   />
                 </div>
                 <button class="link-button mt-2" type="button" @click="seedCopyKeys(policy)">
-                  Fill registry keys
+                  自动填入系统标识
                 </button>
               </details>
             </td>
 
             <td class="whitespace-nowrap">
-              <button class="btn-danger" type="button" @click="removePolicy(index)">Remove</button>
+              <button class="btn-danger" type="button" @click="removePolicy(index)">删除</button>
             </td>
           </tr>
         </tbody>
@@ -217,9 +217,9 @@
     <div class="preview-panel">
       <div class="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Policy preview</h3>
+          <h3 class="text-sm font-semibold text-gray-900 dark:text-white">规则预览</h3>
           <p class="text-xs text-gray-500">
-            Local read-only estimate for operator review. Server validation and gateway telemetry remain authoritative.
+            这里用示例数值预估命中结果，最终以服务端执行为准。
           </p>
         </div>
         <span class="status-pill" :class="previewSeverity">{{ previewStatus }}</span>
@@ -228,54 +228,54 @@
       <div class="mt-3 grid gap-3 lg:grid-cols-[minmax(0,360px)_1fr]">
         <div class="grid grid-cols-2 gap-2">
           <label class="preview-field">
-            <span>linked policy_id</span>
+            <span>关联规则</span>
             <input v-model.trim="preview.policyId" class="input" placeholder="default" />
           </label>
           <label class="preview-field">
-            <span>plan_id</span>
+            <span>套餐编号</span>
             <input v-model.trim="preview.planId" class="input" placeholder="starter" />
           </label>
           <label class="preview-field">
-            <span>model group</span>
+            <span>模型分组</span>
             <input v-model.trim="preview.modelGroup" class="input" placeholder="default" />
           </label>
           <label class="preview-field">
-            <span>segment</span>
+            <span>用户分层</span>
             <input v-model.trim="preview.userSegment" class="input" placeholder="internal" />
           </label>
           <label class="preview-field">
-            <span>balance</span>
+            <span>余额</span>
             <input v-model.number="preview.balance" class="input" type="number" min="0" />
           </label>
           <label class="preview-field">
-            <span>daily used</span>
+            <span>今日已用</span>
             <input v-model.number="preview.dailyUsed" class="input" type="number" min="0" />
           </label>
           <label class="preview-field">
-            <span>active req</span>
+            <span>正在请求</span>
             <input v-model.number="preview.activeRequests" class="input" type="number" min="0" />
           </label>
           <label class="preview-field">
-            <span>RPM now</span>
+            <span>当前每分钟请求</span>
             <input v-model.number="preview.rpm" class="input" type="number" min="0" />
           </label>
           <label class="preview-field">
-            <span>TPM now</span>
+            <span>当前每分钟令牌</span>
             <input v-model.number="preview.tpm" class="input" type="number" min="0" />
           </label>
           <label class="preview-field">
-            <span>expired hrs</span>
+            <span>已过期小时</span>
             <input v-model.number="preview.expiredHours" class="input" type="number" min="0" />
           </label>
           <label class="preview-check">
             <input v-model="preview.subscriptionExpired" type="checkbox" />
-            subscription expired
+            套餐已过期
           </label>
         </div>
 
         <div class="hit-box">
           <div class="mb-2 flex flex-wrap items-center gap-2">
-            <strong>{{ previewPolicy?.policy_id || 'No policy' }}</strong>
+            <strong>{{ previewPolicy?.policy_id || '没有匹配规则' }}</strong>
             <span v-if="previewSource" class="source-chip">{{ previewSource }}</span>
           </div>
           <ul class="space-y-1">
@@ -339,10 +339,10 @@ const copyKeyWarnings = computed(() => {
     const warnings: string[] = []
     const keys = policy.copy_keys
     if (!keys?.insufficient_balance_message && !isCopyKey(policy.insufficient_balance_message)) {
-      warnings.push(`Policy ${policy.policy_id || '(new)'} needs a registry-safe insufficient balance copy key before publish.`)
+      warnings.push(`规则 ${policy.policy_id || '新规则'} 需要一个合法的“余额不足”文案标识。`)
     }
     if (!keys?.rate_limited_message && policy.rate_limited_message && !isCopyKey(policy.rate_limited_message)) {
-      warnings.push(`Policy ${policy.policy_id || '(new)'} needs a registry-safe rate limited copy key before publish.`)
+      warnings.push(`规则 ${policy.policy_id || '新规则'} 需要一个合法的“触发限速”文案标识。`)
     }
     return warnings
   })
@@ -370,73 +370,73 @@ const previewSource = computed(() => {
   const policy = previewPolicy.value
   if (!policy) return ''
   if (preview.value.policyId.trim() && same(policy.policy_id, preview.value.policyId)) {
-    return 'plan usage_policy_id match'
+    return '套餐直接关联'
   }
-  if (scopeScore(policy) > 0 && scopeMatches(policy)) return 'scope metadata match'
-  if (same(policy.policy_id, 'default')) return 'default fallback'
-  return 'first configured fallback'
+  if (scopeScore(policy) > 0 && scopeMatches(policy)) return '适用范围匹配'
+  if (same(policy.policy_id, 'default')) return '默认规则'
+  return '使用第一条规则'
 })
 
 const previewLines = computed<PreviewLine[]>(() => {
   const policy = previewPolicy.value
   if (!policy) {
-    return [{ text: 'No usage policy is configured.', level: 'block' }]
+    return [{ text: '还没有配置用量规则。', level: 'block' }]
   }
 
   const lines: PreviewLine[] = [
     {
-      text: `Limits: daily ${describeQuota(policy.daily_quota)}, concurrency ${policy.concurrency_limit}, ${policy.rpm_limit} RPM, ${policy.tpm_limit} TPM.`,
+      text: `限制：每日 ${describeQuota(policy.daily_quota)}，并发 ${policy.concurrency_limit}，每分钟请求 ${policy.rpm_limit}，每分钟令牌 ${policy.tpm_limit}。`,
       level: 'ok'
     }
   ]
 
   if (policy.low_balance_threshold > 0 && preview.value.balance <= policy.low_balance_threshold) {
     lines.push({
-      text: `Low balance threshold hit at ${policy.low_balance_threshold}.`,
+      text: `余额已低于提醒线：${policy.low_balance_threshold}。`,
       level: preview.value.balance <= 0 ? 'block' : 'warn'
     })
   }
 
   if (preview.value.balance <= 0) {
     lines.push({
-      text: `Insufficient balance response: ${policy.insufficient_balance_message || policy.copy_keys?.insufficient_balance_message || 'missing copy'}.`,
+      text: `会返回余额不足提示：${policy.insufficient_balance_message || policy.copy_keys?.insufficient_balance_message || '未设置'}。`,
       level: 'block'
     })
   }
 
   if (policy.daily_quota > 0 && preview.value.dailyUsed >= policy.daily_quota) {
     lines.push({
-      text: `Daily quota exhausted: ${preview.value.dailyUsed} / ${policy.daily_quota}.`,
+      text: `今日额度已用完：${preview.value.dailyUsed} / ${policy.daily_quota}。`,
       level: 'block'
     })
   }
 
   if (preview.value.activeRequests >= policy.concurrency_limit) {
     lines.push({
-      text: `Next request would exceed concurrency ${policy.concurrency_limit}.`,
+      text: `下一次请求会超过并发上限 ${policy.concurrency_limit}。`,
       level: 'block'
     })
   }
 
   if (preview.value.rpm >= policy.rpm_limit) {
     lines.push({
-      text: `RPM limit would return: ${policy.rate_limited_message || policy.copy_keys?.rate_limited_message || 'missing copy'}.`,
+      text: `会触发每分钟请求限制，返回提示：${policy.rate_limited_message || policy.copy_keys?.rate_limited_message || '未设置'}。`,
       level: 'block'
     })
   }
 
   if (preview.value.tpm >= policy.tpm_limit) {
-    lines.push({ text: `TPM limit reached: ${preview.value.tpm} / ${policy.tpm_limit}.`, level: 'block' })
+    lines.push({ text: `会触发每分钟令牌限制：${preview.value.tpm} / ${policy.tpm_limit}。`, level: 'block' })
   }
 
   if (preview.value.subscriptionExpired) {
     lines.push(expiredPreviewLine(policy))
   } else {
-    lines.push({ text: 'Subscription is active in this preview.', level: 'ok' })
+    lines.push({ text: '示例中的套餐仍在有效期内。', level: 'ok' })
   }
 
   if (lines.every(line => line.level === 'ok')) {
-    lines.push({ text: 'No blocking threshold is crossed by the preview inputs.', level: 'ok' })
+    lines.push({ text: '示例数值没有触发阻止规则。', level: 'ok' })
   }
 
   return lines
@@ -449,9 +449,9 @@ const previewSeverity = computed(() => {
 })
 
 const previewStatus = computed(() => {
-  if (previewSeverity.value === 'block') return 'would block'
-  if (previewSeverity.value === 'warn') return 'attention'
-  return 'would allow'
+  if (previewSeverity.value === 'block') return '会被阻止'
+  if (previewSeverity.value === 'warn') return '需要关注'
+  return '可以通过'
 })
 
 function addPolicy() {
@@ -579,19 +579,19 @@ function scopeListMatches(values: string[] | undefined, candidate: string) {
 
 function expiredPreviewLine(policy: CodexPlusUsageRule): PreviewLine {
   if (policy.expired_behavior === 'degrade') {
-    return { text: 'Expired entitlement would degrade access instead of full block.', level: 'warn' }
+    return { text: '套餐过期后会降级使用，不会完全阻止。', level: 'warn' }
   }
   if (policy.expired_behavior === 'allow_grace_period') {
     const withinGrace = preview.value.expiredHours <= policy.grace_period_hours
     return withinGrace
-      ? { text: `Expired but still inside ${policy.grace_period_hours}h grace period.`, level: 'warn' }
-      : { text: `Grace period exceeded after ${preview.value.expiredHours}h.`, level: 'block' }
+      ? { text: `已过期，但仍在 ${policy.grace_period_hours} 小时宽限期内。`, level: 'warn' }
+      : { text: `已超过宽限期，过期 ${preview.value.expiredHours} 小时。`, level: 'block' }
   }
-  return { text: 'Expired entitlement would be blocked immediately.', level: 'block' }
+  return { text: '套餐过期后会立即停止使用。', level: 'block' }
 }
 
 function describeQuota(value: number) {
-  return value > 0 ? String(value) : 'not capped'
+  return value > 0 ? String(value) : '不限制'
 }
 
 function nonEmpty(values?: string[]) {

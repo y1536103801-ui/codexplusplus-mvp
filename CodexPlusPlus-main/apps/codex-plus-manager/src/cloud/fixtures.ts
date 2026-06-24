@@ -67,10 +67,10 @@ function clone<T>(value: T): T {
 function activeBootstrap(): CloudBootstrapResult {
   const result = clone(bootstrapFixtures[activeFixture]);
   if (localConfigFailed && result.data) {
-    result.message = "Local Codex config write failed.";
+    result.message = "本机 Codex 配置写入失败。";
     result.data.service = {
       status: "local_config_failed",
-      message: "Codex++ Cloud account is ready, but local Codex config could not be updated.",
+      message: "账号已就绪，但本机 Codex 配置未能更新。",
       action_hint: "repair_local_config",
       retryable: true,
       support_url: null,
@@ -89,7 +89,7 @@ function managedProviderFromBootstrap(bootstrap: CloudBootstrapResult): CloudMan
     configured: providerApplied && readyStatus,
     active: providerApplied && readyStatus,
     hasApiKey,
-    displayName: provider?.display_name || "Codex++ Cloud",
+    displayName: provider?.display_name || "Codex++ 服务",
     maskedKey: provider?.key_summary.masked_key || "",
     defaultModel: provider?.default_model || "",
     lastAppliedAt: providerApplied ? new Date().toISOString() : null,

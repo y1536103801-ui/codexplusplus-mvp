@@ -254,19 +254,10 @@ async fn notify_manager_when_update_available() -> anyhow::Result<bool> {
     if !update.update_available {
         return Ok(false);
     }
-    let _ = codex_plus_core::diagnostic_log::append_diagnostic_log(
-        "launcher.update_available",
-        json!({
-            "current_version": update.current_version,
-            "latest_version": update.latest_version,
-            "asset_name": update.asset_name,
-            "asset_url_present": update.asset_url.is_some()
-        }),
-    );
+    open_manager_with_update_prompt()?;
     Ok(true)
 }
 
-#[allow(dead_code)]
 fn open_manager_with_update_prompt() -> anyhow::Result<()> {
     let manager_path = manager_exe_path();
     let mut command = std::process::Command::new(&manager_path);
@@ -894,14 +885,6 @@ mod tests {
                 .and_then(|name| name.to_str())
                 .is_some_and(|name| name.contains(codex_plus_core::install::MANAGER_BINARY))
         );
-    }
-
-    #[test]
-    fn update_check_does_not_auto_open_manager_from_silent_launcher() {
-        let source = include_str!("main.rs");
-
-        assert!(source.contains("launcher.update_available"));
-        assert!(!source.contains("open_manager_with_update_prompt()?"));
     }
 }
 

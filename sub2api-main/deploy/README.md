@@ -123,13 +123,16 @@ That wrapper creates the ignored `.env.codexplus-local` file when needed, starts
 ```powershell
 cd sub2api-main/deploy
 Copy-Item .env.codexplus-local.example .env.codexplus-local
-# Edit .env.codexplus-local and replace placeholder passwords.
+# Edit .env.codexplus-local and replace database/JWT/TOTP placeholder secrets.
+# The default local flow keeps AUTO_SETUP=false, so a fresh stack opens /setup
+# and lets the administrator create their own account and password.
+# Set AUTO_SETUP=true only for unattended CI or throwaway smoke tests.
 # Generate local 64-hex secrets when you need fresh values:
 # [Convert]::ToHexString([Security.Cryptography.RandomNumberGenerator]::GetBytes(32)).ToLowerInvariant()
 docker compose --env-file .env.codexplus-local -p sub2api-codexplus-local -f docker-compose.dev.yml up -d --build
 ```
 
-The example `.env.codexplus-local.example` contains valid local-only 64-hex `JWT_SECRET` and `TOTP_ENCRYPTION_KEY` values so a copied file can boot. Replace both before any shared, long-lived, or production-like use.
+The example `.env.codexplus-local.example` contains valid local-only 64-hex `JWT_SECRET` and `TOTP_ENCRYPTION_KEY` values so a copied file can boot the setup wizard. Replace both before any shared, long-lived, or production-like use.
 
 To verify the default current-source container exposes the Codex++ 07 routes, run:
 

@@ -23,6 +23,10 @@ export const useAnnouncementStore = defineStore('announcements', () => {
 
   // Actions
   async function fetchAnnouncements(force = false) {
+    if (typeof document !== 'undefined' && document.visibilityState === 'hidden') {
+      return
+    }
+
     const now = Date.now()
     if (!force && lastFetchTime.value > 0 && now - lastFetchTime.value < THROTTLE_MS) {
       return

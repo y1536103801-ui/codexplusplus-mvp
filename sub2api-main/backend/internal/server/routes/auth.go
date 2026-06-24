@@ -223,6 +223,15 @@ func RegisterAuthRoutes(
 		settings.GET("/email-unsubscribe", h.Setting.UnsubscribeNotificationEmail)
 	}
 
+	// 桌面客户端登录闭环：浏览器只负责批准桌面会话，后台模式不应拦截客户端登录协议。
+	desktopAuthenticated := v1.Group("")
+	desktopAuthenticated.Use(gin.HandlerFunc(jwtAuth))
+	{
+		desktopAuthenticated.POST("/auth/desktop/complete", rateLimiter.LimitWithOptions("auth-desktop-complete", 30, time.Minute, middleware.RateLimitOptions{
+			FailureMode: middleware.RateLimitFailClose,
+		}), h.Auth.CompleteDesktopLogin)
+	}
+
 	// 需要认证的当前用户信息
 	authenticated := v1.Group("")
 	authenticated.Use(gin.HandlerFunc(jwtAuth))
@@ -232,8 +241,5 @@ func RegisterAuthRoutes(
 		// 撤销所有会话（需要认证）
 		authenticated.POST("/auth/revoke-all-sessions", h.Auth.RevokeAllSessions)
 		authenticated.POST("/auth/oauth/bind-token", h.Auth.PrepareOAuthBindAccessTokenCookie)
-		authenticated.POST("/auth/desktop/complete", rateLimiter.LimitWithOptions("auth-desktop-complete", 30, time.Minute, middleware.RateLimitOptions{
-			FailureMode: middleware.RateLimitFailClose,
-		}), h.Auth.CompleteDesktopLogin)
 	}
 }

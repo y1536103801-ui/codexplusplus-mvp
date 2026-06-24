@@ -6,7 +6,6 @@
 import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useAppStore } from '@/stores/app'
-import { useAdminSettingsStore } from '@/stores/adminSettings'
 import { useAdminComplianceStore } from '@/stores/adminCompliance'
 import { useNavigationLoadingState } from '@/composables/useNavigationLoading'
 import { useRoutePrefetch } from '@/composables/useRoutePrefetch'
@@ -106,16 +105,6 @@ const routes: RouteRecordRaw[] = [
       requiresAuth: false,
       title: 'WeChat OAuth Callback',
       titleKey: 'auth.wechatCallbackPageTitle'
-    }
-  },
-  {
-    path: '/auth/wechat/payment/callback',
-    name: 'WeChatPaymentOAuthCallback',
-    component: () => import('@/views/auth/WechatPaymentCallbackView.vue'),
-    meta: {
-      requiresAuth: false,
-      title: 'WeChat Payment Callback',
-      titleKey: 'auth.wechatPaymentCallbackPageTitle'
     }
   },
   {
@@ -227,30 +216,6 @@ const routes: RouteRecordRaw[] = [
     }
   },
   {
-    path: '/redeem',
-    name: 'Redeem',
-    component: () => import('@/views/user/RedeemView.vue'),
-    meta: {
-      requiresAuth: true,
-      requiresAdmin: false,
-      title: 'Redeem Code',
-      titleKey: 'redeem.title',
-      descriptionKey: 'redeem.description'
-    }
-  },
-  {
-    path: '/affiliate',
-    name: 'Affiliate',
-    component: () => import('@/views/user/AffiliateView.vue'),
-    meta: {
-      requiresAuth: true,
-      requiresAdmin: false,
-      title: 'Affiliate',
-      titleKey: 'affiliate.title',
-      descriptionKey: 'affiliate.description'
-    }
-  },
-  {
     path: '/available-channels',
     name: 'UserAvailableChannels',
     component: () => import('@/views/user/AvailableChannelsView.vue'),
@@ -284,101 +249,6 @@ const routes: RouteRecordRaw[] = [
       title: 'My Subscriptions',
       titleKey: 'userSubscriptions.title',
       descriptionKey: 'userSubscriptions.description'
-    }
-  },
-  {
-    path: '/purchase',
-    name: 'PurchaseSubscription',
-    component: () => import('@/views/user/PaymentView.vue'),
-    meta: {
-      requiresAuth: true,
-      requiresAdmin: false,
-      title: 'Purchase Subscription',
-      titleKey: 'nav.buySubscription',
-      descriptionKey: 'purchase.description',
-      requiresPayment: true
-    }
-  },
-  {
-    path: '/orders',
-    name: 'OrderList',
-    component: () => import('@/views/user/UserOrdersView.vue'),
-    meta: {
-      requiresAuth: true,
-      requiresAdmin: false,
-      title: 'My Orders',
-      titleKey: 'nav.myOrders',
-      requiresPayment: true
-    }
-  },
-  {
-    path: '/payment/qrcode',
-    name: 'PaymentQRCode',
-    component: () => import('@/views/user/PaymentQRCodeView.vue'),
-    meta: {
-      requiresAuth: true,
-      requiresAdmin: false,
-      title: 'Payment',
-      titleKey: 'payment.qr.scanToPay',
-      requiresPayment: true
-    }
-  },
-  {
-    path: '/payment/result',
-    name: 'PaymentResult',
-    component: () => import('@/views/user/PaymentResultView.vue'),
-    meta: {
-      requiresAuth: false,
-      requiresAdmin: false,
-      title: 'Payment Result',
-      titleKey: 'payment.result.success',
-      requiresPayment: false
-    }
-  },
-  {
-    path: '/payment/stripe',
-    name: 'StripePayment',
-    component: () => import('@/views/user/StripePaymentView.vue'),
-    meta: {
-      requiresAuth: false,
-      requiresAdmin: false,
-      title: 'Stripe Payment',
-      titleKey: 'payment.stripePay',
-      requiresPayment: false
-    }
-  },
-  {
-    path: '/payment/airwallex',
-    name: 'AirwallexPayment',
-    component: () => import('@/views/user/AirwallexPaymentView.vue'),
-    meta: {
-      requiresAuth: false,
-      requiresAdmin: false,
-      title: 'Airwallex Payment',
-      titleKey: 'payment.airwallexPay',
-      requiresPayment: false
-    }
-  },
-  {
-    path: '/payment/stripe-popup',
-    name: 'StripePopup',
-    component: () => import('@/views/user/StripePopupView.vue'),
-    meta: {
-      requiresAuth: false,
-      requiresAdmin: false,
-      title: 'Payment',
-      requiresPayment: false
-    }
-  },
-  {
-    path: '/custom/:id',
-    name: 'CustomPage',
-    component: () => import('@/views/user/CustomPageView.vue'),
-    meta: {
-      requiresAuth: true,
-      requiresAdmin: false,
-      title: 'Custom Page',
-      titleKey: 'customPage.title',
     }
   },
 
@@ -509,18 +379,6 @@ const routes: RouteRecordRaw[] = [
     }
   },
   {
-    path: '/admin/announcements',
-    name: 'AdminAnnouncements',
-    component: () => import('@/views/admin/AnnouncementsView.vue'),
-    meta: {
-      requiresAuth: true,
-      requiresAdmin: true,
-      title: 'Announcements',
-      titleKey: 'admin.announcements.title',
-      descriptionKey: 'admin.announcements.description'
-    }
-  },
-  {
     path: '/admin/proxies',
     name: 'AdminProxies',
     component: () => import('@/views/admin/ProxiesView.vue'),
@@ -530,30 +388,6 @@ const routes: RouteRecordRaw[] = [
       title: 'Proxy Management',
       titleKey: 'admin.proxies.title',
       descriptionKey: 'admin.proxies.description'
-    }
-  },
-  {
-    path: '/admin/redeem',
-    name: 'AdminRedeem',
-    component: () => import('@/views/admin/RedeemView.vue'),
-    meta: {
-      requiresAuth: true,
-      requiresAdmin: true,
-      title: 'Redeem Code Management',
-      titleKey: 'admin.redeem.title',
-      descriptionKey: 'admin.redeem.description'
-    }
-  },
-  {
-    path: '/admin/promo-codes',
-    name: 'AdminPromoCodes',
-    component: () => import('@/views/admin/PromoCodesView.vue'),
-    meta: {
-      requiresAuth: true,
-      requiresAdmin: true,
-      title: 'Promo Code Management',
-      titleKey: 'admin.promo.title',
-      descriptionKey: 'admin.promo.description'
     }
   },
   {
@@ -593,86 +427,6 @@ const routes: RouteRecordRaw[] = [
       descriptionKey: 'admin.usage.description'
     }
   },
-  {
-    path: '/admin/affiliates',
-    redirect: '/admin/affiliates/invites'
-  },
-  {
-    path: '/admin/affiliates/invites',
-    name: 'AdminAffiliateInvites',
-    component: () => import('@/views/admin/affiliates/AdminAffiliateInvitesView.vue'),
-    meta: {
-      requiresAuth: true,
-      requiresAdmin: true,
-      title: 'Affiliate Invite Records',
-      titleKey: 'nav.affiliateInviteRecords',
-      descriptionKey: 'admin.affiliates.invitesDescription'
-    }
-  },
-  {
-    path: '/admin/affiliates/rebates',
-    name: 'AdminAffiliateRebates',
-    component: () => import('@/views/admin/affiliates/AdminAffiliateRebatesView.vue'),
-    meta: {
-      requiresAuth: true,
-      requiresAdmin: true,
-      title: 'Affiliate Rebate Records',
-      titleKey: 'nav.affiliateRebateRecords',
-      descriptionKey: 'admin.affiliates.rebatesDescription'
-    }
-  },
-  {
-    path: '/admin/affiliates/transfers',
-    name: 'AdminAffiliateTransfers',
-    component: () => import('@/views/admin/affiliates/AdminAffiliateTransfersView.vue'),
-    meta: {
-      requiresAuth: true,
-      requiresAdmin: true,
-      title: 'Affiliate Transfer Records',
-      titleKey: 'nav.affiliateTransferRecords',
-      descriptionKey: 'admin.affiliates.transfersDescription'
-    }
-  },
-
-
-  // ==================== Payment Admin Routes ====================
-  {
-    path: '/admin/orders/dashboard',
-    name: 'AdminPaymentDashboard',
-    component: () => import('@/views/admin/orders/AdminPaymentDashboardView.vue'),
-    meta: {
-      requiresAuth: true,
-      requiresAdmin: true,
-      title: 'Payment Dashboard',
-      titleKey: 'nav.paymentDashboard',
-      requiresPayment: true
-    }
-  },
-  {
-    path: '/admin/orders',
-    name: 'AdminOrders',
-    component: () => import('@/views/admin/orders/AdminOrdersView.vue'),
-    meta: {
-      requiresAuth: true,
-      requiresAdmin: true,
-      title: 'Order Management',
-      titleKey: 'nav.orderManagement',
-      requiresPayment: true
-    }
-  },
-  {
-    path: '/admin/orders/plans',
-    name: 'AdminPaymentPlans',
-    component: () => import('@/views/admin/orders/AdminPaymentPlansView.vue'),
-    meta: {
-      requiresAuth: true,
-      requiresAdmin: true,
-      title: 'Subscription Plans',
-      titleKey: 'nav.paymentPlans',
-      requiresPayment: true
-    }
-  },
-
   // ==================== 404 Not Found ====================
   {
     path: '/:pathMatch(.*)*',
@@ -687,8 +441,30 @@ const routes: RouteRecordRaw[] = [
 /**
  * Create router instance
  */
+function createDesktopSafeWebHistory(base?: string) {
+  const originalAddEventListener = document.addEventListener.bind(document)
+
+  document.addEventListener = ((
+    type: string,
+    listener: EventListenerOrEventListenerObject,
+    options?: boolean | AddEventListenerOptions
+  ) => {
+    // Vue Router stores scroll position on visibilitychange by calling
+    // history.replaceState while the page is being minimized. On Edge/Windows
+    // this can immediately restore the minimized browser window.
+    if (type === 'visibilitychange') return
+    return originalAddEventListener(type, listener, options)
+  }) as typeof document.addEventListener
+
+  try {
+    return createWebHistory(base)
+  } finally {
+    document.addEventListener = originalAddEventListener as typeof document.addEventListener
+  }
+}
+
 const router = createRouter({
-  history: createWebHistory(import.meta.env.BASE_URL),
+  history: createDesktopSafeWebHistory(import.meta.env.BASE_URL),
   routes,
   scrollBehavior(_to, _from, savedPosition) {
     // Scroll to saved position when using browser back/forward
@@ -709,7 +485,20 @@ let authInitialized = false
 const navigationLoading = useNavigationLoadingState()
 // 延迟初始化预加载，传入 router 实例
 let routePrefetch: ReturnType<typeof useRoutePrefetch> | null = null
-const BACKEND_MODE_ALLOWED_PATHS = ['/login', '/auth/desktop/authorize', '/key-usage', '/setup', '/payment/result', '/payment/airwallex', '/legal']
+const RETIRED_PLATFORM_FEATURE_PATHS = [
+  '/affiliate',
+  '/custom',
+  '/orders',
+  '/payment',
+  '/purchase',
+  '/redeem',
+  '/admin/affiliates',
+  '/admin/announcements',
+  '/admin/orders',
+  '/admin/promo-codes',
+  '/admin/redeem',
+]
+const BACKEND_MODE_ALLOWED_PATHS = ['/login', '/auth/desktop/authorize', '/key-usage', '/setup', '/legal']
 const BACKEND_MODE_CALLBACK_PATHS = [
   '/auth/callback',
   '/auth/linuxdo/callback',
@@ -717,7 +506,6 @@ const BACKEND_MODE_CALLBACK_PATHS = [
   '/auth/dingtalk/email-completion',
   '/auth/oidc/callback',
   '/auth/wechat/callback',
-  '/auth/wechat/payment/callback',
 ]
 const BACKEND_MODE_PENDING_AUTH_PATHS = ['/register', '/email-verify']
 
@@ -737,6 +525,20 @@ function isBackendModePublicRouteAllowed(path: string, hasPendingAuthSession: bo
   return false
 }
 
+function reloadWhenVisible(): void {
+  if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return
+  window.location.reload()
+}
+
+function isRetiredPlatformFeaturePath(path: string): boolean {
+  return RETIRED_PLATFORM_FEATURE_PATHS.some((retiredPath) => path === retiredPath || path.startsWith(`${retiredPath}/`))
+}
+
+function resolveRetiredFeatureRedirectPath(isAuthenticated: boolean, isAdmin: boolean): string {
+  if (!isAuthenticated) return '/login'
+  return isAdmin ? '/admin/dashboard' : '/dashboard'
+}
+
 router.beforeEach(async (to, _from, next) => {
   // 开始导航加载状态
   navigationLoading.startNavigation()
@@ -749,24 +551,14 @@ router.beforeEach(async (to, _from, next) => {
     authInitialized = true
   }
 
+  if (isRetiredPlatformFeaturePath(to.path)) {
+    next(resolveRetiredFeatureRedirectPath(authStore.isAuthenticated, authStore.isAdmin))
+    return
+  }
+
   // Set page title
   const appStore = useAppStore()
-  // For custom pages, use menu item label as document title
-  if (to.name === 'CustomPage') {
-    const id = to.params.id as string
-    const publicItems = appStore.cachedPublicSettings?.custom_menu_items ?? []
-    const adminSettingsStore = useAdminSettingsStore()
-    const menuItem = publicItems.find((item) => item.id === id)
-      ?? (authStore.isAdmin ? adminSettingsStore.customMenuItems.find((item) => item.id === id) : undefined)
-    if (menuItem?.label) {
-      const siteName = appStore.siteName || 'Sub2API'
-      document.title = `${menuItem.label} - ${siteName}`
-    } else {
-      document.title = resolveDocumentTitle(to.meta.title, appStore.siteName, to.meta.titleKey as string)
-    }
-  } else {
-    document.title = resolveDocumentTitle(to.meta.title, appStore.siteName, to.meta.titleKey as string)
-  }
+  document.title = resolveDocumentTitle(to.meta.title, appStore.siteName, to.meta.titleKey as string)
 
   // Check if route requires authentication
   const requiresAuth = to.meta.requiresAuth !== false // Default to true
@@ -841,16 +633,6 @@ router.beforeEach(async (to, _from, next) => {
     }
   }
 
-
-  // Check payment requirement (internal payment system only)
-  if (to.meta.requiresPayment) {
-    const paymentEnabled = appStore.cachedPublicSettings?.payment_enabled
-    if (!paymentEnabled) {
-      next(authStore.isAdmin ? '/admin/dashboard' : '/dashboard')
-      return
-    }
-  }
-
   if (to.meta.requiresRiskControl) {
     const riskControlEnabled = appStore.cachedPublicSettings?.risk_control_enabled === true
     if (!riskControlEnabled) {
@@ -864,9 +646,7 @@ router.beforeEach(async (to, _from, next) => {
     const restrictedPaths = [
       '/admin/groups',
       '/admin/subscriptions',
-      '/admin/redeem',
       '/subscriptions',
-      '/redeem'
     ]
 
     if (restrictedPaths.some((path) => to.path.startsWith(path))) {
@@ -932,7 +712,7 @@ router.onError((error) => {
     if (!lastReload || now - parseInt(lastReload) > 10000) {
       sessionStorage.setItem(reloadKey, now.toString())
       console.warn('Chunk load error detected, reloading page to fetch latest version...')
-      window.location.reload()
+      reloadWhenVisible()
     } else {
       console.error('Chunk load error persists after reload. Please clear browser cache.')
     }

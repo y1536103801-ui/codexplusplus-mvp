@@ -7,8 +7,6 @@ param(
     [string]$Network = "deploy_sub2api-network",
     [string]$BindHost = "127.0.0.1",
     [int]$HostPort = 8081,
-    [string]$GoProxy = "",
-    [string]$GoSumDb = "",
     [switch]$SkipBuild,
     [switch]$ReplaceExisting,
     [switch]$ProbeOnly,
@@ -65,15 +63,8 @@ function Invoke-DockerText {
 
 function Invoke-DockerCode {
     param([string[]]$Arguments)
-    $previousErrorActionPreference = $ErrorActionPreference
-    $ErrorActionPreference = "Continue"
-    try {
-        & docker @Arguments 2>&1 | ForEach-Object { Write-Host $_ }
-        $exitCode = $LASTEXITCODE
-    } finally {
-        $ErrorActionPreference = $previousErrorActionPreference
-    }
-    return [int]$exitCode
+    & docker @Arguments
+    return $LASTEXITCODE
 }
 
 function Test-DockerAvailable {
@@ -224,15 +215,7 @@ if ($ProbeOnly) {
 
 if (-not $ProbeOnly -and -not $SkipBuild) {
     Write-Host "Building local source image $ImageTag..."
-    $buildArgs = @("build", "-t", $ImageTag, "-f", $Dockerfile)
-    if (-not [string]::IsNullOrWhiteSpace($GoProxy)) {
-        $buildArgs += @("--build-arg", "GOPROXY=$GoProxy")
-    }
-    if (-not [string]::IsNullOrWhiteSpace($GoSumDb)) {
-        $buildArgs += @("--build-arg", "GOSUMDB=$GoSumDb")
-    }
-    $buildArgs += $Sub2ApiRoot
-    $buildCode = Invoke-DockerCode -Arguments $buildArgs
+    $buildCode = Invoke-DockerCode -Arguments @("build", "-t", $ImageTag, "-f", $Dockerfile, $Sub2ApiRoot)
     Add-Check "docker-build:image" ($buildCode -eq 0) "docker build exit=$buildCode for $ImageTag."
     if ($buildCode -ne 0) {
         $results | Format-Table -AutoSize

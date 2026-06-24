@@ -53,6 +53,7 @@ import { ProviderPresetSelector } from "@/components/ProviderPresetSelector";
 import type { PresetPatch } from "@/components/ProviderPresetSelector";
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { CloudHomeScreen } from "@/cloud/CloudHomeScreen";
+import { normalizeCloudMessage } from "@/cloud/cloudCommands";
 
 import { Badge as UiBadge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -488,7 +489,7 @@ type Route = "cloud" | "overview" | "relay" | "sessions" | "context" | "enhance"
 type Theme = "dark" | "light";
 
 const routes: Array<{ id: Route; label: string; icon: LucideIcon }> = [
-  { id: "cloud", label: "Codex++ Cloud", icon: Cloud },
+  { id: "cloud", label: "账户", icon: Cloud },
   { id: "sessions", label: "会话管理", icon: MessageCircle },
   { id: "context", label: "工具与插件", icon: Network },
   { id: "maintenance", label: "安装维护", icon: Wrench },
@@ -643,7 +644,7 @@ export function App() {
       return await task();
     } catch (error) {
       if (isDesktopRuntimeUnavailable(error)) return null;
-      showNotice("调用失败", stringifyError(error), "failed");
+      showNotice("操作失败", stringifyError(error), "failed");
       return null;
     }
   };
@@ -1351,7 +1352,7 @@ export function App() {
   };
 
   const showNotice = (title: string, message: string, status?: Status) => {
-    setNotice({ title, message, status });
+    setNotice({ title: userFacingTitle(title), message: userFacingMessage(message), status });
   };
 
   const showResultNotice = (
@@ -1545,6 +1546,31 @@ export function App() {
   );
   const hasUpdate = update?.updateAvailable === true;
 
+  if (route === "cloud") {
+    return (
+      <div className={`shell ${theme} account-shell-only`}>
+        <main className="account-workspace">
+          <CloudHomeScreen
+            overview={overview}
+            settings={settings}
+            watcher={watcher}
+            actions={actions}
+            onOpenAdvancedProviders={() => void navigate("relay")}
+            onOpenMaintenance={() => void navigate("maintenance")}
+            refreshSignal={cloudRefreshTick}
+          />
+        </main>
+        {notice ? (
+          <NoticeDialog
+            key={`${notice.title}-${notice.message}-${notice.status ?? ""}`}
+            notice={notice}
+            onClose={() => setNotice(null)}
+          />
+        ) : null}
+      </div>
+    );
+  }
+
   return (
     <div className={`shell ${theme}`}>
       <aside className="sidebar">
@@ -1615,17 +1641,6 @@ export function App() {
           </div>
         </header>
         <section className="screen" key={route}>
-          {route === "cloud" ? (
-            <CloudHomeScreen
-              overview={overview}
-              settings={settings}
-              watcher={watcher}
-              actions={actions}
-              onOpenAdvancedProviders={() => void navigate("relay")}
-              onOpenMaintenance={() => void navigate("maintenance")}
-              refreshSignal={cloudRefreshTick}
-            />
-          ) : null}
           {route === "overview" ? (
             <OverviewScreen
               overview={overview}
@@ -2456,8 +2471,7 @@ function MaintenanceScreen({
         <CardContent>
           <div className="status-table">
             <StatusRow title="Codex 应用" status={overview?.codex_app.status} path={overview?.codex_app.path} />
-            <StatusRow title="静默启动入口" status={overview?.silent_shortcut.status} path={overview?.silent_shortcut.path} />
-            <StatusRow title="管理控制台入口" status={overview?.management_shortcut.status} path={overview?.management_shortcut.path} />
+            <StatusRow title="桌面入口" status={overview?.management_shortcut.status} path={overview?.management_shortcut.path} />
             <StatusRow title="Watcher 自动接管" status={watcher?.enabled ? "ok" : "disabled"} path={watcher?.disabled_flag} />
           </div>
           <Toolbar>
@@ -2493,7 +2507,7 @@ function MaintenanceScreen({
         </CardContent>
       </Panel>
       <Panel>
-        <CardHead title="Codex 应用路径" detail="免安装版或解包版只需要选择一次，之后静默启动会自动复用" />
+        <CardHead title="Codex 应用路径" detail="免安装版或解包版只需要选择一次，之后会自动复用" />
         <CardContent>
           <div className="status-table">
             <StatusRow title="保存路径" status={savedCodexAppPath ? "ok" : "not_checked"} path={savedCodexAppPath || null} />
@@ -4567,16 +4581,10 @@ function healthItems(overview: OverviewResult | null) {
       detail: overview?.codex_app.path || "尚未检查 Codex 应用路径。",
     },
     {
-      title: "静默启动入口",
-      status: overview?.silent_shortcut.status ?? "not_checked",
-      ok: overview?.silent_shortcut.status === "installed",
-      detail: overview?.silent_shortcut.path || "缺少 Codex++ 静默启动快捷方式时可在安装维护页修复。",
-    },
-    {
-      title: "管理工具入口",
+      title: "桌面入口",
       status: overview?.management_shortcut.status ?? "not_checked",
       ok: overview?.management_shortcut.status === "installed",
-      detail: overview?.management_shortcut.path || "缺少管理工具快捷方式时可在安装维护页修复。",
+      detail: overview?.management_shortcut.path || "缺少 Codex++ 桌面入口时可在安装维护页修复。",
     },
   ];
 }
@@ -5260,6 +5268,31 @@ function formatDuration(startedAtMs: number): string {
 function stringifyError(error: unknown) {
   if (error instanceof Error) return error.message;
   return String(error);
+}
+
+function userFacingTitle(title: string) {
+  const text = (title || "").trim();
+  if (!text) return "提示";
+  return text
+    .replace(/^调用失败$/, "操作失败")
+    .replace(/^Codex\+\+ Cloud$/i, "Codex++ 服务")
+    .replace(/Codex\+\+ Cloud/gi, "Codex++ 服务")
+    .replace(/^Mock 状态$/, "演示状态")
+    .replace(/^GitHub Release 检查$/, "更新检查")
+    .replace(/^Provider 同步目标$/, "供应商检查");
+}
+
+function userFacingMessage(message: string) {
+  const normalized = normalizeCloudMessage(message);
+  return normalized
+    .replace(/Codex\+\+ Cloud/gi, "Codex++")
+    .replace(/\bCloud\b/g, "Codex++")
+    .replace(/\bprovider\b/gi, "供应商")
+    .replace(/\bPlugin not found\b/gi, "组件未准备好")
+    .replace(/\bopen_external_url\b/g, "打开链接")
+    .replace(/\bnot allowed\b/gi, "当前操作未被允许")
+    .replace(/\bconfigured\b/gi, "已配置")
+    .trim();
 }
 
 function loadInitialTheme(): Theme {

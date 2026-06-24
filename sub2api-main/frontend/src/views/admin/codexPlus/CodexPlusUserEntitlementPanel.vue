@@ -2,18 +2,18 @@
   <section class="space-y-4">
     <form class="flex flex-wrap items-end gap-2" @submit.prevent="loadUser">
       <label class="space-y-1">
-        <span class="text-xs font-medium text-gray-500">User ID</span>
+        <span class="text-xs font-medium text-gray-500">用户 ID</span>
         <input v-model.number="userId" class="input w-36" type="number" min="1" />
       </label>
       <button class="btn-primary" type="submit" :disabled="loading || !userId">
-        {{ loading ? 'Loading...' : 'Inspect' }}
+        {{ loading ? '查询中...' : '查询用户' }}
       </button>
       <button v-if="entitlement?.user" class="btn-secondary" type="button" :disabled="loading" @click="loadUser">
-        Refresh
+        刷新
       </button>
-      <RouterLink v-if="userId" class="btn-secondary" to="/admin/users">Users</RouterLink>
-      <RouterLink v-if="userId" class="btn-secondary" :to="`/admin/subscriptions?user_id=${userId}`">Subscriptions</RouterLink>
-      <RouterLink v-if="userId" class="btn-secondary" :to="`/admin/usage?user_id=${userId}`">Usage</RouterLink>
+      <RouterLink v-if="userId" class="btn-secondary" to="/admin/users">用户列表</RouterLink>
+      <RouterLink v-if="userId" class="btn-secondary" :to="`/admin/subscriptions?user_id=${userId}`">订阅记录</RouterLink>
+      <RouterLink v-if="userId" class="btn-secondary" :to="`/admin/usage?user_id=${userId}`">使用记录</RouterLink>
     </form>
 
     <p v-if="error" class="error">{{ error }}</p>
@@ -21,35 +21,35 @@
     <template v-if="entitlement?.user">
       <div class="grid gap-3 md:grid-cols-3 xl:grid-cols-6">
         <div class="metric">
-          <span>User</span>
+          <span>用户</span>
           <strong>#{{ entitlement.user.id }} {{ entitlement.user.email || entitlement.user.username }}</strong>
         </div>
         <div class="metric">
-          <span>Status</span>
-          <strong><span class="badge" :class="statusClass(entitlement.user.status)">{{ entitlement.user.status }}</span></strong>
+          <span>状态</span>
+          <strong><span class="badge" :class="statusClass(entitlement.user.status)">{{ statusText(entitlement.user.status) }}</span></strong>
         </div>
         <div class="metric">
-          <span>Current package</span>
+          <span>当前套餐</span>
           <strong>{{ currentPackageLabel }}</strong>
         </div>
         <div class="metric">
-          <span>Expires</span>
+          <span>到期时间</span>
           <strong>{{ currentExpiryLabel }}</strong>
         </div>
         <div class="metric">
-          <span>Balance</span>
+          <span>余额</span>
           <strong>{{ formatNumber(entitlement.user.balance, 2) }}</strong>
         </div>
         <div class="metric">
-          <span>Codex++ key</span>
+          <span>托管密钥</span>
           <strong>{{ managedKeyLabel }}</strong>
         </div>
       </div>
 
       <section class="panel">
         <div class="section-head">
-          <h3 class="section-title">Abnormal status</h3>
-          <span class="text-xs text-gray-500">server aggregate</span>
+          <h3 class="section-title">需要关注</h3>
+          <span class="text-xs text-gray-500">服务端汇总</span>
         </div>
         <div class="flex flex-wrap gap-2">
           <span
@@ -67,40 +67,40 @@
       <div class="grid gap-4 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)]">
         <section class="panel">
           <div class="section-head">
-            <h3 class="section-title">Subscriptions</h3>
-            <span class="text-xs text-gray-500">{{ activeSubscriptions.length }} active / {{ subscriptions.length }} total</span>
+            <h3 class="section-title">套餐记录</h3>
+            <span class="text-xs text-gray-500">{{ activeSubscriptions.length }} 个生效 / 共 {{ subscriptions.length }} 个</span>
           </div>
           <div class="overflow-x-auto">
             <table class="admin-table min-w-[760px]">
               <thead>
                 <tr>
-                  <th>Group</th>
-                  <th>Status</th>
-                  <th>Window</th>
-                  <th>Usage</th>
-                  <th>Notes</th>
+                  <th>用户组</th>
+                  <th>状态</th>
+                  <th>时间</th>
+                  <th>用量</th>
+                  <th>备注</th>
                 </tr>
               </thead>
               <tbody>
                 <tr v-for="sub in subscriptionRows" :key="sub.id">
                   <td>
-                    <strong>{{ sub.group_name || `Group #${sub.group_id}` }}</strong>
+                    <strong>{{ sub.group_name || `用户组 #${sub.group_id}` }}</strong>
                     <span class="block text-xs text-gray-500">{{ sub.group_platform || '-' }} / #{{ sub.group_id }}</span>
                   </td>
-                  <td><span class="badge" :class="statusClass(sub.status)">{{ sub.status }}</span></td>
+                  <td><span class="badge" :class="statusClass(sub.status)">{{ statusText(sub.status) }}</span></td>
                   <td>
                     <span class="block">{{ formatDate(sub.starts_at) }}</span>
                     <span class="block text-xs text-gray-500">{{ formatExpiry(sub.expires_at) }}</span>
                   </td>
                   <td>
-                    <span class="block">D {{ formatMoney(sub.daily_usage_usd) }}</span>
+                    <span class="block">今日 {{ formatMoney(sub.daily_usage_usd) }}</span>
                     <span class="block text-xs text-gray-500">
-                      W {{ formatMoney(sub.weekly_usage_usd) }} / M {{ formatMoney(sub.monthly_usage_usd) }}
+                      本周 {{ formatMoney(sub.weekly_usage_usd) }} / 本月 {{ formatMoney(sub.monthly_usage_usd) }}
                     </span>
                   </td>
                   <td>{{ sub.notes || '-' }}</td>
                 </tr>
-                <tr v-if="!subscriptions.length"><td colspan="5">No subscriptions.</td></tr>
+                <tr v-if="!subscriptions.length"><td colspan="5">暂无套餐记录。</td></tr>
               </tbody>
             </table>
           </div>
@@ -108,21 +108,21 @@
 
         <section class="panel">
           <div class="section-head">
-            <h3 class="section-title">Allowed groups and model scopes</h3>
-            <span class="text-xs text-gray-500">{{ allowedGroups.length }} resolved</span>
+            <h3 class="section-title">可用用户组和模型范围</h3>
+            <span class="text-xs text-gray-500">已识别 {{ allowedGroups.length }} 个</span>
           </div>
           <div class="mb-3 flex flex-wrap gap-1.5">
             <span v-for="scope in modelScopes" :key="scope" class="chip">{{ scope }}</span>
-            <span v-if="!modelScopes.length" class="text-xs text-gray-500">No model scopes returned.</span>
+            <span v-if="!modelScopes.length" class="text-xs text-gray-500">暂无模型范围。</span>
           </div>
           <div class="overflow-x-auto">
             <table class="admin-table min-w-[560px]">
               <thead>
                 <tr>
-                  <th>Group</th>
-                  <th>Platform</th>
-                  <th>Type</th>
-                  <th>Status</th>
+                  <th>用户组</th>
+                  <th>平台</th>
+                  <th>类型</th>
+                  <th>状态</th>
                 </tr>
               </thead>
               <tbody>
@@ -133,13 +133,13 @@
                   </td>
                   <td>{{ group.platform || '-' }}</td>
                   <td>{{ group.subscription_type || '-' }}</td>
-                  <td><span class="badge" :class="statusClass(group.status)">{{ group.status }}</span></td>
+                  <td><span class="badge" :class="statusClass(group.status)">{{ statusText(group.status) }}</span></td>
                 </tr>
                 <tr v-if="!allowedGroups.length && userAllowedGroupIds.length">
-                  <td colspan="4">Unresolved group IDs: {{ userAllowedGroupIds.join(', ') }}</td>
+                  <td colspan="4">未识别的用户组 ID：{{ userAllowedGroupIds.join(', ') }}</td>
                 </tr>
                 <tr v-else-if="!allowedGroups.length">
-                  <td colspan="4">No dedicated group entitlements.</td>
+                  <td colspan="4">暂无单独授权的用户组。</td>
                 </tr>
               </tbody>
             </table>
@@ -150,25 +150,25 @@
       <div class="grid gap-4 xl:grid-cols-2">
         <section class="panel">
           <div class="section-head">
-            <h3 class="section-title">Devices</h3>
-            <span class="text-xs text-gray-500">{{ devices.length }} registered</span>
+            <h3 class="section-title">设备</h3>
+            <span class="text-xs text-gray-500">已登记 {{ devices.length }} 台</span>
           </div>
           <div class="overflow-x-auto">
             <table class="admin-table min-w-[560px]">
               <thead>
                 <tr>
-                  <th>Device</th>
-                  <th>Status</th>
-                  <th>Last seen</th>
+                  <th>设备</th>
+                  <th>状态</th>
+                  <th>最后在线</th>
                 </tr>
               </thead>
               <tbody>
                 <tr v-for="device in devices" :key="device.device_id">
                   <td><code>{{ device.device_id }}</code></td>
-                  <td><span class="badge" :class="statusClass(device.status)">{{ device.status }}</span></td>
+                  <td><span class="badge" :class="statusClass(device.status)">{{ statusText(device.status) }}</span></td>
                   <td>{{ formatDate(device.last_seen) }}</td>
                 </tr>
-                <tr v-if="!devices.length"><td colspan="3">No devices.</td></tr>
+                <tr v-if="!devices.length"><td colspan="3">暂无设备。</td></tr>
               </tbody>
             </table>
           </div>
@@ -176,16 +176,16 @@
 
         <section class="panel">
           <div class="section-head">
-            <h3 class="section-title">Codex++ key summary</h3>
-            <span class="text-xs text-gray-500">{{ apiKeys.length }} user keys</span>
+            <h3 class="section-title">密钥概况</h3>
+            <span class="text-xs text-gray-500">{{ apiKeys.length }} 个用户密钥</span>
           </div>
           <div class="mb-3 grid gap-2 sm:grid-cols-2">
             <div class="summary-box">
-              <span>Managed provider key</span>
+              <span>托管供应密钥</span>
               <strong>{{ managedKeyLabel }}</strong>
             </div>
             <div class="summary-box">
-              <span>Managed key ID</span>
+              <span>托管密钥 ID</span>
               <strong>{{ managedKeyID }}</strong>
             </div>
           </div>
@@ -194,11 +194,11 @@
               <thead>
                 <tr>
                   <th>ID</th>
-                  <th>Name</th>
-                  <th>Group</th>
-                  <th>Status</th>
-                  <th>Masked key</th>
-                  <th>Last used</th>
+                  <th>名称</th>
+                  <th>用户组</th>
+                  <th>状态</th>
+                  <th>脱敏密钥</th>
+                  <th>最后使用</th>
                 </tr>
               </thead>
               <tbody>
@@ -206,11 +206,11 @@
                   <td>{{ key.id }}</td>
                   <td>{{ key.name || '-' }}</td>
                   <td>{{ key.group_id || '-' }}</td>
-                  <td><span class="badge" :class="statusClass(key.status)">{{ key.status }}</span></td>
+                  <td><span class="badge" :class="statusClass(key.status)">{{ statusText(key.status) }}</span></td>
                   <td><code>{{ safeMaskedKey(key.masked_key) }}</code></td>
                   <td>{{ formatDate(key.last_used_at) }}</td>
                 </tr>
-                <tr v-if="!apiKeys.length"><td colspan="6">No API keys.</td></tr>
+                <tr v-if="!apiKeys.length"><td colspan="6">暂无 API 密钥。</td></tr>
               </tbody>
             </table>
           </div>
@@ -220,8 +220,8 @@
       <div class="grid gap-4 xl:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
         <section class="panel">
           <div class="section-head">
-            <h3 class="section-title">Recent usage</h3>
-            <span class="text-xs text-gray-500">30d aggregate</span>
+            <h3 class="section-title">近期用量</h3>
+            <span class="text-xs text-gray-500">近 30 天汇总</span>
           </div>
           <div v-if="usageMetrics.length" class="grid gap-2 sm:grid-cols-2">
             <div v-for="metric in usageMetrics" :key="metric.label" class="summary-box">
@@ -229,30 +229,30 @@
               <strong>{{ metric.value }}</strong>
             </div>
           </div>
-          <p v-else class="text-sm text-gray-500">No usage aggregate.</p>
+          <p v-else class="text-sm text-gray-500">暂无用量汇总。</p>
         </section>
 
         <section class="panel">
           <div class="section-head">
-            <h3 class="section-title">Recent events</h3>
-            <span class="text-xs text-gray-500">{{ recentEvents.length }} events</span>
+            <h3 class="section-title">最近事件</h3>
+            <span class="text-xs text-gray-500">{{ recentEvents.length }} 条</span>
           </div>
           <div class="overflow-x-auto">
             <table class="admin-table min-w-[640px]">
               <thead>
                 <tr>
-                  <th>Time</th>
-                  <th>Type</th>
-                  <th>Summary</th>
+                  <th>时间</th>
+                  <th>类型</th>
+                  <th>说明</th>
                 </tr>
               </thead>
               <tbody>
                 <tr v-for="event in recentEvents" :key="`${event.created_at}-${event.event_type}-${event.summary}`">
                   <td>{{ formatDate(event.created_at) }}</td>
-                  <td><span class="badge" :class="statusClass(event.event_type)">{{ event.event_type }}</span></td>
+                  <td><span class="badge" :class="statusClass(event.event_type)">{{ statusText(event.event_type) }}</span></td>
                   <td>{{ event.summary || '-' }}</td>
                 </tr>
-                <tr v-if="!recentEvents.length"><td colspan="3">No recent events.</td></tr>
+                <tr v-if="!recentEvents.length"><td colspan="3">暂无最近事件。</td></tr>
               </tbody>
             </table>
           </div>
@@ -261,12 +261,12 @@
 
       <section v-if="integrationEntries.length" class="panel">
         <div class="section-head">
-          <h3 class="section-title">Integration status</h3>
+          <h3 class="section-title">接入状态</h3>
         </div>
         <div class="flex flex-wrap gap-2">
           <span v-for="[key, value] in integrationEntries" :key="key" class="status-pill" :class="statusClass(value)">
             <strong>{{ key }}</strong>
-            <span>{{ value }}</span>
+            <span>{{ statusText(value) }}</span>
           </span>
         </div>
       </section>
@@ -329,8 +329,8 @@ const currentSubscription = computed(() => activeSubscriptions.value[0] ?? null)
 
 const currentPackageLabel = computed(() => {
   const sub = currentSubscription.value
-  if (!sub) return 'none'
-  return sub.group_name || `Group #${sub.group_id}`
+  if (!sub) return '无生效套餐'
+  return sub.group_name || `用户组 #${sub.group_id}`
 })
 
 const currentExpiryLabel = computed(() => {
@@ -340,7 +340,7 @@ const currentExpiryLabel = computed(() => {
 
 const managedKeyLabel = computed(() => {
   const key = entitlement.value?.managed_provider_key
-  if (!key?.exists) return 'none'
+  if (!key?.exists) return '未配置'
   return safeMaskedKey(key.masked_key)
 })
 
@@ -357,12 +357,12 @@ const usageMetrics = computed<DisplayMetric[]>(() => {
   if (!stats) return []
 
   return [
-    { label: 'Period', value: formatScalar(stats.period || '30d') },
-    { label: 'Requests', value: formatNumber(stats.total_requests) },
-    { label: 'Tokens', value: formatNumber(stats.total_tokens) },
-    { label: 'Actual cost', value: formatMoney(stats.total_actual_cost ?? stats.total_cost) },
-    { label: 'Standard cost', value: formatMoney(stats.total_cost) },
-    { label: 'Avg duration', value: formatDuration(stats.average_duration_ms ?? stats.avg_duration_ms) }
+    { label: '周期', value: formatScalar(stats.period || '30d') },
+    { label: '请求数', value: formatNumber(stats.total_requests) },
+    { label: '令牌数', value: formatNumber(stats.total_tokens) },
+    { label: '实际成本', value: formatMoney(stats.total_actual_cost ?? stats.total_cost) },
+    { label: '标准成本', value: formatMoney(stats.total_cost) },
+    { label: '平均耗时', value: formatDuration(stats.average_duration_ms ?? stats.avg_duration_ms) }
   ].filter(metric => metric.value !== '-')
 })
 
@@ -373,35 +373,35 @@ const statusItems = computed<StatusItem[]>(() => {
   const items: StatusItem[] = []
   const userStatus = normalize(current.user.status)
   if (userStatus && userStatus !== 'active') {
-    items.push({ label: 'User status', detail: current.user.status, tone: 'danger' })
+    items.push({ label: '用户状态', detail: statusText(current.user.status), tone: 'danger' })
   }
   if (Number(current.user.balance) <= 0) {
-    items.push({ label: 'Balance', detail: formatNumber(current.user.balance, 2), tone: 'warn' })
+    items.push({ label: '余额', detail: formatNumber(current.user.balance, 2), tone: 'warn' })
   }
   if (!activeSubscriptions.value.length) {
-    items.push({ label: 'Subscription', detail: 'no active subscription', tone: 'warn' })
+    items.push({ label: '套餐', detail: '没有生效套餐', tone: 'warn' })
   }
   if (!current.managed_provider_key?.exists) {
-    items.push({ label: 'Managed key', detail: 'missing', tone: 'warn' })
+    items.push({ label: '托管密钥', detail: '未配置', tone: 'warn' })
   }
 
   const revokedDevices = devices.value.filter(device => isRiskStatus(device.status))
   if (revokedDevices.length) {
-    items.push({ label: 'Devices', detail: `${revokedDevices.length} revoked/blocked`, tone: 'danger' })
+    items.push({ label: '设备', detail: `${revokedDevices.length} 台异常`, tone: 'danger' })
   }
 
   const unavailableIntegrations = integrationEntries.value.filter(([, value]) => !isHealthyStatus(value))
   if (unavailableIntegrations.length) {
-    items.push({ label: 'Integrations', detail: unavailableIntegrations.map(([key]) => key).join(', '), tone: 'warn' })
+    items.push({ label: '接入状态', detail: unavailableIntegrations.map(([key]) => key).join(', '), tone: 'warn' })
   }
 
   const errorEvents = recentEvents.value.filter(event => isRiskStatus(`${event.event_type} ${event.summary}`))
   if (errorEvents.length) {
-    items.push({ label: 'Recent events', detail: `${errorEvents.length} error-like events`, tone: 'warn' })
+    items.push({ label: '最近事件', detail: `${errorEvents.length} 条疑似异常`, tone: 'warn' })
   }
 
   if (!items.length) {
-    items.push({ label: 'Clear', detail: 'no abnormal status', tone: 'ok' })
+    items.push({ label: '正常', detail: '没有需要处理的状态', tone: 'ok' })
   }
   return items
 })
@@ -421,7 +421,7 @@ async function loadUser() {
   try {
     entitlement.value = await getCodexPlusUserEntitlement(userId.value)
   } catch (err) {
-    error.value = (err as { message?: string }).message || 'Failed to load user entitlement'
+    error.value = (err as { message?: string }).message || '查询用户授权失败'
     entitlement.value = null
   } finally {
     loading.value = false
@@ -473,7 +473,7 @@ function relativeExpiry(time: number) {
   const day = 24 * 60 * 60 * 1000
   const hour = 60 * 60 * 1000
   const value = abs >= day ? `${Math.ceil(abs / day)}d` : `${Math.ceil(abs / hour)}h`
-  return diff >= 0 ? `${value} left` : `${value} expired`
+  return diff >= 0 ? `剩余 ${value}` : `已过期 ${value}`
 }
 
 function formatScalar(value: unknown) {
@@ -514,7 +514,7 @@ function asRecord(value: unknown): UnknownRecord | null {
 
 function safeMaskedKey(value?: string) {
   const trimmed = (value || '').trim()
-  if (!trimmed) return 'masked'
+  if (!trimmed) return '已隐藏'
   if (trimmed.includes('*') || trimmed.includes('...') || trimmed.includes('…') || trimmed.length <= 16) {
     return trimmed
   }
@@ -543,6 +543,35 @@ function statusClass(status?: string) {
   const normalized = normalize(status)
   if (['pending', 'paused', 'warning', 'warn', 'limited'].some(item => normalized.includes(item))) return 'badge-yellow'
   return 'badge-gray'
+}
+
+function statusText(value: unknown) {
+  const raw = String(value || '').trim()
+  const labels: Record<string, string> = {
+    active: '正常',
+    ok: '正常',
+    loaded: '已加载',
+    enabled: '已启用',
+    available: '可用',
+    paid: '已支付',
+    success: '成功',
+    pending: '等待中',
+    paused: '已暂停',
+    warning: '需关注',
+    warn: '需关注',
+    limited: '受限',
+    revoked: '已撤销',
+    expired: '已过期',
+    disabled: '已停用',
+    error: '错误',
+    failed: '失败',
+    unavailable: '不可用',
+    blocked: '已阻止',
+    deleted: '已删除',
+    inactive: '未启用',
+    denied: '已拒绝'
+  }
+  return labels[raw.toLowerCase()] || raw || '-'
 }
 
 function toneClass(tone: AlertTone) {

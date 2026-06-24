@@ -18,6 +18,10 @@ const CLOUD_STATE_DIR: &str = "codexplus-cloud";
 const SESSION_FILE: &str = "session.json";
 const DEVICE_FILE: &str = "device.json";
 const BOOTSTRAP_SNAPSHOT_FILE: &str = "bootstrap_snapshot.json";
+const ENDPOINT_JSON_FILE: &str = "endpoint.json";
+const ENDPOINT_TEXT_FILE: &str = "endpoint.txt";
+const CLOUD_BASE_URL_ENV: &str = "CODEXPLUS_CLOUD_BASE_URL";
+const DEFAULT_LOCAL_CLOUD_BASE_URL: &str = "http://127.0.0.1:8081";
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct CloudSession {
@@ -260,10 +264,15 @@ impl CloudLocalStore {
         let session = self.load_session().ok().flatten();
         let device = self.load_device().ok().flatten();
         let snapshot = self.load_snapshot().ok().flatten();
+        let preconfigured_base_url = session
+            .as_ref()
+            .and_then(|session| non_empty_string(&session.base_url))
+            .or_else(|| preconfigured_cloud_base_url(&self.root));
         state_from_parts(
             session.as_ref(),
             device.as_ref(),
             snapshot.as_ref(),
+            preconfigured_base_url.as_deref(),
             settings,
         )
     }
@@ -413,6 +422,7 @@ fn state_from_parts(
     session: Option<&CloudSession>,
     device: Option<&CloudDevice>,
     snapshot: Option<&CloudBootstrapSnapshotFile>,
+    preconfigured_base_url: Option<&str>,
     settings: &BackendSettings,
 ) -> CloudRuntimeState {
     let active_profile = settings
@@ -467,7 +477,9 @@ fn state_from_parts(
     CloudRuntimeState {
         connection: CloudConnectionState {
             base_url: session
-                .map(|session| redact_url_query_secrets(&session.base_url))
+                .and_then(|session| non_empty_string(&session.base_url))
+                .or_else(|| preconfigured_base_url.and_then(non_empty_string))
+                .map(|url| redact_url_query_secrets(&url))
                 .unwrap_or_default(),
             authenticated,
             user_label: session.and_then(|session| session.user_label.clone()),
@@ -582,6 +594,42 @@ fn profile_has_api_key(profile: &crate::settings::RelayProfile) -> bool {
     !profile.api_key.trim().is_empty() || !profile.auth_contents.trim().is_empty()
 }
 
+#[derive(Debug, Deserialize)]
+struct CloudEndpointConfig {
+    #[serde(default)]
+    base_url: String,
+    #[serde(default)]
+    endpoint: String,
+}
+
+fn preconfigured_cloud_base_url(root: &Path) -> Option<String> {
+    std::env::var(CLOUD_BASE_URL_ENV)
+        .ok()
+        .and_then(|value| non_empty_string(&value))
+        .or_else(|| option_env!("CODEXPLUS_CLOUD_BASE_URL").and_then(non_empty_string))
+        .or_else(|| read_endpoint_json(&root.join(ENDPOINT_JSON_FILE)))
+        .or_else(|| read_endpoint_text(&root.join(ENDPOINT_TEXT_FILE)))
+        .or_else(|| Some(DEFAULT_LOCAL_CLOUD_BASE_URL.to_string()))
+        .map(|url| normalize_base_url(&url))
+}
+
+fn read_endpoint_json(path: &Path) -> Option<String> {
+    let contents = fs::read_to_string(path).ok()?;
+    let config: CloudEndpointConfig = serde_json::from_str(&contents).ok()?;
+    non_empty_string(&config.base_url).or_else(|| non_empty_string(&config.endpoint))
+}
+
+fn read_endpoint_text(path: &Path) -> Option<String> {
+    fs::read_to_string(path)
+        .ok()
+        .and_then(|contents| non_empty_string(&contents))
+}
+
+fn non_empty_string(value: &str) -> Option<String> {
+    let value = value.trim();
+    (!value.is_empty()).then(|| value.to_string())
+}
+
 fn read_optional_json<T>(path: &Path) -> anyhow::Result<Option<T>>
 where
     T: for<'de> Deserialize<'de>,
@@ -686,8 +734,22 @@ mod tests {
         let state = store.state(&settings);
 
         assert!(!state.connection.authenticated);
+        assert_eq!(state.connection.base_url, DEFAULT_LOCAL_CLOUD_BASE_URL);
         assert_eq!(state.entitlement.status, "needs_login");
         assert!(!state.provider.has_api_key);
+    }
+
+    #[test]
+    fn endpoint_file_overrides_default_local_cloud_endpoint() {
+        let temp = tempfile::tempdir().unwrap();
+        let root = temp.path().join("cloud");
+        fs::create_dir_all(&root).unwrap();
+        fs::write(root.join(ENDPOINT_TEXT_FILE), " http://127.0.0.1:19090/ ").unwrap();
+
+        let store = CloudLocalStore::new(root);
+        let state = store.state(&BackendSettings::default());
+
+        assert_eq!(state.connection.base_url, "http://127.0.0.1:19090");
     }
 
     #[test]

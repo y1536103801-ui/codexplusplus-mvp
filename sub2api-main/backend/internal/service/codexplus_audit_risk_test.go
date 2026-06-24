@@ -66,54 +66,6 @@ func TestCodexPlusAuditRiskPayloadRedactsSensitiveFields(t *testing.T) {
 	}
 }
 
-func TestCodexPlusAdminEventSummaryExposesSafeAuditFields(t *testing.T) {
-	userID := int64(8)
-	deviceID := "codexplus-07-e2e-device"
-	requestID := "req-gateway-1"
-	configVersion := "codexplus-mvp-1"
-	event := CodexPlusEvent{
-		ID:            123,
-		UserID:        &userID,
-		DeviceID:      &deviceID,
-		EventType:     CodexPlusGatewayPolicyEventRejected,
-		Severity:      "warning",
-		RequestID:     &requestID,
-		ConfigVersion: &configVersion,
-		Payload: map[string]any{
-			"event_type":        CodexPlusGatewayPolicyEventRejected,
-			"model_id":          "codex-denied-local",
-			"error_code":        CodexPlusGatewayErrorModelNotAllowed,
-			"service_status":    CodexPlusServiceStatusModelUnavailable,
-			"risk_tags":         []string{CodexPlusAuditRiskTagGatewayRejected},
-			"redaction_applied": true,
-			"metadata": map[string]any{
-				"reason":        "requested model is not in Codex++ model catalog",
-				"authorization": "Bearer should-not-survive",
-			},
-		},
-		CreatedAt: time.Date(2026, 6, 19, 8, 0, 0, 0, time.UTC),
-	}
-
-	summary := eventSummaryFromService(event)
-	if summary.EventType != CodexPlusGatewayPolicyEventRejected ||
-		summary.RequestID == nil || *summary.RequestID != requestID ||
-		summary.ConfigVersion == nil || *summary.ConfigVersion != configVersion ||
-		summary.DeviceID == nil || *summary.DeviceID != deviceID {
-		t.Fatalf("summary identity fields = %#v", summary)
-	}
-	if summary.ErrorCode != CodexPlusGatewayErrorModelNotAllowed ||
-		summary.ServiceStatus != CodexPlusServiceStatusModelUnavailable ||
-		!summary.RedactionApplied {
-		t.Fatalf("summary audit fields = %#v", summary)
-	}
-	if !containsCodexPlusStringFold(summary.RiskTags, CodexPlusAuditRiskTagGatewayRejected) {
-		t.Fatalf("summary risk tags = %#v", summary.RiskTags)
-	}
-	if summary.Summary != "requested model is not in Codex++ model catalog" {
-		t.Fatalf("summary text = %q", summary.Summary)
-	}
-}
-
 func TestCodexPlusAuditRiskQueryByUserDeviceAndRequestID(t *testing.T) {
 	ctx := context.Background()
 	store := &codexPlusAuditRiskMemoryStore{}

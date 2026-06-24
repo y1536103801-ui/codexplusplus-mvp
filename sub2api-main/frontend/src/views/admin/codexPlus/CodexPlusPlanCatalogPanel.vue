@@ -1,293 +1,298 @@
 <template>
-  <section class="space-y-3">
-    <div class="flex flex-wrap items-center justify-between gap-2">
-      <p class="text-sm text-gray-600 dark:text-gray-300">
-        Sale price and entitlement fulfillment stay in existing payment plans, groups, and subscriptions.
-      </p>
+  <section class="space-y-4">
+    <div class="plan-toolbar">
+      <div>
+        <h3 class="toolbar-title">套餐列表</h3>
+        <p class="toolbar-desc">每张卡片就是一个套餐。卡片里的字段只属于该套餐，删除按钮在卡片右上角。</p>
+      </div>
       <div class="flex flex-wrap gap-2">
-        <RouterLink class="btn-secondary" to="/admin/orders/plans">Payment plans</RouterLink>
-        <RouterLink class="btn-secondary" to="/admin/groups">Groups</RouterLink>
-        <button class="btn-primary" type="button" @click="addPlan">Add plan</button>
+        <RouterLink class="btn-secondary" to="/admin/orders/plans">支付套餐</RouterLink>
+        <RouterLink class="btn-secondary" to="/admin/groups">用户组</RouterLink>
+        <button class="btn-primary" type="button" @click="addPlan">新增套餐</button>
       </div>
     </div>
 
-    <div class="overflow-x-auto">
-      <table class="admin-table">
-        <thead>
-          <tr>
-            <th>Plan</th>
-            <th>Price</th>
-            <th>Commerce</th>
-            <th>Grant</th>
-            <th>Sources</th>
-            <th>Access</th>
-            <th>Status</th>
-            <th>User summary</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="(plan, index) in editablePlans" :key="plan.plan_id || index">
-            <td class="w-[230px]">
-              <div class="two-col">
-                <label class="field">
-                  <span class="field-label">Plan ID</span>
-                  <input v-model.trim="plan.plan_id" class="input" placeholder="pro_monthly" />
-                </label>
-                <label class="field">
-                  <span class="field-label">Sort</span>
-                  <input v-model.number="plan.sort_order" class="input" min="0" type="number" />
-                </label>
-              </div>
-              <label class="field">
-                <span class="field-label">Name</span>
-                <input v-model.trim="plan.name" class="input" placeholder="Codex++ Pro Monthly" />
-              </label>
-              <label class="field">
-                <span class="field-label">Description</span>
-                <textarea
-                  v-model.trim="plan.description"
-                  class="input min-h-[68px] resize-y"
-                  placeholder="Shown in the user plan snapshot"
-                ></textarea>
-              </label>
-              <label class="field">
-                <span class="field-label">Usage policy</span>
-                <input v-model.trim="plan.usage_policy_id" class="input" placeholder="pro_monthly_policy" />
-              </label>
-            </td>
+    <div v-if="!editablePlans.length" class="empty-card">
+      <div class="font-medium text-gray-900 dark:text-white">还没有套餐</div>
+      <p>点击“新增套餐”创建第一项，填写后记得保存配置。</p>
+    </div>
 
-            <td class="w-[190px]">
+    <div v-else class="plan-list">
+      <article v-for="(plan, index) in editablePlans" :key="plan.plan_id || index" class="plan-card">
+        <header class="plan-card-header">
+          <div class="min-w-0">
+            <div class="flex flex-wrap items-center gap-2">
+              <span class="plan-index">套餐 {{ index + 1 }}</span>
+              <span class="pill" :class="{ ok: plan.status === 'active', warning: plan.status !== 'active' }">
+                {{ statusLabel(plan.status) }}
+              </span>
+              <span class="pill" :class="{ ok: plan.is_listed, warning: !plan.is_listed }">
+                {{ plan.is_listed ? '用户可见' : '用户不可见' }}
+              </span>
+              <span class="pill" :class="{ ok: isPurchasable(plan), warning: !isPurchasable(plan) }">
+                {{ isPurchasable(plan) ? '可购买' : '未开放购买' }}
+              </span>
+            </div>
+            <h4 class="plan-title">{{ planDisplayName(plan, index) }}</h4>
+            <p class="plan-subtitle">
+              {{ plan.display_price || '未设置价格' }} · {{ periodLabel(plan.billing_period) }} ·
+              {{ formatQuotaLabel(plan.entitlement_grant.balance_credit, '次') }}
+            </p>
+          </div>
+          <div class="plan-actions">
+            <button class="btn-secondary px-3 py-1.5 text-xs" type="button" @click="downlistPlan(plan)">下架</button>
+            <button class="btn-danger px-3 py-1.5 text-xs" type="button" @click="removePlan(index)">删除套餐</button>
+          </div>
+        </header>
+
+        <div class="plan-grid">
+          <section class="plan-section">
+            <div class="section-heading">基本信息</div>
+            <div class="two-col">
               <label class="field">
-                <span class="field-label">Period</span>
-                <select v-model="plan.billing_period" class="input">
-                  <option value="none">none</option>
-                  <option value="trial">trial</option>
-                  <option value="monthly">monthly</option>
-                  <option value="quarterly">quarterly</option>
-                  <option value="yearly">yearly</option>
-                  <option value="one_time">one_time</option>
+                <span class="field-label">套餐编号</span>
+                <input v-model.trim="plan.plan_id" class="input" placeholder="team_monthly" />
+              </label>
+              <label class="field">
+                <span class="field-label">排序</span>
+                <input v-model.number="plan.sort_order" class="input" min="0" type="number" />
+              </label>
+            </div>
+            <label class="field">
+              <span class="field-label">套餐名称</span>
+              <input v-model.trim="plan.name" class="input" placeholder="团队套餐" />
+            </label>
+            <label class="field">
+              <span class="field-label">用户看到的说明</span>
+              <textarea
+                v-model.trim="plan.description"
+                class="input min-h-[82px] resize-y"
+                placeholder="显示给用户看的套餐说明"
+              ></textarea>
+            </label>
+            <div class="two-col">
+              <label class="field">
+                <span class="field-label">状态</span>
+                <select v-model="plan.status" class="input" @change="syncStatus(plan)">
+                  <option value="active">上架</option>
+                  <option value="hidden">隐藏</option>
+                  <option value="disabled">停用</option>
                 </select>
               </label>
-              <div class="two-col">
-                <label class="field">
-                  <span class="field-label">Currency</span>
-                  <input
-                    v-model="plan.currency"
-                    class="input uppercase"
-                    maxlength="3"
-                    placeholder="USD"
-                    @blur="plan.currency = plan.currency.trim().toUpperCase()"
-                  />
-                </label>
-                <label class="field">
-                  <span class="field-label">Minor amount</span>
-                  <input v-model.number="plan.price_amount_minor" class="input" min="0" type="number" />
-                </label>
-              </div>
-              <label class="field">
-                <span class="field-label">Display price</span>
-                <input v-model.trim="plan.display_price" class="input" placeholder="$19.99/month" />
+              <label class="check mt-6">
+                <input v-model="plan.is_listed" type="checkbox" @change="syncListing(plan)" />
+                用户可见
               </label>
-            </td>
+            </div>
+          </section>
 
-            <td class="w-[260px]">
+          <section class="plan-section">
+            <div class="section-heading">价格与购买</div>
+            <label class="field">
+              <span class="field-label">周期</span>
+              <select v-model="plan.billing_period" class="input">
+                <option value="none">无周期</option>
+                <option value="trial">试用</option>
+                <option value="monthly">月付</option>
+                <option value="quarterly">季付</option>
+                <option value="yearly">年付</option>
+                <option value="one_time">一次性</option>
+              </select>
+            </label>
+            <div class="two-col">
               <label class="field">
-                <span class="field-label">Purchase URL</span>
-                <input
-                  v-model="plan.purchase_url"
-                  class="input"
-                  placeholder="https://..."
-                  @blur="normalizePlanUrl(plan, 'purchase_url')"
-                />
+                <span class="field-label">显示价格</span>
+                <input v-model.trim="plan.display_price" class="input" placeholder="¥99 / 月" />
               </label>
               <label class="field">
-                <span class="field-label">Renew URL</span>
-                <input
-                  v-model="plan.renew_url"
-                  class="input"
-                  placeholder="https://..."
-                  @blur="normalizePlanUrl(plan, 'renew_url')"
-                />
+                <span class="field-label">金额（分）</span>
+                <input v-model.number="plan.price_amount_minor" class="input" min="0" type="number" />
               </label>
-              <div class="two-col">
-                <label class="field">
-                  <span class="field-label">Product ref</span>
-                  <input
-                    v-model="plan.external_billing_refs.product_id"
-                    class="input"
-                    placeholder="product id"
-                    @blur="normalizeBillingRef(plan, 'product_id')"
-                  />
-                </label>
-                <label class="field">
-                  <span class="field-label">SKU ref</span>
-                  <input
-                    v-model="plan.external_billing_refs.sku_id"
-                    class="input"
-                    placeholder="sku id"
-                    @blur="normalizeBillingRef(plan, 'sku_id')"
-                  />
-                </label>
-              </div>
-            </td>
+            </div>
+            <label class="field">
+              <span class="field-label">币种</span>
+              <input
+                v-model="plan.currency"
+                class="input uppercase"
+                maxlength="3"
+                placeholder="USD"
+                @blur="plan.currency = plan.currency.trim().toUpperCase()"
+              />
+            </label>
+            <label class="field">
+              <span class="field-label">购买链接</span>
+              <input
+                v-model="plan.purchase_url"
+                class="input"
+                placeholder="https://..."
+                @blur="normalizePlanUrl(plan, 'purchase_url')"
+              />
+            </label>
+            <label class="field">
+              <span class="field-label">续费链接</span>
+              <input
+                v-model="plan.renew_url"
+                class="input"
+                placeholder="https://..."
+                @blur="normalizePlanUrl(plan, 'renew_url')"
+              />
+            </label>
+          </section>
 
-            <td class="w-[190px]">
+          <section class="plan-section">
+            <div class="section-heading">用户获得</div>
+            <div class="two-col">
               <label class="field">
-                <span class="field-label">Balance credit</span>
+                <span class="field-label">发放余额</span>
                 <input v-model.number="plan.entitlement_grant.balance_credit" class="input" min="0" type="number" />
               </label>
               <label class="field">
-                <span class="field-label">Duration days</span>
+                <span class="field-label">有效天数</span>
                 <input v-model.number="plan.entitlement_grant.duration_days" class="input" min="0" type="number" />
               </label>
+            </div>
+            <div class="two-col">
               <label class="field">
-                <span class="field-label">Daily quota</span>
+                <span class="field-label">每日额度</span>
                 <input
                   :value="nullableNumberValue(plan.entitlement_grant.daily_quota)"
                   class="input"
                   min="0"
-                  placeholder="null"
+                  placeholder="不限制"
                   type="number"
                   @input="plan.entitlement_grant.daily_quota = parseNullableNumber(($event.target as HTMLInputElement).value)"
                 />
               </label>
               <label class="field">
-                <span class="field-label">Period quota</span>
+                <span class="field-label">周期额度</span>
                 <input
                   :value="nullableNumberValue(plan.entitlement_grant.period_quota)"
                   class="input"
                   min="0"
-                  placeholder="null"
+                  placeholder="不限制"
                   type="number"
                   @input="plan.entitlement_grant.period_quota = parseNullableNumber(($event.target as HTMLInputElement).value)"
                 />
               </label>
-            </td>
+            </div>
+            <label class="field">
+              <span class="field-label">模型分组</span>
+              <input
+                :value="plan.model_groups.join(', ')"
+                class="input"
+                placeholder="codex_standard, codex_premium"
+                @input="plan.model_groups = splitList(($event.target as HTMLInputElement).value)"
+              />
+            </label>
+            <label class="field">
+              <span class="field-label">用量规则</span>
+              <input v-model.trim="plan.usage_policy_id" class="input" placeholder="default_policy" />
+            </label>
+          </section>
 
-            <td class="w-[250px]">
+          <section class="plan-section">
+            <div class="section-heading">绑定来源</div>
+            <label class="field">
+              <span class="field-label">订阅用户组</span>
+              <input
+                :value="formatNumberList(plan.entitlement_sources.subscription_group_ids)"
+                class="input"
+                list="codex-payment-group-candidates"
+                placeholder="101, 102"
+                @input="plan.entitlement_sources.subscription_group_ids = splitNumberList(($event.target as HTMLInputElement).value)"
+              />
+            </label>
+            <label class="field">
+              <span class="field-label">密钥用户组</span>
+              <input
+                :value="formatNumberList(plan.entitlement_sources.api_key_group_ids)"
+                class="input"
+                list="codex-payment-group-candidates"
+                placeholder="201, 202"
+                @input="plan.entitlement_sources.api_key_group_ids = splitNumberList(($event.target as HTMLInputElement).value)"
+              />
+            </label>
+            <label class="field">
+              <span class="field-label">用户组名称</span>
+              <input
+                :value="plan.entitlement_sources.group_names.join(', ')"
+                class="input"
+                placeholder="codex-plus-pro"
+                @input="plan.entitlement_sources.group_names = splitList(($event.target as HTMLInputElement).value)"
+              />
+            </label>
+            <div class="two-col">
               <label class="field">
-                <span class="field-label">Subscription group IDs</span>
+                <span class="field-label">商品编号</span>
                 <input
-                  :value="formatNumberList(plan.entitlement_sources.subscription_group_ids)"
+                  v-model="plan.external_billing_refs.product_id"
                   class="input"
-                  list="codex-payment-group-candidates"
-                  placeholder="101, 102"
-                  @input="plan.entitlement_sources.subscription_group_ids = splitNumberList(($event.target as HTMLInputElement).value)"
+                  placeholder="商品 ID"
+                  @blur="normalizeBillingRef(plan, 'product_id')"
                 />
               </label>
               <label class="field">
-                <span class="field-label">API key group IDs</span>
+                <span class="field-label">规格编号</span>
                 <input
-                  :value="formatNumberList(plan.entitlement_sources.api_key_group_ids)"
+                  v-model="plan.external_billing_refs.sku_id"
                   class="input"
-                  list="codex-payment-group-candidates"
-                  placeholder="201, 202"
-                  @input="plan.entitlement_sources.api_key_group_ids = splitNumberList(($event.target as HTMLInputElement).value)"
+                  placeholder="SKU ID"
+                  @blur="normalizeBillingRef(plan, 'sku_id')"
                 />
               </label>
-              <label class="field">
-                <span class="field-label">Group names</span>
-                <input
-                  :value="plan.entitlement_sources.group_names.join(', ')"
-                  class="input"
-                  placeholder="codex-plus-pro"
-                  @input="plan.entitlement_sources.group_names = splitList(($event.target as HTMLInputElement).value)"
-                />
-              </label>
-              <div class="mt-1 flex flex-wrap gap-1">
-                <span class="pill" :class="{ warning: !hasEntitlementSources(plan) }">
-                  {{ hasEntitlementSources(plan) ? 'mapped' : 'no mapping' }}
-                </span>
-              </div>
-            </td>
+            </div>
+            <div class="mt-1">
+              <span class="pill" :class="{ ok: hasEntitlementSources(plan), warning: !hasEntitlementSources(plan) }">
+                {{ hasEntitlementSources(plan) ? '已绑定权益来源' : '未绑定权益来源' }}
+              </span>
+            </div>
+          </section>
+        </div>
 
-            <td class="w-[250px]">
-              <label class="field">
-                <span class="field-label">Model groups</span>
-                <input
-                  :value="plan.model_groups.join(', ')"
-                  class="input"
-                  placeholder="codex_standard, codex_premium"
-                  @input="plan.model_groups = splitList(($event.target as HTMLInputElement).value)"
-                />
-              </label>
+        <div class="plan-preview">
+          <div>
+            <span class="preview-label">用户侧预览</span>
+            <strong>{{ planDisplayName(plan, index) }}</strong>
+            <span>{{ plan.display_price || '未设置价格' }}，{{ plan.description || '暂无说明' }}</span>
+          </div>
+          <div class="flex flex-wrap gap-1">
+            <span v-for="group in plan.model_groups" :key="group" class="pill">{{ group }}</span>
+          </div>
+        </div>
 
-              <details class="details">
-                <summary>Copy keys</summary>
-                <div class="mt-2 space-y-1.5">
-                  <input v-model.trim="plan.copy_keys.purchase_action" class="input" placeholder="billing.action.purchase" />
-                  <input v-model.trim="plan.copy_keys.renew_action" class="input" placeholder="billing.action.renew" />
-                  <input v-model.trim="plan.copy_keys.upgrade_action" class="input" placeholder="billing.action.upgrade" />
-                  <input
-                    v-model.trim="plan.copy_keys.not_purchased_message"
-                    class="input"
-                    placeholder="billing.message.not_purchased"
-                  />
-                  <input v-model.trim="plan.copy_keys.expired_message" class="input" placeholder="billing.message.expired" />
-                  <input
-                    v-model.trim="plan.copy_keys.low_balance_message"
-                    class="input"
-                    placeholder="billing.message.low_balance"
-                  />
-                </div>
-              </details>
-            </td>
-
-            <td class="w-[145px]">
-              <label class="field">
-                <span class="field-label">Status</span>
-                <select v-model="plan.status" class="input" @change="syncStatus(plan)">
-                  <option value="active">active</option>
-                  <option value="hidden">hidden</option>
-                  <option value="disabled">disabled</option>
-                </select>
-              </label>
-              <label class="check">
-                <input v-model="plan.is_listed" type="checkbox" @change="syncListing(plan)" />
-                listed
-              </label>
-              <div class="mt-2 flex flex-wrap gap-1">
-                <span class="pill" :class="{ ok: isPurchasable(plan), warning: !isPurchasable(plan) }">
-                  {{ isPurchasable(plan) ? 'purchasable' : 'not purchasable' }}
-                </span>
-                <span v-if="plan.renew_url" class="pill ok">renew</span>
-              </div>
-            </td>
-
-            <td class="w-[250px]">
-              <div class="summary">
-                <div class="font-medium text-gray-900 dark:text-white">{{ plan.name || plan.plan_id || 'Unnamed plan' }}</div>
-                <div>{{ plan.display_price || 'No display price' }} / {{ plan.billing_period }}</div>
-                <div>{{ plan.description || 'No description' }}</div>
-                <div class="mt-1 flex flex-wrap gap-1">
-                  <span v-for="group in plan.model_groups" :key="group" class="pill">{{ group }}</span>
-                </div>
-              </div>
-            </td>
-
-            <td class="w-[118px]">
-              <div class="space-y-1.5">
-                <button class="btn-secondary w-full px-2 py-1 text-xs" type="button" @click="downlistPlan(plan)">Downlist</button>
-                <button class="btn-danger w-full" type="button" @click="removePlan(index)">Remove row</button>
-              </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-
-      <datalist id="codex-payment-group-candidates">
-        <option v-for="group in paymentGroupOptions" :key="group.id" :value="group.id">
-          {{ group.label }}
-        </option>
-      </datalist>
+        <details class="details">
+          <summary>高级文案标识（通常不用改）</summary>
+          <div class="mt-2 grid gap-2 md:grid-cols-2 xl:grid-cols-3">
+            <input v-model.trim="plan.copy_keys.purchase_action" class="input" placeholder="billing.action.purchase" />
+            <input v-model.trim="plan.copy_keys.renew_action" class="input" placeholder="billing.action.renew" />
+            <input v-model.trim="plan.copy_keys.upgrade_action" class="input" placeholder="billing.action.upgrade" />
+            <input
+              v-model.trim="plan.copy_keys.not_purchased_message"
+              class="input"
+              placeholder="billing.message.not_purchased"
+            />
+            <input v-model.trim="plan.copy_keys.expired_message" class="input" placeholder="billing.message.expired" />
+            <input
+              v-model.trim="plan.copy_keys.low_balance_message"
+              class="input"
+              placeholder="billing.message.low_balance"
+            />
+          </div>
+        </details>
+      </article>
     </div>
 
+    <datalist id="codex-payment-group-candidates">
+      <option v-for="group in paymentGroupOptions" :key="group.id" :value="group.id">
+        {{ group.label }}
+      </option>
+    </datalist>
+
     <div v-if="paymentPlans.length" class="reference-table">
-      <div class="reference-title">Available payment plans</div>
+      <div class="reference-title">已有支付套餐</div>
       <div class="reference-grid">
         <span v-for="plan in paymentPlans" :key="plan.id">
-          #{{ plan.id }} {{ plan.name }} / group {{ plan.group_id }} / {{ plan.price }} / {{ plan.validity_days }}
+          #{{ plan.id }} {{ plan.name }} / 用户组 {{ plan.group_id }} / {{ plan.price }} / {{ plan.validity_days }}
           {{ plan.validity_unit }}
         </span>
       </div>
@@ -296,7 +301,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 import type { CodexPlusOptions, CodexPlusPlan } from '@/api/admin/codexPlus'
 
 interface PlanEntitlementSources {
@@ -337,16 +342,18 @@ const props = defineProps<{
   paymentPlans: CodexPlusOptions['payment_plans']
 }>()
 
-const editablePlans = computed(() => {
-  const plans = props.plans as AdminPlan[]
-  plans.forEach(ensurePlanDefaults)
-  return plans
-})
+const editablePlans = computed(() => props.plans as AdminPlan[])
+
+watch(
+  () => props.plans,
+  () => normalizePlans(),
+  { immediate: true }
+)
 
 const paymentGroupOptions = computed(() => {
   const seen = new Set<number>()
   return props.paymentPlans
-    .map(plan => ({ id: plan.group_id, label: `group ${plan.group_id} via ${plan.name}` }))
+    .map(plan => ({ id: plan.group_id, label: `用户组 ${plan.group_id}，来自 ${plan.name}` }))
     .filter(group => {
       if (!group.id || seen.has(group.id)) return false
       seen.add(group.id)
@@ -389,12 +396,12 @@ function addPlan() {
   const nextIndex = props.plans.length + 1
   const plan = {
     plan_id: `plan_${nextIndex}`,
-    name: 'New Codex++ plan',
-    description: 'Draft Codex++ plan.',
+    name: '新套餐',
+    description: '待完善的 Codex++ 套餐。',
     billing_period: 'monthly',
     currency: 'USD',
     price_amount_minor: 0,
-    display_price: 'TBD',
+    display_price: '待定',
     entitlement_grant: { balance_credit: 0, duration_days: 30, daily_quota: null, period_quota: null },
     entitlement_sources: emptyEntitlementSources(),
     model_groups: ['default'],
@@ -407,12 +414,32 @@ function addPlan() {
     sort_order: nextSortOrder(),
     external_billing_refs: { product_id: null, sku_id: null }
   } satisfies AdminPlan
+  ensurePlanDefaults(plan)
   props.plans.push(plan)
 }
 
 function removePlan(index: number) {
-  if (props.plans.length <= 1) return
+  const plan = props.plans[index] as AdminPlan | undefined
+  const label = plan ? planDisplayName(plan, index) : `套餐 ${index + 1}`
+  if (typeof window !== 'undefined' && !window.confirm(`删除套餐「${label}」？保存配置后才会正式生效。`)) return
   props.plans.splice(index, 1)
+}
+
+function planDisplayName(plan: AdminPlan, index: number): string {
+  return plan.name || plan.plan_id || `套餐 ${index + 1}`
+}
+
+function statusLabel(value: string): string {
+  const labels: Record<string, string> = {
+    active: '上架',
+    hidden: '隐藏',
+    disabled: '停用'
+  }
+  return labels[value] || value || '未设置'
+}
+
+function formatQuotaLabel(value: number | null | undefined, unit: string): string {
+  return typeof value === 'number' ? `${value} ${unit}` : '不限制'
 }
 
 function downlistPlan(plan: AdminPlan) {
@@ -463,6 +490,18 @@ function isPurchasable(plan: AdminPlan): boolean {
   return plan.status === 'active' && plan.is_listed && !!plan.purchase_url
 }
 
+function periodLabel(value: string): string {
+  const labels: Record<string, string> = {
+    none: '无周期',
+    trial: '试用',
+    monthly: '月付',
+    quarterly: '季付',
+    yearly: '年付',
+    one_time: '一次性'
+  }
+  return labels[value] || value || '-'
+}
+
 function ensurePlanDefaults(plan: AdminPlan) {
   plan.description = plan.description || ''
   plan.status = plan.status || 'hidden'
@@ -489,8 +528,14 @@ function ensurePlanDefaults(plan: AdminPlan) {
   syncStatus(plan)
 }
 
+function normalizePlans() {
+  for (const plan of props.plans as AdminPlan[]) {
+    ensurePlanDefaults(plan)
+  }
+}
+
 function nextSortOrder(): number {
-  const orders = editablePlans.value.map(plan => plan.sort_order || 0)
+  const orders = (props.plans as AdminPlan[]).map(plan => plan.sort_order || 0)
   return orders.length ? Math.max(...orders) + 10 : 10
 }
 
@@ -511,16 +556,72 @@ function defaultCopyKeys(): PlanCopyKeys {
 </script>
 
 <style scoped>
-.admin-table {
-  @apply w-full min-w-[1880px] text-left text-sm;
+.plan-toolbar {
+  @apply flex flex-wrap items-start justify-between gap-3 rounded-lg border border-gray-200 bg-white p-4 dark:border-dark-700 dark:bg-dark-900;
 }
 
-.admin-table th {
-  @apply border-b border-gray-200 px-2 py-2 text-xs font-semibold uppercase text-gray-500 dark:border-dark-700;
+.toolbar-title {
+  @apply text-base font-semibold text-gray-900 dark:text-white;
 }
 
-.admin-table td {
-  @apply border-b border-gray-100 px-2 py-2 align-top dark:border-dark-800;
+.toolbar-desc {
+  @apply mt-1 text-sm text-gray-500 dark:text-gray-400;
+}
+
+.empty-card {
+  @apply rounded-lg border border-dashed border-gray-300 bg-white p-6 text-sm text-gray-500 dark:border-dark-600 dark:bg-dark-900 dark:text-gray-400;
+}
+
+.plan-list {
+  @apply space-y-4;
+}
+
+.plan-card {
+  @apply rounded-lg border border-gray-200 bg-white p-4 shadow-sm dark:border-dark-700 dark:bg-dark-900;
+}
+
+.plan-card-header {
+  @apply mb-4 flex flex-wrap items-start justify-between gap-3 border-b border-gray-100 pb-4 dark:border-dark-800;
+}
+
+.plan-index {
+  @apply rounded bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600 dark:bg-dark-800 dark:text-gray-300;
+}
+
+.plan-title {
+  @apply mt-2 truncate text-xl font-semibold text-gray-900 dark:text-white;
+}
+
+.plan-subtitle {
+  @apply mt-1 text-sm text-gray-500 dark:text-gray-400;
+}
+
+.plan-actions {
+  @apply flex flex-wrap gap-2;
+}
+
+.plan-grid {
+  @apply grid gap-3 lg:grid-cols-2 2xl:grid-cols-4;
+}
+
+.plan-section {
+  @apply rounded-lg border border-gray-200 bg-gray-50 p-3 dark:border-dark-700 dark:bg-dark-800/60;
+}
+
+.section-heading {
+  @apply mb-3 text-sm font-semibold text-gray-900 dark:text-white;
+}
+
+.plan-preview {
+  @apply mt-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-dashed border-gray-200 bg-white px-3 py-2 text-sm text-gray-600 dark:border-dark-700 dark:bg-dark-900 dark:text-gray-300;
+}
+
+.plan-preview > div:first-child {
+  @apply flex min-w-0 flex-wrap items-center gap-2;
+}
+
+.preview-label {
+  @apply text-xs font-medium text-gray-400 dark:text-gray-500;
 }
 
 .two-col {

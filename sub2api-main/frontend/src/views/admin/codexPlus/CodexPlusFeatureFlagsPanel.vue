@@ -1,8 +1,8 @@
 <template>
   <section class="space-y-3">
     <div class="server-note">
-      <strong>strict_device_enforcement is server-only.</strong>
-      <span>Published backend config decides gateway enforcement; desktop clients can only report device context.</span>
+      <strong>设备强制校验只在服务端生效。</strong>
+      <span>客户端只上报设备信息，是否拦截由后端发布后的配置决定。</span>
     </div>
 
     <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
@@ -14,10 +14,10 @@
       >
         <span>
           <span class="flag-title">
-            <strong>{{ flag }}</strong>
-            <em v-if="isServerOnly(flag)">server/gateway</em>
+            <strong>{{ flagLabel(flag) }}</strong>
+            <em v-if="isServerOnly(flag)">仅服务端</em>
           </span>
-          <small>{{ descriptions[flag] || 'Desktop/bootstrap feature flag' }}</small>
+          <small>{{ descriptions[flag] || '客户端功能开关' }}</small>
         </span>
         <input v-model="model[flag]" type="checkbox" />
       </label>
@@ -37,18 +37,33 @@ const serverOnlyFlags = new Set(['strict_device_enforcement'])
 const visibleFlags = computed(() => Array.from(new Set([...props.flags, 'strict_device_enforcement'])))
 
 const descriptions: Record<string, string> = {
-  advanced_provider_config: 'Show advanced provider settings in desktop.',
-  install_assistant: 'Enable guided installation flows.',
-  new_user_tutorial: 'Show first-run tutorial surfaces.',
-  model_selector: 'Allow users to choose available models.',
-  diagnostic_export: 'Enable diagnostic export tools.',
-  announcements: 'Show Codex++ announcements.',
-  force_update_prompt: 'Prompt users when an update is required.',
-  strict_device_enforcement: 'Server rollout switch: when enabled, managed gateway requests without valid device context are rejected.'
+  advanced_provider_config: '允许客户端显示高级供应商设置。',
+  install_assistant: '开启安装和首次配置向导。',
+  new_user_tutorial: '给新用户显示首次使用引导。',
+  model_selector: '允许用户选择可用模型。',
+  diagnostic_export: '允许用户导出诊断信息。',
+  announcements: '在客户端显示 Codex++ 公告。',
+  force_update_prompt: '需要升级时提示用户更新。',
+  strict_device_enforcement: '开启后，没有合法设备信息的请求会被服务端拒绝。'
+}
+
+const labels: Record<string, string> = {
+  advanced_provider_config: '高级供应商设置',
+  install_assistant: '安装向导',
+  new_user_tutorial: '新用户引导',
+  model_selector: '模型选择',
+  diagnostic_export: '诊断导出',
+  announcements: '公告',
+  force_update_prompt: '强制更新提示',
+  strict_device_enforcement: '设备强制校验'
 }
 
 function isServerOnly(flag: string) {
   return serverOnlyFlags.has(flag)
+}
+
+function flagLabel(flag: string) {
+  return labels[flag] || flag
 }
 </script>
 

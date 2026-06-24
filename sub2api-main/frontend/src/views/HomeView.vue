@@ -1,20 +1,5 @@
 <template>
-  <!-- Custom Home Content: Full Page Mode -->
-  <div v-if="homeContent" class="min-h-screen">
-    <!-- iframe mode -->
-    <iframe
-      v-if="isHomeContentUrl"
-      :src="homeContent.trim()"
-      class="h-screen w-full border-0"
-      allowfullscreen
-    ></iframe>
-    <!-- HTML mode - SECURITY: homeContent is admin-only setting, XSS risk is acceptable -->
-    <div v-else v-html="homeContent"></div>
-  </div>
-
-  <!-- Default Home Page -->
   <div
-    v-else
     class="relative flex min-h-screen flex-col overflow-hidden bg-gradient-to-br from-gray-50 via-primary-50/30 to-gray-100 dark:from-dark-950 dark:via-dark-900 dark:to-dark-950"
   >
     <!-- Background Decorations -->
@@ -421,13 +406,6 @@ const siteName = computed(() => appStore.cachedPublicSettings?.site_name || appS
 const siteLogo = computed(() => appStore.cachedPublicSettings?.site_logo || appStore.siteLogo || '')
 const siteSubtitle = computed(() => appStore.cachedPublicSettings?.site_subtitle || 'AI API Gateway Platform')
 const docUrl = computed(() => appStore.cachedPublicSettings?.doc_url || appStore.docUrl || '')
-const homeContent = computed(() => appStore.cachedPublicSettings?.home_content || '')
-
-// Check if homeContent is a URL (for iframe display)
-const isHomeContentUrl = computed(() => {
-  const content = homeContent.value.trim()
-  return content.startsWith('http://') || content.startsWith('https://')
-})
 
 // Theme
 const isDark = ref(document.documentElement.classList.contains('dark'))

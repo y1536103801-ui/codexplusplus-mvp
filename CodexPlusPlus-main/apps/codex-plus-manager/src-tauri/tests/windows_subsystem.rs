@@ -46,7 +46,7 @@ fn launcher_binary_embeds_codex_icon_resource() {
 }
 
 #[test]
-fn windows_binaries_request_administrator_privileges() {
+fn windows_binaries_run_without_uac_prompt() {
     let manifest_dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
     let manager_build =
         std::fs::read_to_string(manifest_dir.join("build.rs")).expect("read manager build.rs");
@@ -69,7 +69,8 @@ fn windows_binaries_request_administrator_privileges() {
 
     assert!(manager_build.contains("windows-app-manifest.xml"));
     assert!(launcher_build.contains("windows-app-manifest.xml"));
-    assert!(windows_manifest.contains("requireAdministrator"));
+    assert!(windows_manifest.contains("asInvoker"));
+    assert!(!windows_manifest.contains("requireAdministrator"));
     assert!(windows_manifest.contains("Microsoft.Windows.Common-Controls"));
     assert!(windows_installer.contains("RequestExecutionLevel admin"));
 }
@@ -101,10 +102,10 @@ fn macos_packager_hides_silent_launcher_but_not_manager() {
     assert!(script.contains("BINARY_DIR=\"${BINARY_DIR:-$ROOT/target/release}\""));
     assert!(script.contains("CodexPlusPlus-${VERSION}-macos-${ARCH}.dmg"));
     assert!(script.contains(
-        "create_app \"Codex++\" \"CodexPlusPlus\" \"$BINARY_DIR/codex-plus-plus\" \"com.bigpizzav3.codexplusplus\" \"true\""
+        "create_app \"Codex++ 静默启动\" \"CodexPlusPlus\" \"$BINARY_DIR/codex-plus-plus\" \"com.bigpizzav3.codexplusplus\" \"true\""
     ));
     assert!(script.contains(
-        "create_app \"Codex++ 管理工具\" \"CodexPlusPlusManager\" \"$BINARY_DIR/codex-plus-plus-manager\" \"com.bigpizzav3.codexplusplus.manager\" \"false\""
+        "create_app \"Codex++\" \"CodexPlusPlusManager\" \"$BINARY_DIR/codex-plus-plus-manager\" \"com.bigpizzav3.codexplusplus.manager\" \"false\""
     ));
 }
 

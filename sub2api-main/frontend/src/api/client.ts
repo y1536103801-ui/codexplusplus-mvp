@@ -42,6 +42,17 @@ function onTokenRefreshed(token: string): void {
   refreshSubscribers = []
 }
 
+function isDocumentHidden(): boolean {
+  return typeof document !== 'undefined' && document.visibilityState === 'hidden'
+}
+
+function redirectWhenVisible(path: string): void {
+  if (typeof window === 'undefined') return
+
+  if (isDocumentHidden()) return
+  window.location.href = path
+}
+
 // ==================== Request Interceptor ====================
 
 // Get user's timezone
@@ -137,7 +148,7 @@ apiClient.interceptors.response.use(
         }
 
         if (window.location.pathname.startsWith('/admin/ops')) {
-          window.location.href = '/admin/settings'
+          redirectWhenVisible('/admin/settings')
         }
 
         return Promise.reject({
@@ -249,7 +260,7 @@ apiClient.interceptors.response.use(
             sessionStorage.setItem('auth_expired', '1')
 
             if (!window.location.pathname.includes('/login')) {
-              window.location.href = '/login'
+              redirectWhenVisible('/login')
             }
 
             return Promise.reject({
@@ -280,7 +291,7 @@ apiClient.interceptors.response.use(
         }
         // Only redirect if not already on login page
         if (!window.location.pathname.includes('/login')) {
-          window.location.href = '/login'
+          redirectWhenVisible('/login')
         }
       }
 
