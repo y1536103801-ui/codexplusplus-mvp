@@ -1,0 +1,28 @@
+# Local runtime data and secrets
+.env
+.env.*
+!.env.example
+backend/data/
+deploy/.env
+
+# Build and test outputs
+backend/*.exe
+backend/*.test
+desktop-client/src-tauri/target/
+desktop-client/src-tauri/gen/
+target/
+dist/
+build/
+
+# Dependencies and generated package state
+node_modules/
+
+# Local reference checkouts and evidence bundles
+.refs/
+codexppp-evidence-*/
+
+# Logs and OS/editor noise
+*.log
+*.tmp
+.DS_Store
+Thumbs.db

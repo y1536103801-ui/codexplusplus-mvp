@@ -1,0 +1,68 @@
+services:
+  backend:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    container_name: codexppp-backend
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      CODEXPPP_ADDR: 0.0.0.0:8787
+      CODEXPPP_DATABASE_URL: postgres://codexppp:codexppp@postgres:5432/codexppp?sslmode=disable
+      CODEXPPP_SECRET: ${CODEXPPP_SECRET:-}
+      CODEXPPP_REDIS_ADDR: redis:6379
+      CODEXPPP_REDIS_DB: ${CODEXPPP_REDIS_DB:-0}
+      CODEXPPP_REDIS_PASSWORD: ${CODEXPPP_REDIS_PASSWORD:-}
+      CODEXPPP_GATEWAY_RATE_LIMIT_PER_MINUTE: ${CODEXPPP_GATEWAY_RATE_LIMIT_PER_MINUTE:-120}
+      CODEXPPP_CLIENT_ORIGINS: ${CODEXPPP_CLIENT_ORIGINS:-}
+      CODEXPPP_CODEX_COMMAND: ${CODEXPPP_CODEX_COMMAND:-codex}
+      CODEXPPP_DESKTOP_LATEST_VERSION: ${CODEXPPP_DESKTOP_LATEST_VERSION:-}
+      CODEXPPP_DESKTOP_DOWNLOAD_URL: ${CODEXPPP_DESKTOP_DOWNLOAD_URL:-}
+      CODEXPPP_DESKTOP_DOWNLOAD_SHA256: ${CODEXPPP_DESKTOP_DOWNLOAD_SHA256:-}
+      CODEXPPP_DESKTOP_RELEASE_NOTES: ${CODEXPPP_DESKTOP_RELEASE_NOTES:-}
+    ports:
+      - "127.0.0.1:8787:8787"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8787/api/health >/dev/null"]
+      interval: 10s
+      timeout: 3s
+      retries: 12
+
+  postgres:
+    image: postgres:17
+    container_name: codexppp-postgres
+    environment:
+      POSTGRES_DB: codexppp
+      POSTGRES_USER: codexppp
+      POSTGRES_PASSWORD: codexppp
+    ports:
+      - "127.0.0.1:54329:5432"
+    volumes:
+      - codexppp-postgres:/var/lib/postgresql/data
+      - ../backend/migrations:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U codexppp -d codexppp"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    image: redis:8
+    container_name: codexppp-redis
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "127.0.0.1:63799:6379"
+    volumes:
+      - codexppp-redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  codexppp-postgres:
+  codexppp-redis:

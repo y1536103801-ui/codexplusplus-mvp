@@ -1,0 +1,779 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Codex+++ 管理后台</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f6f7f9;
+      --panel: #ffffff;
+      --line: #d8dde6;
+      --text: #1e2430;
+      --muted: #667085;
+      --brand: #116b5f;
+      --brand-soft: #e6f4f1;
+      --danger: #b42318;
+      --ok: #087443;
+      --warn: #9f5f00;
+      font-family: "Microsoft YaHei", "Segoe UI", Arial, sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--text); }
+    header { height: 56px; display: flex; align-items: center; justify-content: space-between; padding: 0 24px; background: var(--panel); border-bottom: 1px solid var(--line); }
+    h1 { font-size: 18px; margin: 0; font-weight: 650; }
+    main { display: grid; grid-template-columns: 220px minmax(0, 1fr); min-height: calc(100vh - 56px); }
+    nav { padding: 16px; border-right: 1px solid var(--line); background: #fbfcfd; }
+    nav button { width: 100%; height: 36px; margin-bottom: 8px; border: 1px solid transparent; background: transparent; color: var(--text); text-align: left; padding: 0 12px; border-radius: 6px; cursor: pointer; }
+    nav button.active { background: var(--brand-soft); border-color: #b7ddd5; color: var(--brand); font-weight: 650; }
+    section { padding: 22px 28px 40px; }
+    .auth { max-width: 420px; margin: 12vh auto; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 24px; }
+    .grid { display: grid; gap: 14px; }
+    .cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+    .card, .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 16px; }
+    .metric { color: var(--muted); font-size: 13px; }
+    .metric strong { display: block; color: var(--text); font-size: 28px; margin-top: 8px; }
+    .toolbar { display: flex; gap: 10px; align-items: center; margin: 0 0 14px; flex-wrap: wrap; }
+    .toolbar input, .toolbar select { width: 180px; }
+    .pager { display: flex; gap: 8px; align-items: center; justify-content: flex-end; margin-top: 12px; color: var(--muted); font-size: 13px; }
+    input, select, textarea { width: 100%; min-height: 36px; border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; background: #fff; color: var(--text); }
+    textarea { min-height: 68px; resize: vertical; }
+    label { display: grid; gap: 6px; color: var(--muted); font-size: 13px; }
+    button { border: 1px solid var(--line); background: #fff; min-height: 36px; border-radius: 6px; padding: 0 12px; cursor: pointer; color: var(--text); }
+    button.primary { background: var(--brand); border-color: var(--brand); color: #fff; }
+    button.danger { color: var(--danger); border-color: #f0b8b2; }
+    button:disabled { opacity: .55; cursor: not-allowed; }
+    table { width: 100%; border-collapse: collapse; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+    th, td { padding: 10px 12px; border-bottom: 1px solid var(--line); text-align: left; font-size: 13px; line-height: 1.4; vertical-align: top; word-break: normal; overflow-wrap: anywhere; }
+    th { color: var(--muted); background: #fbfcfd; font-weight: 600; white-space: nowrap; }
+    tr:last-child td { border-bottom: none; }
+    .split { display: grid; grid-template-columns: 340px minmax(0, 1fr); gap: 16px; align-items: start; }
+    .status { display: inline-flex; align-items: center; min-height: 24px; padding: 0 8px; border-radius: 999px; background: #eef2f6; color: var(--muted); }
+    .status.active, .status.approved, .status.available { background: #e7f7ee; color: var(--ok); }
+    .status.pending { background: #fff6e5; color: var(--warn); }
+    .status.disabled, .status.rejected { background: #fdeceb; color: var(--danger); }
+    .msg { min-height: 22px; color: var(--muted); }
+    .msg.err { color: var(--danger); }
+    .hidden { display: none !important; }
+    .row-actions { display: grid; grid-template-columns: 1fr; gap: 6px; align-items: stretch; white-space: normal; }
+    .row-actions button { width: 100%; min-height: 28px; padding: 0 6px; background: #fbfcfd; }
+    .upstream-table td:last-child { vertical-align: middle; }
+    .switch-slot { display: inline-flex; width: 42px; min-width: 42px; height: 30px; align-items: center; justify-content: center; }
+    .page-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+    .page-head h2 { margin: 0; font-size: 20px; }
+    .table-wrap { width: 100%; overflow: hidden; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); }
+    .table-wrap table { border: 0; border-radius: 0; min-width: 0; }
+    .table-wrap .upstream-table { table-layout: fixed; width: 100%; min-width: 0; }
+    .upstream-table td:nth-child(6), .upstream-table th:nth-child(6) { text-align: center; }
+    .upstream-table th, .upstream-table td { padding: 10px 8px; }
+    .time-cell { white-space: normal; }
+    .account-main { display: grid; gap: 4px; min-width: 0; }
+    .account-main strong { font-weight: 650; }
+    .meta-stack { display: grid; gap: 4px; color: var(--muted); }
+    .meta-stack strong { color: var(--text); font-weight: 600; }
+    .meta-stack .status { justify-self: start; }
+    .meta-inline { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+    .muted { color: var(--muted); }
+    .upstream-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+    .upstream-form-grid label:last-of-type, .upstream-form-grid textarea { grid-column: 1 / -1; }
+    .upstream-json { min-height: 120px; font-family: Consolas, "SFMono-Regular", monospace; font-size: 12px; }
+    .upstream-panel-actions { display: flex; gap: 10px; align-items: center; justify-content: flex-end; flex-wrap: wrap; }
+    .switch-toggle { width: 38px; height: 20px; min-height: 20px; padding: 0; border-radius: 999px; border-color: #cfd6e2; background: #e8edf3; position: relative; vertical-align: middle; }
+    .switch-toggle::before { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 999px; background: #8a95a5; box-shadow: 0 1px 2px rgba(16, 24, 40, .18); transition: left .16s ease, background .16s ease; }
+    .switch-toggle.enabled { background: #d8efe7; border-color: #a8d8c9; }
+    .switch-toggle.enabled::before { left: 18px; background: var(--ok); }
+    @media (max-width: 900px) {
+      main { grid-template-columns: 1fr; }
+      nav { display: flex; overflow-x: auto; border-right: none; border-bottom: 1px solid var(--line); }
+      nav button { min-width: 132px; }
+      .cards, .split { grid-template-columns: 1fr; }
+      .upstream-form-grid { grid-template-columns: 1fr; }
+      section { padding: 18px; }
+    }
+  </style>
+</head>
+<body>
+  <div id="auth" class="auth">
+    <h1>Codex+++ 管理后台</h1>
+    <p id="authHint" class="msg">正在检查初始化状态</p>
+    <div class="grid">
+      <label>管理员账号<input id="account" autocomplete="username"></label>
+      <label>管理员密码<input id="password" type="password" autocomplete="current-password"></label>
+      <label id="newPasswordWrap" class="hidden">新密码<input id="newPassword" type="password" autocomplete="new-password"></label>
+      <button id="authAction" class="primary">继续</button>
+    </div>
+  </div>
+
+  <div id="app" class="hidden">
+    <header>
+      <h1>Codex+++ 管理后台</h1>
+      <button id="logout">退出</button>
+    </header>
+    <main>
+      <nav id="tabs">
+        <button data-tab="overview" class="active">运营概览</button>
+        <button data-tab="users">普通用户</button>
+        <button data-tab="topups">Token 充值项</button>
+        <button data-tab="recharges">待确认充值</button>
+        <button data-tab="upstreams">号池账号</button>
+        <button data-tab="devices">设备管理</button>
+        <button data-tab="usage">用量与审计</button>
+      </nav>
+      <section id="content"></section>
+    </main>
+  </div>
+
+  <script>
+    const api = location.origin + '/api';
+    const state = { token: localStorage.getItem('adminToken') || '', tab: 'overview', initialized: false, usersPage: 1, userQ: '', userDetailId: '', userLedgerPage: 1, userRechargePage: 1, userUsagePage: 1, topupsPage: 1, topupQ: '', topupEnabled: '', topupEditId: '', rechargePage: 1, upstreamPage: 1, apiKeyPage: 1, upstreamAvailable: '', upstreamMsg: '', upstreamCredentialEditId: '', upstreamPanel: '', devicePage: 1, usagePage: 1, usageToday: '', ledgerPage: 1, auditPage: 1 };
+    const $ = (id) => document.getElementById(id);
+    const fmtTime = (v) => v ? new Date(v).toLocaleString() : '';
+    const money = (cents) => cents === 0 ? 'free' : '¥' + (Number(cents || 0) / 100).toFixed(2);
+    const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (ch) => ({
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#39;'
+    })[ch]);
+    const statusClass = (v) => String(v || '').toLowerCase().replace(/[^a-z0-9_-]/g, '');
+    const statusLabel = (v) => ({
+      active: '可用',
+      available: '可用',
+      disabled: '不可用',
+      unavailable: '不可用',
+      pending: '等待管理员确认',
+      approved: '已确认',
+      rejected: '已拒绝',
+      cancelled: '已取消'
+    })[v] || (v || '');
+    const status = (v) => `<span class="status ${statusClass(v)}">${esc(statusLabel(v))}</span>`;
+    const availability = (v) => {
+      const ok = v === 'active' || v === 'available';
+      return `<span class="status ${ok ? 'available' : 'disabled'}">${ok ? '可用' : '不可用'}</span>`;
+    };
+    const qs = (params) => new URLSearchParams(Object.entries(params).filter(([, v]) => v !== undefined && v !== null && v !== '')).toString();
+
+    async function request(path, opts = {}) {
+      const headers = { 'Content-Type': 'application/json', ...(opts.headers || {}) };
+      if (state.token) headers.Authorization = `Bearer ${state.token}`;
+      const res = await fetch(api + path, { ...opts, headers });
+      const text = await res.text();
+      const data = text ? JSON.parse(text) : {};
+      if (!res.ok) throw new Error(data.error || res.statusText);
+      return data;
+    }
+
+    async function bootstrap() {
+      try {
+        const info = await request('/admin/bootstrap');
+        state.initialized = info.initialized;
+        $('authHint').textContent = info.initialized ? '请输入管理员账号和密码' : '初始化首个管理员';
+        $('authAction').textContent = info.initialized ? '登录' : '初始化';
+        if (state.token) await resumeAdminSession();
+      } catch (err) {
+        $('authHint').textContent = err.message;
+        $('authHint').className = 'msg err';
+      }
+    }
+
+    async function resumeAdminSession() {
+      try {
+        const data = await request('/admin/me');
+        if (data.admin && data.admin.mustChangePassword) {
+          $('authHint').textContent = '请完成首轮更改账户密码';
+          $('newPasswordWrap').classList.remove('hidden');
+          $('authAction').textContent = '保存新密码';
+          return;
+        }
+        showApp();
+      } catch (err) {
+        localStorage.removeItem('adminToken');
+        state.token = '';
+      }
+    }
+
+    async function authAction() {
+      const account = $('account').value;
+      const password = $('password').value;
+      const newPassword = $('newPassword').value;
+      try {
+        if (!$('newPasswordWrap').classList.contains('hidden')) {
+          await request('/admin/password', { method: 'POST', body: JSON.stringify({ password: newPassword }) });
+          $('newPasswordWrap').classList.add('hidden');
+          showApp();
+          return;
+        }
+        const path = state.initialized ? '/admin/login' : '/admin/setup';
+        const data = await request(path, { method: 'POST', body: JSON.stringify({ account, password }) });
+        state.token = data.token;
+        localStorage.setItem('adminToken', state.token);
+        if (data.admin && data.admin.mustChangePassword) {
+          $('authHint').textContent = '请完成首轮更改账户密码';
+          $('newPasswordWrap').classList.remove('hidden');
+          $('authAction').textContent = '保存新密码';
+          return;
+        }
+        showApp();
+      } catch (err) {
+        $('authHint').textContent = err.message === 'login_failed' ? '登录失败' : err.message;
+        $('authHint').className = 'msg err';
+      }
+    }
+
+    function showApp() {
+      $('auth').classList.add('hidden');
+      $('app').classList.remove('hidden');
+      render();
+    }
+
+    function formData(form) {
+      return Object.fromEntries(new FormData(form).entries());
+    }
+
+    function upstreamFormData(form) {
+      const d = formData(form);
+      if (d.expiresAtLocal) {
+        const expiresAt = new Date(d.expiresAtLocal);
+        if (Number.isNaN(expiresAt.getTime())) throw new Error('expires_at_invalid');
+        d.expiresAt = expiresAt.toISOString();
+      }
+      delete d.expiresAtLocal;
+      return d;
+    }
+
+    function fmtNumber(v) {
+      return new Intl.NumberFormat('zh-CN', { maximumFractionDigits: 2 }).format(Number(v || 0));
+    }
+    function fmtPercent(v) {
+      return `${fmtNumber(v)}%`;
+    }
+    function upstreamReasonLabel(value) {
+      return ({
+        available: '检查通过',
+        check_failed: '检查失败',
+        missing_access_token: '缺少 access_token',
+        missing_chatgpt_account_id: '缺少 chatgptAccountId',
+        auth_failed: '认证失败',
+        usage_limit: '额度限制',
+        rate_limited: '频率限制',
+        service_overloaded: 'Codex 服务繁忙',
+        check_service_start_failed: '检查服务启动失败',
+        check_service_unavailable: '检查服务不可用'
+      })[value] || value || '';
+    }
+    function upstreamAccountCell(up) {
+      const name = up.name || up.email || up.id;
+      const meta = [up.group || '未分组', up.email && up.email !== name ? up.email : ''].filter(Boolean);
+      return `<div class="account-main"><strong>${esc(name)}</strong>${meta.map(x => `<span class="muted">${esc(x)}</span>`).join('')}</div>`;
+    }
+    function upstreamMeta(up) {
+      const first = [up.subscriptionTier].filter(Boolean).join(' / ');
+      const second = [up.credentialType, up.tokenType].filter(Boolean).join(' / ');
+      return `<div class="meta-stack">${first ? `<strong>${esc(first)}</strong>` : '<span class="muted">未检查</span>'}${second ? `<span>${esc(second)}</span>` : ''}</div>`;
+    }
+    function upstreamLimitLines(up) {
+      const items = [];
+      if (up.creditBalanceLabel) items.push(`credits ${up.creditBalanceLabel}`);
+      else if (up.creditBalance !== null && up.creditBalance !== undefined) items.push(`credits ${fmtNumber(up.creditBalance)}`);
+      if (up.rateLimitRemainingPercent !== null && up.rateLimitRemainingPercent !== undefined) items.push(`余量约 ${fmtPercent(up.rateLimitRemainingPercent)}`);
+      if (up.usageTokens) items.push(`今日已用 ${fmtNumber(up.usageTokens)} token`);
+      if (up.rateLimitResetsAt) items.push(`重置 ${fmtTime(up.rateLimitResetsAt)}`);
+      return items;
+    }
+    function upstreamAvailabilityCell(up) {
+      const reason = up.availabilityStatus !== 'available' ? upstreamReasonLabel(up.entitlementStatus) : '';
+      const limitLines = upstreamLimitLines(up);
+      const detail = reason || (up.lastCheckedAt ? (limitLines.length ? limitLines.join(' / ') : '无额度数据') : '未检查');
+      return `<div class="meta-stack">${availability(up.availabilityStatus)}<span class="muted">${esc(detail)}</span></div>`;
+    }
+    function upstreamValidity(up) {
+      if (!up.expiresAt) return '未记录';
+      const expired = Date.now() >= new Date(up.expiresAt).getTime();
+      return `<div class="meta-stack"><span>${esc(fmtTime(up.expiresAt))}</span><span class="${expired ? 'status disabled' : 'muted'}">${expired ? '已过期' : '未过期'}</span></div>`;
+    }
+    function topupPayload(item, overrides = {}) {
+      const src = { ...item, ...overrides };
+      return {
+        name: src.name || '',
+        priceCents: Number(src.priceCents || 0),
+        tokens: Number(src.tokens || 0),
+        enabled: Boolean(src.enabled),
+        sort: Number(src.sort || 0),
+        description: src.description || ''
+      };
+    }
+
+    async function render() {
+      const tab = state.tab;
+      if (tab === 'overview') return renderOverview();
+      if (tab === 'users') return renderUsers();
+      if (tab === 'topups') return renderTopups();
+      if (tab === 'recharges') return renderRecharges();
+      if (tab === 'upstreams') return renderUpstreams();
+      if (tab === 'devices') return renderDevices();
+      if (tab === 'usage') return renderUsage();
+    }
+
+    async function renderOverview() {
+      const o = await request('/admin/overview');
+      $('content').innerHTML = `
+        <div class="cards">
+          <button class="card metric" data-jump="recharges">待确认充值<strong>${esc(o.pendingRecharges)}</strong></button>
+          <button class="card metric" data-jump="upstreams" data-available="true">可调度号池账号<strong>${esc(o.availableUpstreams)}</strong></button>
+          <button class="card metric" data-jump="usage" data-today="true">今日 token 用量<strong>${esc(o.todayTokens)}</strong></button>
+        </div>`;
+      document.querySelectorAll('[data-jump]').forEach(btn => btn.onclick = () => {
+        if (btn.dataset.jump === 'recharges') state.rechargePage = 1;
+        if (btn.dataset.available) {
+          state.upstreamAvailable = btn.dataset.available;
+          state.upstreamPage = 1;
+        }
+        if (btn.dataset.today) {
+          state.usageToday = btn.dataset.today;
+          state.usagePage = 1;
+        }
+        setTab(btn.dataset.jump);
+      });
+    }
+
+    async function renderUsers() {
+      const data = await request('/admin/users?' + qs({ page: state.usersPage, size: 10, q: state.userQ }));
+      let detail = null;
+      if (state.userDetailId) {
+        const [user, ledger, recharges, usage] = await Promise.all([
+          request(`/admin/users/${state.userDetailId}`),
+          request(`/admin/users/${state.userDetailId}/ledger?` + qs({ page: state.userLedgerPage, size: 10 })),
+          request(`/admin/users/${state.userDetailId}/recharges?` + qs({ page: state.userRechargePage, size: 10 })),
+          request(`/admin/users/${state.userDetailId}/usage?` + qs({ page: state.userUsagePage, size: 10 }))
+        ]);
+        detail = { user, ledger, recharges, usage };
+      }
+      $('content').innerHTML = `
+        <div class="grid">
+          <div class="split">
+            ${detail ? `
+              <div class="panel grid">
+                <div class="toolbar"><h2>普通用户详情</h2><button data-user-back>返回创建</button></div>
+                <p>账号 <span class="status">${esc(detail.user.account)}</span></p>
+                <p>token <strong>${esc(detail.user.tokenBalance)}</strong></p>
+                <p>最近充值 <span class="status">${esc(detail.user.recentRechargeStatus)}</span></p>
+                <p>账号状态 ${status(detail.user.status)}</p>
+                <p>最近使用 ${esc(fmtTime(detail.user.lastLoginAt))}</p>
+                <form id="userAdjustForm" class="grid">
+                  <label>token 变动<input name="deltaTokens" type="number" value="1000"></label>
+                  <label>备注<input name="remark"></label>
+                  <button class="primary">调整 token</button>
+                </form>
+                <form id="userPasswordForm" class="grid">
+                  <label>新密码<input name="password" type="password"></label>
+                  <button>重置密码</button>
+                </form>
+              </div>` : `
+              <form id="userForm" class="panel grid">
+                <h2>创建普通用户</h2>
+                <label>账号<input name="account"></label>
+                <label>密码<input name="password" type="password"></label>
+                <button class="primary">创建</button>
+                <p class="msg" id="userMsg"></p>
+              </form>`}
+            <div>
+              <div class="toolbar">
+                <input id="userSearch" value="${esc(state.userQ)}" placeholder="搜索账号">
+                <button data-user-search>搜索</button>
+                <button data-refresh>刷新</button>
+              </div>
+              <table><thead><tr><th>账号</th><th>token</th><th>最近充值</th><th>状态</th><th>最近使用</th><th>操作</th></tr></thead>
+              <tbody>${data.items.map(u => `<tr>
+                <td>${esc(u.account)}</td><td>${esc(u.tokenBalance)}</td><td>${esc(u.recentRechargeStatus)}</td><td>${status(u.status)}</td><td>${esc(fmtTime(u.lastLoginAt))}</td>
+                <td class="row-actions">
+                  <button data-user-detail="${esc(u.id)}">详情</button>
+                  <button data-status="${esc(u.id)}" data-value="${u.status === 'active' ? 'disabled' : 'active'}">${u.status === 'active' ? '停用' : '启用'}</button>
+                </td>
+              </tr>`).join('')}</tbody></table>
+              ${pager(data, 'users')}
+            </div>
+          </div>
+          ${detail ? `
+            <div class="panel">
+              <h2>token 流水</h2>
+              <table><thead><tr><th>时间</th><th>类型</th><th>token 变动</th><th>变动后余额</th><th>来源</th></tr></thead><tbody>${detail.ledger.items.map(x => `<tr><td>${esc(fmtTime(x.createdAt))}</td><td>${esc(x.typeLabel || x.type)}</td><td>${esc(x.deltaTokens)}</td><td>${esc(x.balanceAfter)}</td><td>${esc(x.source)}</td></tr>`).join('')}</tbody></table>
+              ${pager(detail.ledger, 'userLedger')}
+            </div>
+            <div class="panel">
+              <h2>充值请求</h2>
+              <table><thead><tr><th>Token 充值项</th><th>状态</th><th>提交时间</th><th>确认时间</th></tr></thead><tbody>${detail.recharges.items.map(x => `<tr><td>${esc(x.topupName)}</td><td>${esc(x.statusLabel || x.status)}</td><td>${esc(fmtTime(x.submittedAt))}</td><td>${esc(fmtTime(x.confirmedAt))}</td></tr>`).join('')}</tbody></table>
+              ${pager(detail.recharges, 'userRecharge')}
+            </div>
+            <div class="panel">
+              <h2>用量明细</h2>
+              <table><thead><tr><th>时间</th><th>模型</th><th>input</th><th>cached</th><th>output</th><th>total</th></tr></thead><tbody>${detail.usage.items.map(x => `<tr><td>${esc(fmtTime(x.createdAt))}</td><td>${esc(x.model)}</td><td>${esc(x.inputTokens)}</td><td>${esc(x.cachedInputTokens)}</td><td>${esc(x.outputTokens)}</td><td>${esc(x.totalTokens)}</td></tr>`).join('')}</tbody></table>
+              ${pager(detail.usage, 'userUsage')}
+            </div>` : ''}
+        </div>`;
+      if ($('userForm')) $('userForm').onsubmit = async (e) => {
+        e.preventDefault();
+        await request('/admin/users', { method: 'POST', body: JSON.stringify(formData(e.target)) });
+        $('userMsg').textContent = '已创建';
+        renderUsers();
+      };
+      document.querySelectorAll('[data-status]').forEach(btn => btn.onclick = async () => { await request(`/admin/users/${btn.dataset.status}/status`, { method: 'POST', body: JSON.stringify({ status: btn.dataset.value }) }); renderUsers(); });
+      document.querySelectorAll('[data-user-detail]').forEach(btn => btn.onclick = () => {
+        state.userDetailId = btn.dataset.userDetail;
+        state.userLedgerPage = 1;
+        state.userRechargePage = 1;
+        state.userUsagePage = 1;
+        renderUsers();
+      });
+      if (document.querySelector('[data-user-back]')) document.querySelector('[data-user-back]').onclick = () => {
+        state.userDetailId = '';
+        renderUsers();
+      };
+      if ($('userAdjustForm')) $('userAdjustForm').onsubmit = async (e) => {
+        e.preventDefault();
+        const d = formData(e.target);
+        await request(`/admin/users/${state.userDetailId}/token-adjustments`, { method: 'POST', body: JSON.stringify({ deltaTokens: Number(d.deltaTokens), remark: d.remark }) });
+        renderUsers();
+      };
+      if ($('userPasswordForm')) $('userPasswordForm').onsubmit = async (e) => {
+        e.preventDefault();
+        const d = formData(e.target);
+        await request(`/admin/users/${state.userDetailId}/password`, { method: 'POST', body: JSON.stringify({ password: d.password }) });
+        renderUsers();
+      };
+      document.querySelector('[data-user-search]').onclick = () => {
+        state.userQ = $('userSearch').value.trim();
+        state.usersPage = 1;
+        renderUsers();
+      };
+      bindPager('users', (page) => { state.usersPage = page; renderUsers(); });
+      bindPager('userLedger', (page) => { state.userLedgerPage = page; renderUsers(); });
+      bindPager('userRecharge', (page) => { state.userRechargePage = page; renderUsers(); });
+      bindPager('userUsage', (page) => { state.userUsagePage = page; renderUsers(); });
+      document.querySelector('[data-refresh]').onclick = renderUsers;
+    }
+
+    async function renderTopups() {
+      const data = await request('/admin/topups?' + qs({ page: state.topupsPage, size: 10, q: state.topupQ, enabled: state.topupEnabled }));
+      const editing = data.items.find(x => x.id === state.topupEditId) || null;
+      if (state.topupEditId && !editing) state.topupEditId = '';
+      const formItem = editing || { name: '', priceCents: 990, tokens: 100000, sort: 10, description: '', enabled: true };
+      $('content').innerHTML = `
+        <div class="split">
+          <form id="topupForm" class="panel grid">
+            <h2>${editing ? '编辑 Token 充值项' : '创建 Token 充值项'}</h2>
+            <label>名称<input name="name" value="${esc(formItem.name)}" required></label>
+            <label>人民币价格（分）<input name="priceCents" type="number" min="0" step="1" value="${esc(formItem.priceCents)}"></label>
+            <label>到账 token<input name="tokens" type="number" min="0" step="1" value="${esc(formItem.tokens)}"></label>
+            <label>排序<input name="sort" type="number" step="1" value="${esc(formItem.sort)}"></label>
+            <label>说明<textarea name="description">${esc(formItem.description || '')}</textarea></label>
+            <label>启用<select name="enabled"><option value="true" ${formItem.enabled ? 'selected' : ''}>启用</option><option value="false" ${!formItem.enabled ? 'selected' : ''}>停用</option></select></label>
+            <div class="row-actions">
+              <button class="primary">${editing ? '保存修改' : '创建'}</button>
+              ${editing ? '<button type="button" data-cancel-topup-edit>取消编辑</button>' : ''}
+            </div>
+          </form>
+          <div>
+            <div class="toolbar">
+              <input id="topupSearch" value="${esc(state.topupQ)}" placeholder="搜索名称">
+              <select id="topupEnabled"><option value="">全部状态</option><option value="true" ${state.topupEnabled === 'true' ? 'selected' : ''}>启用</option><option value="false" ${state.topupEnabled === 'false' ? 'selected' : ''}>停用</option></select>
+              <button data-topup-search>筛选</button>
+              <button data-refresh>刷新</button>
+            </div>
+            <table><thead><tr><th>名称</th><th>价格</th><th>token</th><th>排序</th><th>状态</th><th>说明</th><th>创建时间</th><th>更新时间</th><th>操作</th></tr></thead>
+            <tbody>${data.items.map(p => `<tr><td>${esc(p.name)}</td><td>${esc(money(p.priceCents))}</td><td>${esc(p.tokens)}</td><td>${esc(p.sort)}</td><td>${p.enabled ? status('active') : status('disabled')}</td><td>${esc(p.description || '')}</td><td>${esc(fmtTime(p.createdAt))}</td><td>${esc(fmtTime(p.updatedAt))}</td><td class="row-actions"><button data-edit-topup="${esc(p.id)}">修改</button><button data-toggle-topup="${esc(p.id)}">${p.enabled ? '停用' : '启用'}</button></td></tr>`).join('')}</tbody></table>
+            ${pager(data, 'topups')}
+          </div>
+        </div>`;
+      $('topupForm').onsubmit = async (e) => {
+        e.preventDefault();
+        const d = formData(e.target);
+        const payload = topupPayload({ ...d, enabled: d.enabled === 'true' });
+        if (editing) {
+          await request(`/admin/topups/${editing.id}`, { method: 'PATCH', body: JSON.stringify(payload) });
+          state.topupEditId = '';
+        } else {
+          await request('/admin/topups', { method: 'POST', body: JSON.stringify(payload) });
+        }
+        renderTopups();
+      };
+      const cancelEdit = document.querySelector('[data-cancel-topup-edit]');
+      if (cancelEdit) cancelEdit.onclick = () => { state.topupEditId = ''; renderTopups(); };
+      document.querySelector('[data-topup-search]').onclick = () => {
+        state.topupQ = $('topupSearch').value.trim();
+        state.topupEnabled = $('topupEnabled').value;
+        state.topupEditId = '';
+        state.topupsPage = 1;
+        renderTopups();
+      };
+      document.querySelectorAll('[data-toggle-topup]').forEach(btn => btn.onclick = async () => {
+        const item = data.items.find(x => x.id === btn.dataset.toggleTopup);
+        if (!item) return;
+        await request(`/admin/topups/${item.id}`, { method: 'PATCH', body: JSON.stringify(topupPayload(item, { enabled: !item.enabled })) });
+        renderTopups();
+      });
+      document.querySelectorAll('[data-edit-topup]').forEach(btn => btn.onclick = async () => {
+        const item = data.items.find(x => x.id === btn.dataset.editTopup);
+        if (!item) return;
+        state.topupEditId = item.id;
+        renderTopups();
+      });
+      bindPager('topups', (page) => { state.topupsPage = page; renderTopups(); });
+      document.querySelector('[data-refresh]').onclick = renderTopups;
+    }
+
+    async function renderRecharges() {
+      const data = await request('/admin/recharges?' + qs({ status: 'pending', page: state.rechargePage, size: 10 }));
+      $('content').innerHTML = `
+        <div class="toolbar"><button data-refresh>刷新</button></div>
+        <table><thead><tr><th>用户账号</th><th>Token 充值项</th><th>充值项 token</th><th>提交时间</th><th>状态</th><th>操作</th></tr></thead>
+        <tbody>${data.items.map(r => `<tr><td>${esc(r.userAccount)}</td><td>${esc(r.topupName)}</td><td>${esc(r.tokens)}</td><td>${esc(fmtTime(r.submittedAt))}</td><td>${status(r.status)}</td><td class="row-actions"><button data-approve="${esc(r.id)}" class="primary">确认</button><button data-reject="${esc(r.id)}" class="danger">拒绝</button></td></tr>`).join('')}</tbody></table>
+        ${pager(data, 'recharges')}`;
+      document.querySelectorAll('[data-approve]').forEach(btn => btn.onclick = async () => { await request(`/admin/recharges/${btn.dataset.approve}/approve`, { method: 'POST' }); renderRecharges(); });
+      document.querySelectorAll('[data-reject]').forEach(btn => btn.onclick = async () => { await request(`/admin/recharges/${btn.dataset.reject}/reject`, { method: 'POST' }); renderRecharges(); });
+      bindPager('recharges', (page) => { state.rechargePage = page; renderRecharges(); });
+      document.querySelector('[data-refresh]').onclick = renderRecharges;
+    }
+
+    async function renderUpstreams() {
+      const [ups, keys] = await Promise.all([
+        request('/admin/upstreams?' + qs({ available: state.upstreamAvailable, page: state.upstreamPage, size: 10 })),
+        request('/admin/api-keys?' + qs({ page: state.apiKeyPage, size: 10 }))
+      ]);
+      let editingUpstream = state.upstreamCredentialEditId ? ups.items.find(x => x.id === state.upstreamCredentialEditId) : null;
+      if (state.upstreamCredentialEditId && !editingUpstream) state.upstreamCredentialEditId = '';
+      const upFormItem = editingUpstream || {};
+      const upFormExpiresAt = upFormItem.expiresAt ? new Date(upFormItem.expiresAt).toISOString().slice(0, 16) : '';
+      const upstreamPanel = state.upstreamCredentialEditId ? 'manual' : state.upstreamPanel;
+      const upstreamFormPanel = upstreamPanel === 'import' ? `
+        <form id="upImportForm" class="panel grid">
+          <div class="toolbar"><h2>自动识别导入</h2><button type="button" data-close-upstream-panel>收起</button></div>
+          <div class="upstream-form-grid">
+            <label>选择 JSON 文件<input id="upstreamImportFile" type="file" accept="application/json,.json"></label>
+            <label>账号导出 JSON<textarea id="upstreamImportJson" class="upstream-json" spellcheck="false"></textarea></label>
+          </div>
+          <div class="upstream-panel-actions"><button class="primary">识别并导入</button></div>
+        </form>` : upstreamPanel === 'manual' ? `
+        <form id="upForm" class="panel grid">
+          <div class="toolbar"><h2>${editingUpstream ? '替换 Codex 上游账号凭据' : '手动导入 Codex 上游账号'}</h2>${editingUpstream ? '<button type="button" data-cancel-upstream-credentials>取消替换</button>' : '<button type="button" data-close-upstream-panel>收起</button>'}</div>
+          <div class="upstream-form-grid">
+            <label>账号名称<input name="name" value="${esc(upFormItem.name || '')}"></label>
+            <label>分组<input name="group" value="${esc(upFormItem.group || '')}"></label>
+            <label>凭据类型<select name="credentialType"><option value="oauth">oauth</option></select></label>
+            <label>token_type<input name="tokenType" value="${esc(upFormItem.tokenType || '')}"></label>
+            <label>expires_at<input name="expiresAtLocal" type="datetime-local" value="${esc(upFormExpiresAt)}"></label>
+            <label>email<input name="email" value="${esc(upFormItem.email || '')}"></label>
+            <label>subscription_tier<input name="subscriptionTier" value="${esc(upFormItem.subscriptionTier || '')}"></label>
+            <label>entitlement_status<input name="entitlementStatus" value="${esc(upFormItem.entitlementStatus || '')}"></label>
+            <label>access_token<input name="accessToken" required></label>
+            <label>refresh_token<input name="refreshToken"></label>
+          </div>
+          <div class="upstream-panel-actions"><button class="primary">${editingUpstream ? '保存替换' : '导入'}</button></div>
+        </form>` : '';
+      $('content').innerHTML = `
+        <div class="grid">
+          <div class="page-head">
+            <h2>号池账号</h2>
+            <div class="toolbar">
+              <select id="upstreamAvailable"><option value="">全部账号</option><option value="true" ${state.upstreamAvailable === 'true' ? 'selected' : ''}>可调度账号</option></select>
+              <button data-upstream-filter>筛选</button>
+              <button data-refresh-upstreams>刷新</button>
+              <button data-open-upstream-panel="import" class="primary">自动导入</button>
+              <button data-open-upstream-panel="manual">手动导入</button>
+            </div>
+          </div>
+          ${upstreamFormPanel}
+          <p id="upstreamMsg" class="msg">${esc(state.upstreamMsg)}</p>
+          <div class="table-wrap">
+            <table class="upstream-table"><colgroup><col style="width:27%"><col style="width:13%"><col style="width:14%"><col style="width:21%"><col style="width:11%"><col style="width:5%"><col style="width:9%"></colgroup><thead><tr><th>账号</th><th>资料</th><th>时效</th><th>账号状态</th><th>最近检查</th><th>启用</th><th>操作</th></tr></thead>
+            <tbody>${ups.items.map(u => `<tr>
+              <td>${upstreamAccountCell(u)}</td><td>${upstreamMeta(u)}</td><td>${upstreamValidity(u)}</td><td>${upstreamAvailabilityCell(u)}</td><td class="time-cell">${esc(fmtTime(u.lastCheckedAt) || '未检查')}</td><td><span class="switch-slot"><button class="switch-toggle ${u.enabled ? 'enabled' : ''}" data-up-enabled="${esc(u.id)}" data-value="${u.enabled ? 'false' : 'true'}" title="${u.enabled ? '启用' : '关闭'}"></button></span></td>
+              <td class="row-actions"><button data-check="${esc(u.id)}">检查</button><button data-up-credentials="${esc(u.id)}">替换</button></td>
+            </tr>`).join('')}</tbody></table>
+          </div>
+          ${pager(ups, 'upstreams')}
+          <div class="panel grid">
+            <div class="toolbar"><h2>API Key 记录</h2></div>
+            <div class="table-wrap">
+              <table><thead><tr><th>API Key 记录</th><th>上游账号</th><th>API Key 状态</th><th>可调度</th><th>最近调度</th><th>操作</th></tr></thead><tbody>${keys.items.map(k => `<tr><td>${esc(k.id)}</td><td>${esc(k.upstreamAccountName || k.upstreamAccountId)}</td><td>${availability(k.status)}</td><td>${k.routeAvailable ? availability('available') : availability('unavailable')}</td><td>${esc(fmtTime(k.lastUsedAt))}</td><td><button data-api-key-status="${esc(k.id)}" data-value="${k.status === 'active' ? 'disabled' : 'active'}">${k.status === 'active' ? '停用' : '启用'}</button></td></tr>`).join('')}</tbody></table>
+            </div>
+            ${pager(keys, 'apiKeys')}
+          </div>
+        </div>`;
+      if ($('upForm')) $('upForm').onsubmit = async (e) => {
+        e.preventDefault();
+        const d = upstreamFormData(e.target);
+        if (state.upstreamCredentialEditId) {
+          await request(`/admin/upstreams/${state.upstreamCredentialEditId}/credentials`, { method: 'POST', body: JSON.stringify(d) });
+          state.upstreamMsg = '已替换 Codex 上游账号凭据';
+          state.upstreamCredentialEditId = '';
+          state.upstreamPanel = '';
+        } else {
+          await request('/admin/upstreams', { method: 'POST', body: JSON.stringify(d) });
+          state.upstreamMsg = '已导入 Codex 上游账号';
+          state.upstreamPanel = '';
+        }
+        renderUpstreams();
+      };
+      if ($('upImportForm')) $('upImportForm').onsubmit = async (e) => {
+        e.preventDefault();
+        const raw = $('upstreamImportJson').value.trim();
+        if (!raw) {
+          state.upstreamMsg = '请选择或粘贴账号导出 JSON';
+          renderUpstreams();
+          return;
+        }
+        let payload;
+        try {
+          payload = JSON.parse(raw);
+        } catch (err) {
+          state.upstreamMsg = 'JSON 格式无效';
+          renderUpstreams();
+          return;
+        }
+        try {
+          const data = await request('/admin/upstreams/import', { method: 'POST', body: JSON.stringify(payload) });
+          state.upstreamCredentialEditId = '';
+          state.upstreamPanel = '';
+          state.upstreamMsg = `已导入 ${data.imported || 0} 个 Codex 上游账号`;
+        } catch (err) {
+          state.upstreamMsg = err.message === 'invalid_upstream_import_request' ? '未识别到可导入的 Codex 上游账号' : '导入失败';
+        }
+        renderUpstreams();
+      };
+      if ($('upstreamImportFile')) $('upstreamImportFile').onchange = async (e) => {
+        const file = e.target.files && e.target.files[0];
+        if (!file) return;
+        $('upstreamImportJson').value = await file.text();
+      };
+      const cancelCredentialEdit = document.querySelector('[data-cancel-upstream-credentials]');
+      if (cancelCredentialEdit) cancelCredentialEdit.onclick = () => { state.upstreamCredentialEditId = ''; state.upstreamPanel = ''; renderUpstreams(); };
+      document.querySelectorAll('[data-close-upstream-panel]').forEach(btn => btn.onclick = () => {
+        state.upstreamCredentialEditId = '';
+        state.upstreamPanel = '';
+        renderUpstreams();
+      });
+      document.querySelectorAll('[data-open-upstream-panel]').forEach(btn => btn.onclick = () => {
+        state.upstreamCredentialEditId = '';
+        state.upstreamPanel = btn.dataset.openUpstreamPanel;
+        state.upstreamMsg = '';
+        renderUpstreams();
+      });
+      document.querySelectorAll('[data-up-credentials]').forEach(btn => btn.onclick = async () => {
+        const item = ups.items.find(x => x.id === btn.dataset.upCredentials);
+        if (!item) return;
+        state.upstreamCredentialEditId = item.id;
+        state.upstreamPanel = 'manual';
+        state.upstreamMsg = '';
+        renderUpstreams();
+      });
+      document.querySelectorAll('[data-key]').forEach(btn => btn.onclick = async () => {
+        await request('/admin/api-keys', { method: 'POST', body: JSON.stringify({ upstreamAccountId: btn.dataset.key }) });
+        state.upstreamMsg = '已生成 API Key 记录';
+        renderUpstreams();
+      });
+      document.querySelectorAll('[data-check]').forEach(btn => btn.onclick = async () => {
+        btn.disabled = true;
+        btn.textContent = '检查中';
+        state.upstreamMsg = '正在检查账号';
+        try {
+          await request(`/admin/upstreams/${btn.dataset.check}/check`, { method: 'POST' });
+          state.upstreamMsg = '已完成账号检查';
+        } catch (err) {
+          state.upstreamMsg = '检查失败';
+        }
+        renderUpstreams();
+      });
+      document.querySelectorAll('[data-up-enabled]').forEach(btn => btn.onclick = async () => {
+        const body = { enabled: btn.dataset.value === 'true' };
+        await request(`/admin/upstreams/${btn.dataset.upEnabled}/status`, { method: 'POST', body: JSON.stringify(body) });
+        state.upstreamMsg = '已更新账号状态';
+        renderUpstreams();
+      });
+      document.querySelectorAll('[data-api-key-status]').forEach(btn => btn.onclick = async () => {
+        await request(`/admin/api-keys/${btn.dataset.apiKeyStatus}/status`, { method: 'POST', body: JSON.stringify({ status: btn.dataset.value }) });
+        state.upstreamMsg = '已更新 API Key 状态';
+        renderUpstreams();
+      });
+      document.querySelector('[data-upstream-filter]').onclick = () => {
+        state.upstreamAvailable = $('upstreamAvailable').value;
+        state.upstreamPage = 1;
+        state.upstreamMsg = '';
+        state.upstreamCredentialEditId = '';
+        renderUpstreams();
+      };
+      document.querySelector('[data-refresh-upstreams]').onclick = renderUpstreams;
+      bindPager('upstreams', (page) => { state.upstreamPage = page; state.upstreamCredentialEditId = ''; renderUpstreams(); });
+      bindPager('apiKeys', (page) => { state.apiKeyPage = page; renderUpstreams(); });
+    }
+
+    async function renderDevices() {
+      const data = await request('/admin/devices?' + qs({ page: state.devicePage, size: 10 }));
+      $('content').innerHTML = `<div class="toolbar"><button data-refresh>刷新</button></div><table><thead><tr><th>用户</th><th>设备</th><th>状态</th><th>最近检查</th><th>操作</th></tr></thead><tbody>${data.items.map(d => `<tr><td>${esc(d.userAccount)}</td><td>${esc(d.name)}</td><td>${availability(d.status)}</td><td>${esc(fmtTime(d.lastSeenAt))}</td><td><button data-device="${esc(d.id)}" data-value="${d.status === 'active' ? 'disabled' : 'active'}">${d.status === 'active' ? '停用' : '启用'}</button></td></tr>`).join('')}</tbody></table>${pager(data, 'devices')}`;
+      document.querySelectorAll('[data-device]').forEach(btn => btn.onclick = async () => { await request(`/admin/devices/${btn.dataset.device}/status`, { method: 'POST', body: JSON.stringify({ status: btn.dataset.value }) }); renderDevices(); });
+      bindPager('devices', (page) => { state.devicePage = page; renderDevices(); });
+      document.querySelector('[data-refresh]').onclick = renderDevices;
+    }
+
+    async function renderUsage() {
+      const [usage, ledger, audit] = await Promise.all([
+        request('/admin/usage?' + qs({ page: state.usagePage, size: 10, today: state.usageToday })),
+        request('/admin/ledger?' + qs({ page: state.ledgerPage, size: 10 })),
+        request('/admin/audit?' + qs({ page: state.auditPage, size: 10 }))
+      ]);
+      $('content').innerHTML = `<div class="grid">
+        <div class="panel"><div class="toolbar"><h2>用量</h2><select id="usageToday"><option value="" ${state.usageToday === '' ? 'selected' : ''}>全部</option><option value="true" ${state.usageToday === 'true' ? 'selected' : ''}>今日</option></select><button data-usage-filter>筛选</button></div><table><thead><tr><th>时间</th><th>用户</th><th>模型</th><th>input</th><th>cached</th><th>output</th><th>total</th></tr></thead><tbody>${usage.items.map(u => `<tr><td>${esc(fmtTime(u.createdAt))}</td><td>${esc(u.userAccount || u.userId)}</td><td>${esc(u.model)}</td><td>${esc(u.inputTokens)}</td><td>${esc(u.cachedInputTokens)}</td><td>${esc(u.outputTokens)}</td><td>${esc(u.totalTokens)}</td></tr>`).join('')}</tbody></table>${pager(usage, 'usage')}</div>
+        <div class="panel"><h2>token 流水</h2><table><thead><tr><th>时间</th><th>用户</th><th>类型</th><th>token 变动</th><th>变动后余额</th><th>来源</th></tr></thead><tbody>${ledger.items.map(x => `<tr><td>${esc(fmtTime(x.createdAt))}</td><td>${esc(x.userAccount || x.userId)}</td><td>${esc(x.typeLabel || x.type)}</td><td>${esc(x.deltaTokens)}</td><td>${esc(x.balanceAfter)}</td><td>${esc(x.source)}</td></tr>`).join('')}</tbody></table>${pager(ledger, 'ledger')}</div>
+        <div class="panel"><h2>审计</h2><table><thead><tr><th>时间</th><th>操作者</th><th>角色</th><th>动作</th><th>目标</th><th>详情</th></tr></thead><tbody>${audit.items.map(a => `<tr><td>${esc(fmtTime(a.createdAt))}</td><td>${esc(a.actorAccount || a.actorId || '')}</td><td>${esc(a.actorRole || '')}</td><td>${esc(a.action)}</td><td>${esc(a.targetId || '')}</td><td>${esc(a.detail || '')}</td></tr>`).join('')}</tbody></table>${pager(audit, 'audit')}</div>
+      </div>`;
+      document.querySelector('[data-usage-filter]').onclick = () => {
+        state.usageToday = $('usageToday').value;
+        state.usagePage = 1;
+        renderUsage();
+      };
+      bindPager('usage', (page) => { state.usagePage = page; renderUsage(); });
+      bindPager('ledger', (page) => { state.ledgerPage = page; renderUsage(); });
+      bindPager('audit', (page) => { state.auditPage = page; renderUsage(); });
+    }
+
+    function pager(data, key) {
+      const page = Number(data.page || 1);
+      const totalPages = Number(data.totalPages || 0);
+      return `<div class="pager">
+        <button data-page="${esc(key)}" data-value="${page - 1}" ${page <= 1 ? 'disabled' : ''}>上一页</button>
+        <span>${esc(page)} / ${esc(Math.max(1, totalPages))}，共 ${esc(Number(data.total || 0))} 条</span>
+        <button data-page="${esc(key)}" data-value="${page + 1}" ${totalPages === 0 || page >= totalPages ? 'disabled' : ''}>下一页</button>
+      </div>`;
+    }
+
+    function bindPager(key, onPage) {
+      document.querySelectorAll(`[data-page="${key}"]`).forEach(btn => btn.onclick = () => {
+        const page = Number(btn.dataset.value || 1);
+        if (page > 0) onPage(page);
+      });
+    }
+
+    function setTab(tab) {
+      state.tab = tab;
+      document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+      render().catch(err => {
+        if (err.message === 'password_change_required') {
+          $('app').classList.add('hidden');
+          $('auth').classList.remove('hidden');
+          $('newPasswordWrap').classList.remove('hidden');
+          $('authHint').textContent = '请完成首轮更改账户密码';
+          $('authAction').textContent = '保存新密码';
+          return;
+        }
+        $('content').innerHTML = `<p class="msg err">${esc(err.message)}</p>`;
+      });
+    }
+
+    $('authAction').onclick = authAction;
+    $('logout').onclick = () => { localStorage.removeItem('adminToken'); location.reload(); };
+    document.querySelectorAll('#tabs button').forEach(btn => btn.onclick = () => setTab(btn.dataset.tab));
+    bootstrap();
+  </script>
+</body>
+</html>
