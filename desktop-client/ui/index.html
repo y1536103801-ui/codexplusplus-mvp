@@ -167,6 +167,7 @@
   </div>
 
   <script>
+    const INTEROP_MAJOR = '1';
     const state = {
       api: 'http://localhost:8787/api',
       token: localStorage.getItem('clientToken') || '',
@@ -174,7 +175,7 @@
       device: null,
       security: null,
       diagnostics: { codexDetected: '不可用', codexRunning: '不可用', codexAccount: '', codexAuthMode: '', configWritten: '不可用', lastFailure: '' },
-      currentVersion: '0.1.37',
+      currentVersion: '0.1.40',
       updateInfo: null,
       usagePage: 1,
       ledgerPage: 1,
@@ -190,7 +191,7 @@
     localStorage.removeItem('apiBase');
 
     async function request(path, opts = {}) {
-      const headers = { 'Content-Type': 'application/json', ...(opts.headers || {}) };
+      const headers = { 'Content-Type': 'application/json', 'X-CodexPPP-Interop-Major': INTEROP_MAJOR, ...(opts.headers || {}) };
       if (state.token) headers.Authorization = `Bearer ${state.token}`;
       let res;
       try {
@@ -552,6 +553,7 @@
         invalid_json: '请求失败，请稍后重试',
         request_failed: '请求失败，请稍后重试',
         network_unavailable: '网络不可用，请稍后重试',
+        client_version_incompatible: '客户端版本不兼容，请更新客户端',
         login_failed: '登录失败',
         invalid_client_login_request: '登录失败',
         desktop_client_required: '请使用 Windows 客户端登录',

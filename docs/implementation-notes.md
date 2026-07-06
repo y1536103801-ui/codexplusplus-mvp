@@ -18,6 +18,8 @@ Reference requirements are explicit in the implementation:
 - sub2api is the reference for the operations boundary: upstream account pool, generated platform API keys, gateway forwarding, token-level usage records, and administrator-operated recharge confirmation.
 - Codex+++ keeps a unique public API surface. It does not add root-level OpenAI-compatible, Anthropic-compatible, sub2api-compatible, or other old-interface compatibility routes. The authenticated `/api/codex/v1` adapter exists only so local Codex can use the official provider `wire_api = "responses"` path, and it reuses the same gateway billing path.
 
+Component versioning is explicit. Backend and Windows client have separate component ownership. Routine backend commits and routine Windows-client commits belong to their component Git histories. The integration branch records paired snapshots. `/api/client/...` compatibility is locked by `X-CodexPPP-Interop-Major`; current value is `1`. The Windows client sends this header on every client API request. The backend returns the same header and rejects absent or different values with `client_version_incompatible`. A changed `/api/client/...` request or response contract requires a paired backend and Windows-client integration snapshot.
+
 The gateway fails closed on billing. The client request body is sanitized before execution, so client-supplied `usage`, `inputTokens`, `outputTokens`, and related fields are not sent to the upstream and cannot be used for local deduction. The backend deducts only after the upstream response contains usage data. If upstream usage is absent or invalid, no usage record or balance deduction is created.
 
 Gateway execution uses Codex app-server as the only runtime path. The backend starts `codex app-server --listen stdio://` with `CODEX_ACCESS_TOKEN`, initializes the JSON-RPC connection, creates a thread with `thread/start`, starts a turn with `turn/start`, and waits for completion notifications. No bridge run URL, root-level OpenAI-compatible route, sub2api route, or historical fallback is part of the runtime contract.
@@ -56,7 +58,7 @@ The Tauri client now owns local Windows/Codex actions:
 - Backing up `~/.codex/config.toml` and `~/.codex/auth.json` before Codex+++ managed writes.
 - Removing Codex+++ managed TOML tables and stale Codex+++ provider entries from the user-level `config.toml`.
 - Refusing to continue if the existing TOML cannot be parsed.
-- Preserving existing local ChatGPT login, or configuring a Codex+++ custom provider with command-backed token retrieval when local Codex has no ChatGPT login.
+- Preserving existing local ChatGPT login, or configuring official Codex API-key auth and the Codex+++ provider when local Codex has no ChatGPT login.
 - Launching local Codex through a verified Windows launch path.
 
 Windows Store Codex has two recorded invalid launch paths:

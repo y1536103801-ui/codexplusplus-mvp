@@ -18,6 +18,12 @@ Codex+++ keeps two explicit reference boundaries:
 
 Codex+++ intentionally does not expose OpenAI-compatible, Anthropic-compatible, sub2api-compatible, or public gateway product routes. The public surface stays unique and clean under `/api/admin`, `/api/client`, and the authenticated backend Codex adapter under `/api/codex/v1`; gateway execution remains an internal backend responsibility. The Windows desktop launch path does not use backend pool-account data as the local Codex account display source.
 
+## Component Versioning
+
+Backend and Windows client are managed as separate components. Routine backend changes belong to backend Git history. Routine Windows client changes belong to desktop-client Git history. The combined branch is an integration snapshot.
+
+Client-backend API compatibility is controlled by `X-CodexPPP-Interop-Major`. Current value: `1`. The Windows client sends this header on every `/api/client/...` request. The backend rejects `/api/client/...` requests when the header is absent or different. Interop-major changes require paired backend and Windows-client changes in the same integration snapshot. Package patch versions such as the Tauri client version can move independently when `/api/client/...` request and response contracts stay on the same interop major.
+
 ## Run Backend
 
 ```powershell

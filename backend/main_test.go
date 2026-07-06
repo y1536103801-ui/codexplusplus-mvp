@@ -109,6 +109,7 @@ func (c *testClient) requestRawWithHeaders(method, path string, token string, he
 	if token != "" {
 		req.Header.Set("Authorization", "Bearer "+token)
 	}
+	headers = withClientInteropTestHeader(path, headers)
 	for key, value := range headers {
 		req.Header.Set(key, value)
 	}
@@ -135,6 +136,7 @@ func (c *testClient) requestWithHeaders(method, path string, token string, heade
 	if token != "" {
 		req.Header.Set("Authorization", "Bearer "+token)
 	}
+	headers = withClientInteropTestHeader(path, headers)
 	for key, value := range headers {
 		req.Header.Set(key, value)
 	}
@@ -146,6 +148,19 @@ func (c *testClient) requestWithHeaders(method, path string, token string, heade
 		_ = json.NewDecoder(res.Body).Decode(out)
 	}
 	return res.StatusCode
+}
+
+func withClientInteropTestHeader(path string, headers map[string]string) map[string]string {
+	if !strings.HasPrefix(path, "/api/client/") {
+		return headers
+	}
+	if headers == nil {
+		headers = map[string]string{}
+	}
+	if _, ok := headers[clientInteropHeader]; !ok {
+		headers[clientInteropHeader] = clientInteropMajor
+	}
+	return headers
 }
 
 func (c *testClient) gatewayRun(token string, body any, out any) int {
@@ -533,8 +548,51 @@ func TestCORSAllowsDefaultTauriOrigin(t *testing.T) {
 	if got := res.Header.Get("Access-Control-Allow-Origin"); got != "http://tauri.localhost" {
 		t.Fatalf("allow origin = %q", got)
 	}
-	if got := res.Header.Get("Access-Control-Allow-Headers"); !strings.Contains(got, "Authorization") || !strings.Contains(got, "Idempotency-Key") {
+	if got := res.Header.Get("Access-Control-Allow-Headers"); !strings.Contains(got, "Authorization") || !strings.Contains(got, "Idempotency-Key") || !strings.Contains(got, clientInteropHeader) {
 		t.Fatalf("allow headers = %q", got)
+	}
+}
+
+func TestClientAPIRequiresMatchingInteropMajor(t *testing.T) {
+	c := newTestClient(t)
+	for _, tt := range []struct {
+		name   string
+		header string
+	}{
+		{name: "missing"},
+		{name: "mismatch", header: "2"},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			var out apiError
+			req := httptest.NewRequest(http.MethodGet, "/api/client/me", nil)
+			if tt.header != "" {
+				req.Header.Set(clientInteropHeader, tt.header)
+			}
+			rr := httptest.NewRecorder()
+
+			c.handler.ServeHTTP(rr, req)
+
+			res := rr.Result()
+			defer res.Body.Close()
+			_ = json.NewDecoder(res.Body).Decode(&out)
+			if res.StatusCode != http.StatusUpgradeRequired {
+				t.Fatalf("status = %d", res.StatusCode)
+			}
+			if out.Error != "client_version_incompatible" {
+				t.Fatalf("error = %q", out.Error)
+			}
+			if got := res.Header.Get(clientInteropHeader); got != clientInteropMajor {
+				t.Fatalf("response interop major = %q", got)
+			}
+		})
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/api/client/me", nil)
+	req.Header.Set(clientInteropHeader, clientInteropMajor)
+	rr := httptest.NewRecorder()
+	c.handler.ServeHTTP(rr, req)
+	if rr.Result().StatusCode != http.StatusUnauthorized {
+		t.Fatalf("matched interop should continue to auth, status = %d", rr.Result().StatusCode)
 	}
 }
 

@@ -45,6 +45,8 @@ const defaultListenAddr = "127.0.0.1:8787"
 const defaultGatewayRateLimitPerMinute int64 = 120
 const maxJSONBodyBytes int64 = 1 << 20
 const maxGatewayBodyBytes int64 = 4 << 20
+const clientInteropHeader = "X-CodexPPP-Interop-Major"
+const clientInteropMajor = "1"
 
 const (
 	statusActive   = "active"
@@ -377,7 +379,7 @@ func withCORS(next http.Handler, allowedOrigins map[string]struct{}) http.Handle
 func writeCORSHeaders(w http.ResponseWriter, origin string) {
 	w.Header().Set("Access-Control-Allow-Origin", origin)
 	w.Header().Add("Vary", "Origin")
-	w.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type, Idempotency-Key, X-Request-ID, X-Request-Id")
+	w.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type, Idempotency-Key, X-Request-ID, X-Request-Id, X-CodexPPP-Interop-Major")
 	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PATCH, OPTIONS")
 	w.Header().Set("Access-Control-Max-Age", "600")
 }
@@ -973,6 +975,10 @@ func (a *App) adminAPI(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *App) clientAPI(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set(clientInteropHeader, clientInteropMajor)
+	if !requireClientInterop(w, r) {
+		return
+	}
 	path := strings.TrimPrefix(r.URL.Path, "/api/client")
 	switch {
 	case path == "/login" && r.Method == http.MethodPost:
@@ -998,6 +1004,14 @@ func (a *App) clientAPI(w http.ResponseWriter, r *http.Request) {
 	default:
 		writeErr(w, http.StatusNotFound, "not_found")
 	}
+}
+
+func requireClientInterop(w http.ResponseWriter, r *http.Request) bool {
+	if strings.TrimSpace(r.Header.Get(clientInteropHeader)) == clientInteropMajor {
+		return true
+	}
+	writeErr(w, http.StatusUpgradeRequired, "client_version_incompatible")
+	return false
 }
 
 func (a *App) codexAPI(w http.ResponseWriter, r *http.Request) {
