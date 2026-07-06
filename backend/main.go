@@ -435,6 +435,13 @@ func OpenStore(path string) (*Store, error) {
 		s.state.NextID = 1
 	}
 	s.normalizeRechargeTransitions()
+	changed, err := s.normalizeAccountPoolAPIKeys()
+	if err != nil {
+		return nil, err
+	}
+	if changed {
+		return s.saveLocked()
+	}
 	return s, nil
 }
 
@@ -489,8 +496,15 @@ func (s *Store) openPostgres() error {
 		s.state.NextID = 1
 	}
 	s.normalizeRechargeTransitions()
+	changed, err := s.normalizeAccountPoolAPIKeys()
+	if err != nil {
+		return err
+	}
 	if len(s.state.TokenTopups) == 0 {
 		s.seedDefaultsLocked()
+		changed = true
+	}
+	if changed {
 		return s.savePostgres(ctx)
 	}
 	return nil
@@ -794,6 +808,36 @@ func (s *Store) normalizeRechargeTransitions() {
 	for i := range s.state.RechargeRequests {
 		s.state.RechargeRequests[i].StatusTransitions = ensureRechargeTransitions(s.state.RechargeRequests[i])
 	}
+}
+
+func (s *Store) normalizeAccountPoolAPIKeys() (bool, error) {
+	if len(s.state.UpstreamAccounts) == 0 {
+		return false, nil
+	}
+	referenced := make(map[string]struct{}, len(s.state.APIKeys))
+	for _, key := range s.state.APIKeys {
+		if key.UpstreamAccountID != "" {
+			referenced[key.UpstreamAccountID] = struct{}{}
+		}
+	}
+	changed := false
+	now := time.Now().UTC()
+	for _, up := range s.state.UpstreamAccounts {
+		if up.ID == "" {
+			continue
+		}
+		if _, ok := referenced[up.ID]; ok {
+			continue
+		}
+		raw, err := generateSub2APIKey()
+		if err != nil {
+			return false, err
+		}
+		s.state.APIKeys = append(s.state.APIKeys, APIKey{ID: s.nextID("key"), KeyHash: hashString(raw), PublicPrefix: raw[:10], UpstreamAccountID: up.ID, Status: statusActive, CreatedAt: now, UpdatedAt: now})
+		referenced[up.ID] = struct{}{}
+		changed = true
+	}
+	return changed, nil
 }
 
 func parseRechargeTransitions(raw []byte, rr RechargeRequest) ([]RechargeStatusTransition, error) {
@@ -1586,24 +1630,35 @@ func (a *App) adminImportUpstreams(w http.ResponseWriter, r *http.Request) {
 	defer a.store.mu.Unlock()
 	now := time.Now().UTC()
 	created := make([]UpstreamAccount, 0, len(reqs))
+	createdKeys := make([]APIKey, 0, len(reqs))
 	for _, req := range reqs {
 		up, err := a.newUpstreamFromRequestLocked(req, now)
 		if err != nil {
 			writeErr(w, http.StatusInternalServerError, "secret_encrypt_failed")
 			return
 		}
+		key, err := a.newAPIKeyForUpstreamLocked(up.ID, now)
+		if err != nil {
+			writeErr(w, http.StatusInternalServerError, "key_generate_failed")
+			return
+		}
 		created = append(created, up)
+		createdKeys = append(createdKeys, key)
 	}
 	items := make([]map[string]any, 0, len(created))
-	for _, up := range created {
+	keyItems := make([]map[string]any, 0, len(createdKeys))
+	for i, up := range created {
 		a.store.state.UpstreamAccounts = append(a.store.state.UpstreamAccounts, up)
 		a.auditLocked(admin.ID, "admin", "upstream.import", up.ID, up.Name)
+		a.store.state.APIKeys = append(a.store.state.APIKeys, createdKeys[i])
+		a.auditLocked(admin.ID, "admin", "api_key.create", createdKeys[i].ID, up.ID)
 		items = append(items, publicUpstream(up))
+		keyItems = append(keyItems, a.publicAPIKeyLocked(createdKeys[i]))
 	}
 	if !a.saveOrErrorLocked(w) {
 		return
 	}
-	writeJSON(w, http.StatusCreated, map[string]any{"imported": len(items), "items": items})
+	writeJSON(w, http.StatusCreated, map[string]any{"imported": len(items), "items": items, "apiKeys": keyItems})
 }
 
 func (a *App) newUpstreamFromRequestLocked(req adminUpstreamRequest, now time.Time) (UpstreamAccount, error) {
@@ -1853,11 +1908,16 @@ func (a *App) adminAPIKeys(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
+	available := r.URL.Query().Get("available")
 	a.store.mu.Lock()
 	defer a.store.mu.Unlock()
 	items := make([]map[string]any, 0, len(a.store.state.APIKeys))
 	for _, key := range a.store.state.APIKeys {
-		items = append(items, a.publicAPIKeyLocked(key))
+		item := a.publicAPIKeyLocked(key)
+		if available == "true" && item["routeAvailable"] != true {
+			continue
+		}
+		items = append(items, item)
 	}
 	writeJSON(w, http.StatusOK, listPayload(items, r))
 }
@@ -1877,13 +1937,12 @@ func (a *App) adminCreateAPIKey(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusNotFound, "upstream_not_found")
 		return
 	}
-	raw, err := generateSub2APIKey()
+	now := time.Now().UTC()
+	key, err := a.newAPIKeyForUpstreamLocked(req.UpstreamAccountID, now)
 	if err != nil {
 		writeErr(w, http.StatusInternalServerError, "key_generate_failed")
 		return
 	}
-	now := time.Now().UTC()
-	key := APIKey{ID: a.store.nextID("key"), KeyHash: hashString(raw), PublicPrefix: raw[:10], UpstreamAccountID: req.UpstreamAccountID, Status: statusActive, CreatedAt: now, UpdatedAt: now}
 	a.store.state.APIKeys = append(a.store.state.APIKeys, key)
 	a.auditLocked(admin.ID, "admin", "api_key.create", key.ID, req.UpstreamAccountID)
 	if !a.saveOrErrorLocked(w) {
@@ -1892,12 +1951,24 @@ func (a *App) adminCreateAPIKey(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusCreated, a.publicAPIKeyLocked(key))
 }
 
+func (a *App) newAPIKeyForUpstreamLocked(upstreamAccountID string, now time.Time) (APIKey, error) {
+	raw, err := generateSub2APIKey()
+	if err != nil {
+		return APIKey{}, err
+	}
+	return APIKey{ID: a.store.nextID("key"), KeyHash: hashString(raw), PublicPrefix: raw[:10], UpstreamAccountID: upstreamAccountID, Status: statusActive, CreatedAt: now, UpdatedAt: now}, nil
+}
+
 func (a *App) adminAPIKeyAction(w http.ResponseWriter, r *http.Request, rest string) {
 	admin, ok := a.requireAdmin(w, r, false)
 	if !ok {
 		return
 	}
 	parts := strings.Split(strings.Trim(rest, "/"), "/")
+	if len(parts) == 1 && parts[0] != "" && r.Method == http.MethodDelete {
+		a.adminDeleteAPIKey(w, r, admin, parts[0])
+		return
+	}
 	if len(parts) != 2 || parts[1] != "status" || r.Method != http.MethodPost {
 		writeErr(w, http.StatusNotFound, "not_found")
 		return
@@ -1924,6 +1995,33 @@ func (a *App) adminAPIKeyAction(w http.ResponseWriter, r *http.Request, rest str
 		return
 	}
 	writeJSON(w, http.StatusOK, a.publicAPIKeyLocked(a.store.state.APIKeys[idx]))
+}
+
+func (a *App) adminDeleteAPIKey(w http.ResponseWriter, r *http.Request, admin Admin, id string) {
+	if !readEmptyJSON(w, r, "invalid_api_key_delete_request") {
+		return
+	}
+	a.store.mu.Lock()
+	defer a.store.mu.Unlock()
+	idx := a.apiKeyIndex(id)
+	if idx < 0 {
+		writeErr(w, http.StatusNotFound, "api_key_not_found")
+		return
+	}
+	upstreamID := a.store.state.APIKeys[idx].UpstreamAccountID
+	a.store.state.APIKeys = append(a.store.state.APIKeys[:idx], a.store.state.APIKeys[idx+1:]...)
+	a.auditLocked(admin.ID, "admin", "api_key.delete", id, upstreamID)
+	if upstreamID != "" && !a.apiKeyReferencesUpstreamLocked(upstreamID) {
+		if upIdx := a.upstreamIndex(upstreamID); upIdx >= 0 {
+			name := a.store.state.UpstreamAccounts[upIdx].Name
+			a.store.state.UpstreamAccounts = append(a.store.state.UpstreamAccounts[:upIdx], a.store.state.UpstreamAccounts[upIdx+1:]...)
+			a.auditLocked(admin.ID, "admin", "upstream.delete", upstreamID, name)
+		}
+	}
+	if !a.saveOrErrorLocked(w) {
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"deleted": true})
 }
 
 func (a *App) adminDevices(w http.ResponseWriter, r *http.Request) {
@@ -4550,6 +4648,15 @@ func (a *App) apiKeyIndex(id string) int {
 	return -1
 }
 
+func (a *App) apiKeyReferencesUpstreamLocked(upstreamID string) bool {
+	for _, key := range a.store.state.APIKeys {
+		if key.UpstreamAccountID == upstreamID {
+			return true
+		}
+	}
+	return false
+}
+
 func publicAdmin(admin Admin) map[string]any {
 	return map[string]any{"id": admin.ID, "account": admin.Account, "mustChangePassword": admin.MustChangePassword, "createdAt": admin.CreatedAt}
 }
@@ -4614,7 +4721,7 @@ func (a *App) publicAPIKeyLocked(key APIKey) map[string]any {
 	if up.ID != "" {
 		routeAvailable = key.Status == statusActive && upstreamIsAvailable(up)
 	}
-	return map[string]any{
+	out := map[string]any{
 		"id":                  key.ID,
 		"upstreamAccountId":   key.UpstreamAccountID,
 		"upstreamAccountName": up.Name,
@@ -4623,6 +4730,10 @@ func (a *App) publicAPIKeyLocked(key APIKey) map[string]any {
 		"lastUsedAt":          key.LastUsedAt,
 		"createdAt":           key.CreatedAt,
 	}
+	if up.ID != "" {
+		out["upstream"] = publicUpstream(up)
+	}
+	return out
 }
 
 func (a *App) encrypt(plain string) (string, error) {
@@ -4982,17 +5093,21 @@ func readAdminUpstreamImportRequest(w http.ResponseWriter, r *http.Request) ([]a
 	if !ok {
 		return nil, false
 	}
+	if len(bytes.TrimSpace(body)) == 0 {
+		writeErr(w, http.StatusBadRequest, "invalid_upstream_import_request")
+		return nil, false
+	}
 	dec := json.NewDecoder(bytes.NewReader(body))
 	dec.UseNumber()
 	var payload any
 	if err := dec.Decode(&payload); err != nil {
-		writeErr(w, http.StatusBadRequest, "invalid_json")
-		return nil, false
-	}
-	var extra any
-	if err := dec.Decode(&extra); err != io.EOF {
-		writeErr(w, http.StatusBadRequest, "invalid_json")
-		return nil, false
+		payload = string(body)
+	} else {
+		var extra any
+		if err := dec.Decode(&extra); err != io.EOF {
+			writeErr(w, http.StatusBadRequest, "invalid_json")
+			return nil, false
+		}
 	}
 	reqs, err := parseAdminUpstreamImportPayload(payload)
 	if err != nil || len(reqs) == 0 {
@@ -5003,15 +5118,28 @@ func readAdminUpstreamImportRequest(w http.ResponseWriter, r *http.Request) ([]a
 }
 
 func parseAdminUpstreamImportPayload(payload any) ([]adminUpstreamRequest, error) {
+	return parseAdminUpstreamImportPayloadWithDefault(payload, "")
+}
+
+func parseAdminUpstreamImportPayloadWithDefault(payload any, inheritedGroup string) ([]adminUpstreamRequest, error) {
 	if accounts, ok := payload.([]any); ok {
-		return parseAdminUpstreamImportAccounts(accounts, "")
+		return parseAdminUpstreamImportAccounts(accounts, inheritedGroup)
+	}
+	if text, ok := payload.(string); ok {
+		return parseAdminUpstreamImportContent(text, inheritedGroup)
 	}
 	obj, ok := payload.(map[string]any)
 	if !ok {
 		return nil, errors.New("upstream_import_must_be_object")
 	}
 	defaultGroup := importStringField(obj, "group", "account_group", "accountGroup")
-	if rawAccounts, ok := obj["accounts"]; ok {
+	if defaultGroup == "" {
+		defaultGroup = inheritedGroup
+	}
+	if content := importStringField(obj, "content", "text", "raw"); content != "" {
+		return parseAdminUpstreamImportContent(content, defaultGroup)
+	}
+	if rawAccounts, ok := importValueField(obj, "accounts", "items", "data", "sessions"); ok {
 		accounts, ok := rawAccounts.([]any)
 		if !ok {
 			return nil, errors.New("upstream_import_accounts_must_be_array")
@@ -5023,6 +5151,46 @@ func parseAdminUpstreamImportPayload(payload any) ([]adminUpstreamRequest, error
 		return nil, err
 	}
 	return []adminUpstreamRequest{req}, nil
+}
+
+func parseAdminUpstreamImportContent(content, defaultGroup string) ([]adminUpstreamRequest, error) {
+	text := strings.TrimSpace(content)
+	if text == "" {
+		return nil, errors.New("upstream_import_content_empty")
+	}
+	var payload any
+	dec := json.NewDecoder(strings.NewReader(text))
+	dec.UseNumber()
+	if err := dec.Decode(&payload); err == nil {
+		var extra any
+		if err := dec.Decode(&extra); err == io.EOF {
+			return parseAdminUpstreamImportPayloadWithDefault(payload, defaultGroup)
+		}
+	}
+	lines := strings.Split(text, "\n")
+	items := make([]any, 0, len(lines))
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+		var item any
+		dec := json.NewDecoder(strings.NewReader(line))
+		dec.UseNumber()
+		if err := dec.Decode(&item); err == nil {
+			var extra any
+			if err := dec.Decode(&extra); err == io.EOF {
+				if nested, ok := item.([]any); ok {
+					items = append(items, nested...)
+				} else {
+					items = append(items, item)
+				}
+				continue
+			}
+		}
+		items = append(items, line)
+	}
+	return parseAdminUpstreamImportAccounts(items, defaultGroup)
 }
 
 func parseAdminUpstreamImportAccounts(accounts []any, defaultGroup string) ([]adminUpstreamRequest, error) {
@@ -5041,17 +5209,28 @@ func parseAdminUpstreamImportAccounts(accounts []any, defaultGroup string) ([]ad
 }
 
 func parseAdminUpstreamImportAccount(item any, index int, defaultGroup string) (adminUpstreamRequest, error) {
+	if token, ok := item.(string); ok {
+		item = map[string]any{"accessToken": token}
+	}
 	obj, ok := item.(map[string]any)
 	if !ok {
 		return adminUpstreamRequest{}, errors.New("upstream_import_account_must_be_object")
 	}
-	credentials, hasCredentials := importMapField(obj, "credentials")
+	credentials, hasCredentials := importFirstMapField(obj, "credentials", "auth", "tokens")
 	if !hasCredentials {
 		credentials = obj
 	}
+	user, hasUser := importFirstMapField(obj, "user", "profile")
+	account, hasAccount := importFirstMapField(obj, "account", "chatgptAccount", "chatgpt_account")
 	name := importStringField(obj, "name", "accountName", "account_name")
 	if name == "" {
 		name = importStringField(credentials, "name", "email")
+	}
+	if name == "" && hasUser {
+		name = importStringField(user, "email", "name", "id")
+	}
+	if name == "" && hasAccount {
+		name = importStringField(account, "email", "name", "id")
 	}
 	if name == "" {
 		name = fmt.Sprintf("Codex account %d", index)
@@ -5072,13 +5251,13 @@ func parseAdminUpstreamImportAccount(item any, index int, defaultGroup string) (
 		Name:              name,
 		Group:             group,
 		CredentialType:    credentialType,
-		AccessToken:       importNestedStringField(credentials, obj, hasCredentials, "access_token", "accessToken"),
+		AccessToken:       importStringFromMaps([]map[string]any{credentials, obj}, "access_token", "accessToken", "OPENAI_API_KEY", "openai_api_key", "apiKey", "api_key", "token"),
 		RefreshToken:      importNestedStringField(credentials, obj, hasCredentials, "refresh_token", "refreshToken"),
 		TokenType:         importNestedStringField(credentials, obj, hasCredentials, "token_type", "tokenType"),
-		ChatGPTAccountID:  importNestedStringField(credentials, obj, hasCredentials, "chatgpt_account_id", "chatgptAccountId", "chatgpt_user_id", "chatgptUserId", "organization_id", "organizationId"),
+		ChatGPTAccountID:  firstNonEmptyText(importStringFromMaps([]map[string]any{account, credentials, obj}, "chatgpt_account_id", "chatgptAccountId", "account_id", "accountId", "id", "organization_id", "organizationId"), importStringFromMaps([]map[string]any{user, credentials, obj}, "chatgpt_user_id", "chatgptUserId", "user_id", "userId", "id")),
 		ExpiresAt:         expiresAt,
-		Email:             importNestedStringField(credentials, obj, hasCredentials, "email"),
-		SubscriptionTier:  importNestedStringField(credentials, obj, hasCredentials, "plan_type", "planType", "subscription_tier", "subscriptionTier"),
+		Email:             importStringFromMaps([]map[string]any{user, account, credentials, obj}, "email"),
+		SubscriptionTier:  importStringFromMaps([]map[string]any{account, credentials, obj}, "plan_type", "planType", "subscription_tier", "subscriptionTier"),
 		EntitlementStatus: importNestedStringField(credentials, obj, hasCredentials, "entitlement_status", "entitlementStatus"),
 	}
 	if req.TokenType == "" {
@@ -5134,13 +5313,18 @@ func chatGPTAccountIDFromAccessToken(accessToken string) string {
 	return firstStringField(claims, "chatgpt_account_id", "chatgptAccountId", "user_id", "userId")
 }
 
-func importMapField(obj map[string]any, name string) (map[string]any, bool) {
-	value, ok := obj[name]
-	if !ok {
-		return nil, false
+func importFirstMapField(obj map[string]any, names ...string) (map[string]any, bool) {
+	for _, name := range names {
+		value, ok := obj[name]
+		if !ok {
+			continue
+		}
+		nested, ok := value.(map[string]any)
+		if ok {
+			return nested, true
+		}
 	}
-	nested, ok := value.(map[string]any)
-	return nested, ok
+	return nil, false
 }
 
 func importNestedStringField(primary, secondary map[string]any, useSecondary bool, names ...string) string {
@@ -5168,6 +5352,18 @@ func importStringField(obj map[string]any, names ...string) string {
 			if text := strings.TrimSpace(v.String()); text != "" {
 				return text
 			}
+		}
+	}
+	return ""
+}
+
+func importStringFromMaps(maps []map[string]any, names ...string) string {
+	for _, obj := range maps {
+		if obj == nil {
+			continue
+		}
+		if value := importStringField(obj, names...); value != "" {
+			return value
 		}
 	}
 	return ""

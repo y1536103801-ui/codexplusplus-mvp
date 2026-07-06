@@ -2989,6 +2989,27 @@ func TestAdminUpstreamAndAPIKeyStatusAreCleanAndSanitized(t *testing.T) {
 	if code := c.request(http.MethodPost, "/api/admin/api-keys/"+keyID+"/status", c.adminToken, map[string]any{"status": "disabled"}, nil); code != http.StatusOK {
 		t.Fatalf("disable api key = %d", code)
 	}
+	if code := c.request(http.MethodDelete, "/api/admin/api-keys/"+keyID, c.adminToken, nil, nil); code != http.StatusOK {
+		t.Fatalf("delete api key = %d", code)
+	}
+	var keysAfterDelete struct {
+		Items []map[string]any `json:"items"`
+	}
+	if code := c.request(http.MethodGet, "/api/admin/api-keys", c.adminToken, nil, &keysAfterDelete); code != http.StatusOK {
+		t.Fatalf("list api keys after delete = %d", code)
+	}
+	if len(keysAfterDelete.Items) != 0 {
+		t.Fatalf("api keys after delete = %#v", keysAfterDelete.Items)
+	}
+	var upstreamsAfterDelete struct {
+		Items []map[string]any `json:"items"`
+	}
+	if code := c.request(http.MethodGet, "/api/admin/upstreams", c.adminToken, nil, &upstreamsAfterDelete); code != http.StatusOK {
+		t.Fatalf("list upstreams after delete = %d", code)
+	}
+	if len(upstreamsAfterDelete.Items) != 0 {
+		t.Fatalf("orphan upstreams after api key delete = %#v", upstreamsAfterDelete.Items)
+	}
 }
 
 func TestAdminImportUpstreamsRecognizesAccountFlowExport(t *testing.T) {
@@ -3016,12 +3037,16 @@ func TestAdminImportUpstreamsRecognizesAccountFlowExport(t *testing.T) {
 	var imported struct {
 		Imported int              `json:"imported"`
 		Items    []map[string]any `json:"items"`
+		APIKeys  []map[string]any `json:"apiKeys"`
 	}
 	if code := c.request(http.MethodPost, "/api/admin/upstreams/import", c.adminToken, body, &imported); code != http.StatusCreated {
 		t.Fatalf("import upstream status = %d", code)
 	}
 	if imported.Imported != 1 || len(imported.Items) != 1 {
 		t.Fatalf("imported upstreams = %#v", imported)
+	}
+	if len(imported.APIKeys) != 1 || imported.APIKeys[0]["upstream"] == nil {
+		t.Fatalf("imported api keys = %#v", imported.APIKeys)
 	}
 	item := imported.Items[0]
 	if item["name"] != "codex@example.com" || item["credentialType"] != "oauth" || item["tokenType"] != "Bearer" || item["chatgptAccountId"] != "chatgpt-account" || item["email"] != "codex@example.com" || item["subscriptionTier"] != "plus" {
@@ -3046,6 +3071,9 @@ func TestAdminImportUpstreamsRecognizesAccountFlowExport(t *testing.T) {
 	if len(c.store.state.UpstreamAccounts) != 1 {
 		t.Fatalf("stored upstreams = %#v", c.store.state.UpstreamAccounts)
 	}
+	if len(c.store.state.APIKeys) != 1 || c.store.state.APIKeys[0].UpstreamAccountID != c.store.state.UpstreamAccounts[0].ID {
+		t.Fatalf("stored api keys = %#v", c.store.state.APIKeys)
+	}
 	up := c.store.state.UpstreamAccounts[0]
 	if up.AccessTokenCipher == "access-secret" || up.RefreshTokenCipher == "refresh-secret" {
 		t.Fatalf("stored upstream credential is plaintext: %#v", up)
@@ -3067,6 +3095,32 @@ func TestAdminImportUpstreamsRecognizesAccountFlowExport(t *testing.T) {
 	expectedExpiry := time.Unix(1783910187, 0).UTC()
 	if up.ExpiresAt == nil || !up.ExpiresAt.Equal(expectedExpiry) {
 		t.Fatalf("stored upstream expiry = %#v, want %s", up.ExpiresAt, expectedExpiry.Format(time.RFC3339))
+	}
+}
+
+func TestAdminImportUpstreamsRecognizesMixedTextLikeSub2API(t *testing.T) {
+	c := newTestClient(t)
+	c.setupAdmin()
+	body := map[string]any{
+		"content": "raw-token-1\n{\"accessToken\":\"json-token\",\"email\":\"json@example.com\",\"account\":{\"id\":\"acct-json\",\"planType\":\"plus\"}}\n[\"array-token\"]",
+	}
+	var imported struct {
+		Imported int              `json:"imported"`
+		APIKeys  []map[string]any `json:"apiKeys"`
+	}
+	if code := c.request(http.MethodPost, "/api/admin/upstreams/import", c.adminToken, body, &imported); code != http.StatusCreated {
+		t.Fatalf("mixed import status = %d", code)
+	}
+	if imported.Imported != 3 || len(imported.APIKeys) != 3 {
+		t.Fatalf("mixed import result = %#v", imported)
+	}
+	c.store.mu.Lock()
+	defer c.store.mu.Unlock()
+	if len(c.store.state.UpstreamAccounts) != 3 || len(c.store.state.APIKeys) != 3 {
+		t.Fatalf("stored mixed import upstreams=%#v keys=%#v", c.store.state.UpstreamAccounts, c.store.state.APIKeys)
+	}
+	if c.store.state.UpstreamAccounts[1].Email != "json@example.com" || c.store.state.UpstreamAccounts[1].ChatGPTAccountID != "acct-json" || c.store.state.UpstreamAccounts[1].SubscriptionTier != "plus" {
+		t.Fatalf("json-line metadata = %#v", c.store.state.UpstreamAccounts[1])
 	}
 }
 
@@ -3097,6 +3151,8 @@ func TestAdminUpstreamUIShowsSingleAvailabilityState(t *testing.T) {
 		"enabled",
 		"data-up-enabled",
 		"switch-toggle",
+		"API Key 记录",
+		"账号详情",
 		"账号状态",
 		"可调度账号",
 		"upstreamCredentialEditId",
@@ -3109,11 +3165,13 @@ func TestAdminUpstreamUIShowsSingleAvailabilityState(t *testing.T) {
 		`id="upstreamImportJson"`,
 		`id="upstreamImportFile"`,
 		"/admin/upstreams/import",
-		"JSON.parse(raw)",
-		"已导入 ${data.imported || 0} 个 Codex 上游账号",
-		"<th>时效</th>",
-		"<th>账号状态</th>",
+		"content: raw",
+		"已导入 ${data.imported || 0} 个 Codex 上游账号并生成 ${(data.apiKeys || []).length} 个 API Key 记录",
+		"<th>API Key 记录</th>",
+		"<th>账号详情</th>",
 		"<th>启用</th>",
+		"data-api-key-delete",
+		"已删除 API Key 记录",
 		"检查中",
 		"正在检查账号",
 		"无额度数据",
@@ -3124,8 +3182,9 @@ func TestAdminUpstreamUIShowsSingleAvailabilityState(t *testing.T) {
 		"switch-slot",
 		"grid-template-columns: 1fr",
 		"upstreamLimitLines(up)",
-		"upstreamValidity(u)",
-		"upstreamAvailabilityCell(u)",
+		"upstreamValidity(up)",
+		"upstreamAvailabilityCell(up)",
+		"apiKeyAccountDetail(k)",
 	} {
 		if !strings.Contains(text, required) {
 			t.Fatalf("admin upstream UI missing %q", required)
@@ -3134,7 +3193,7 @@ func TestAdminUpstreamUIShowsSingleAvailabilityState(t *testing.T) {
 	if !strings.Contains(text, `<label>access_token<input name="accessToken" required></label>`) {
 		t.Fatal("admin upstream UI must require access_token before importing a routable account")
 	}
-	for _, forbidden := range []string{"<th>剩余</th>", "<th>余额</th>", "<th>风控</th>", "上游余额", "风控不可用", "余额不可用", "min-width: 1180px", "flex-wrap: nowrap", "生成 Key</button>", "data-up-balance", "data-up-risk", "data-up-availability", "balanceStatus", "riskStatus", "credentialFingerprint", "accessTokenCipher", "refreshTokenCipher", "prompt(", "alert(", "confirm("} {
+	for _, forbidden := range []string{"<th>剩余</th>", "<th>余额</th>", "<th>风控</th>", "上游余额", "风控不可用", "余额不可用", "min-width: 1180px", "flex-wrap: nowrap", "生成 Key</button>", "data-up-balance", "data-up-risk", "data-up-availability", "balanceStatus", "riskStatus", "credentialFingerprint", "accessTokenCipher", "refreshTokenCipher", "JSON.parse(raw)", "prompt(", "alert(", "confirm("} {
 		if strings.Contains(text, forbidden) {
 			t.Fatalf("admin upstream UI still exposes split availability control %q", forbidden)
 		}
@@ -3149,10 +3208,12 @@ func TestAdminAPIKeyUIUsesInlineStatusAndHidesSecrets(t *testing.T) {
 	text := string(raw)
 	for _, required := range []string{
 		`id="upstreamMsg"`,
-		"已生成 API Key 记录",
+		"生成 API Key 记录",
 		"已更新 API Key 状态",
+		"已删除 API Key 记录",
 		"routeAvailable",
 		"最近调度",
+		"data-api-key-delete",
 	} {
 		if !strings.Contains(text, required) {
 			t.Fatalf("admin api key UI missing %q", required)
@@ -4855,6 +4916,46 @@ func TestGatewayFailedRequestReleasesReservationForRetry(t *testing.T) {
 	}
 	if got := int64(me.User["tokenBalance"].(float64)); got != 99997 {
 		t.Fatalf("token balance = %d", got)
+	}
+}
+
+func TestOpenStoreNormalizesOrphanUpstreamsIntoAPIKeys(t *testing.T) {
+	t.Setenv("CODEXPPP_DATABASE_URL", "")
+	now := time.Now().UTC().Truncate(time.Second)
+	path := filepath.Join(t.TempDir(), "state.json")
+	state := State{
+		NextID: 10,
+		UpstreamAccounts: []UpstreamAccount{{
+			ID: "up_1", Name: "orphan", CredentialType: "oauth", TokenType: "Bearer", Status: statusActive, BalanceStatus: "available", RiskStatus: "available", CreatedAt: now, UpdatedAt: now,
+		}},
+	}
+	raw, err := json.Marshal(state)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path, raw, 0600); err != nil {
+		t.Fatal(err)
+	}
+	store, err := OpenStore(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(store.state.APIKeys) != 1 || store.state.APIKeys[0].UpstreamAccountID != "up_1" || store.state.APIKeys[0].Status != statusActive {
+		t.Fatalf("normalized api keys = %#v", store.state.APIKeys)
+	}
+	if store.state.NextID != 11 {
+		t.Fatalf("next id = %d", store.state.NextID)
+	}
+	savedRaw, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var saved State
+	if err := json.Unmarshal(savedRaw, &saved); err != nil {
+		t.Fatal(err)
+	}
+	if len(saved.APIKeys) != 1 || saved.APIKeys[0].UpstreamAccountID != "up_1" {
+		t.Fatalf("saved normalized api keys = %#v", saved.APIKeys)
 	}
 }
 

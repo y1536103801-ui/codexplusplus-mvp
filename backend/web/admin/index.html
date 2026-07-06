@@ -58,15 +58,15 @@
     .hidden { display: none !important; }
     .row-actions { display: grid; grid-template-columns: 1fr; gap: 6px; align-items: stretch; white-space: normal; }
     .row-actions button { width: 100%; min-height: 28px; padding: 0 6px; background: #fbfcfd; }
-    .upstream-table td:last-child { vertical-align: middle; }
+    .upstream-table td:last-child, .api-key-table td:last-child { vertical-align: middle; }
     .switch-slot { display: inline-flex; width: 42px; min-width: 42px; height: 30px; align-items: center; justify-content: center; }
     .page-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
     .page-head h2 { margin: 0; font-size: 20px; }
     .table-wrap { width: 100%; overflow: hidden; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); }
     .table-wrap table { border: 0; border-radius: 0; min-width: 0; }
-    .table-wrap .upstream-table { table-layout: fixed; width: 100%; min-width: 0; }
-    .upstream-table td:nth-child(6), .upstream-table th:nth-child(6) { text-align: center; }
-    .upstream-table th, .upstream-table td { padding: 10px 8px; }
+    .table-wrap .upstream-table, .table-wrap .api-key-table { table-layout: fixed; width: 100%; min-width: 0; }
+    .upstream-table td:nth-child(6), .upstream-table th:nth-child(6), .api-key-table td:nth-child(5), .api-key-table th:nth-child(5) { text-align: center; }
+    .upstream-table th, .upstream-table td, .api-key-table th, .api-key-table td { padding: 10px 8px; }
     .time-cell { white-space: normal; }
     .account-main { display: grid; gap: 4px; min-width: 0; }
     .account-main strong { font-weight: 650; }
@@ -79,6 +79,10 @@
     .upstream-form-grid label:last-of-type, .upstream-form-grid textarea { grid-column: 1 / -1; }
     .upstream-json { min-height: 120px; font-family: Consolas, "SFMono-Regular", monospace; font-size: 12px; }
     .upstream-panel-actions { display: flex; gap: 10px; align-items: center; justify-content: flex-end; flex-wrap: wrap; }
+    .account-detail { display: grid; gap: 8px; }
+    .account-detail summary { cursor: pointer; color: var(--text); font-weight: 650; }
+    .detail-grid { display: grid; grid-template-columns: 92px minmax(0, 1fr); gap: 6px 10px; margin-top: 8px; color: var(--muted); }
+    .detail-grid span:nth-child(2n) { color: var(--text); }
     .switch-toggle { width: 38px; height: 20px; min-height: 20px; padding: 0; border-radius: 999px; border-color: #cfd6e2; background: #e8edf3; position: relative; vertical-align: middle; }
     .switch-toggle::before { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 999px; background: #8a95a5; box-shadow: 0 1px 2px rgba(16, 24, 40, .18); transition: left .16s ease, background .16s ease; }
     .switch-toggle.enabled { background: #d8efe7; border-color: #a8d8c9; }
@@ -292,6 +296,25 @@
       if (!up.expiresAt) return '未记录';
       const expired = Date.now() >= new Date(up.expiresAt).getTime();
       return `<div class="meta-stack"><span>${esc(fmtTime(up.expiresAt))}</span><span class="${expired ? 'status disabled' : 'muted'}">${expired ? '已过期' : '未过期'}</span></div>`;
+    }
+    function apiKeyPrimaryCell(key) {
+      return `<div class="account-main"><strong>${esc(key.id)}</strong><span class="muted">创建 ${esc(fmtTime(key.createdAt))}</span></div>`;
+    }
+    function apiKeyAccountDetail(key) {
+      const up = key.upstream || {};
+      if (!up.id) return '<span class="muted">未绑定账号</span>';
+      const summary = up.name || up.email || up.id;
+      return `<details class="account-detail">
+        <summary>${esc(summary)}</summary>
+        <div class="detail-grid">
+          <span>账号</span><span>${upstreamAccountCell(up)}</span>
+          <span>资料</span><span>${upstreamMeta(up)}</span>
+          <span>时效</span><span>${upstreamValidity(up)}</span>
+          <span>账号状态</span><span>${upstreamAvailabilityCell(up)}</span>
+          <span>最近检查</span><span>${esc(fmtTime(up.lastCheckedAt) || '未检查')}</span>
+          <span>账号启用</span><span><button class="switch-toggle ${up.enabled ? 'enabled' : ''}" data-up-enabled="${esc(up.id)}" data-value="${up.enabled ? 'false' : 'true'}" title="${up.enabled ? '启用' : '关闭'}"></button></span>
+        </div>
+      </details>`;
     }
     function topupPayload(item, overrides = {}) {
       const src = { ...item, ...overrides };
@@ -537,11 +560,8 @@
     }
 
     async function renderUpstreams() {
-      const [ups, keys] = await Promise.all([
-        request('/admin/upstreams?' + qs({ available: state.upstreamAvailable, page: state.upstreamPage, size: 10 })),
-        request('/admin/api-keys?' + qs({ page: state.apiKeyPage, size: 10 }))
-      ]);
-      let editingUpstream = state.upstreamCredentialEditId ? ups.items.find(x => x.id === state.upstreamCredentialEditId) : null;
+      const keys = await request('/admin/api-keys?' + qs({ available: state.upstreamAvailable, page: state.apiKeyPage, size: 10 }));
+      let editingUpstream = state.upstreamCredentialEditId ? (keys.items.find(x => x.upstream && x.upstream.id === state.upstreamCredentialEditId)?.upstream || null) : null;
       if (state.upstreamCredentialEditId && !editingUpstream) state.upstreamCredentialEditId = '';
       const upFormItem = editingUpstream || {};
       const upFormExpiresAt = upFormItem.expiresAt ? new Date(upFormItem.expiresAt).toISOString().slice(0, 16) : '';
@@ -550,8 +570,8 @@
         <form id="upImportForm" class="panel grid">
           <div class="toolbar"><h2>自动识别导入</h2><button type="button" data-close-upstream-panel>收起</button></div>
           <div class="upstream-form-grid">
-            <label>选择 JSON 文件<input id="upstreamImportFile" type="file" accept="application/json,.json"></label>
-            <label>账号导出 JSON<textarea id="upstreamImportJson" class="upstream-json" spellcheck="false"></textarea></label>
+            <label>选择导入文件<input id="upstreamImportFile" type="file" accept="application/json,text/plain,.json,.txt"></label>
+            <label>账号导入内容<textarea id="upstreamImportJson" class="upstream-json" spellcheck="false"></textarea></label>
           </div>
           <div class="upstream-panel-actions"><button class="primary">识别并导入</button></div>
         </form>` : upstreamPanel === 'manual' ? `
@@ -586,20 +606,13 @@
           ${upstreamFormPanel}
           <p id="upstreamMsg" class="msg">${esc(state.upstreamMsg)}</p>
           <div class="table-wrap">
-            <table class="upstream-table"><colgroup><col style="width:27%"><col style="width:13%"><col style="width:14%"><col style="width:21%"><col style="width:11%"><col style="width:5%"><col style="width:9%"></colgroup><thead><tr><th>账号</th><th>资料</th><th>时效</th><th>账号状态</th><th>最近检查</th><th>启用</th><th>操作</th></tr></thead>
-            <tbody>${ups.items.map(u => `<tr>
-              <td>${upstreamAccountCell(u)}</td><td>${upstreamMeta(u)}</td><td>${upstreamValidity(u)}</td><td>${upstreamAvailabilityCell(u)}</td><td class="time-cell">${esc(fmtTime(u.lastCheckedAt) || '未检查')}</td><td><span class="switch-slot"><button class="switch-toggle ${u.enabled ? 'enabled' : ''}" data-up-enabled="${esc(u.id)}" data-value="${u.enabled ? 'false' : 'true'}" title="${u.enabled ? '启用' : '关闭'}"></button></span></td>
-              <td class="row-actions"><button data-check="${esc(u.id)}">检查</button><button data-up-credentials="${esc(u.id)}">替换</button></td>
+            <table class="api-key-table"><colgroup><col style="width:19%"><col style="width:14%"><col style="width:37%"><col style="width:12%"><col style="width:6%"><col style="width:12%"></colgroup><thead><tr><th>API Key 记录</th><th>可调度</th><th>账号详情</th><th>最近调度</th><th>启用</th><th>操作</th></tr></thead>
+            <tbody>${keys.items.map(k => `<tr>
+              <td>${apiKeyPrimaryCell(k)}</td><td>${k.routeAvailable ? availability('available') : availability('unavailable')}</td><td>${apiKeyAccountDetail(k)}</td><td class="time-cell">${esc(fmtTime(k.lastUsedAt) || '未调度')}</td><td><span class="switch-slot"><button class="switch-toggle ${k.status === 'active' ? 'enabled' : ''}" data-api-key-status="${esc(k.id)}" data-value="${k.status === 'active' ? 'disabled' : 'active'}" title="${k.status === 'active' ? '启用' : '关闭'}"></button></span></td>
+              <td class="row-actions"><button data-check="${esc(k.upstreamAccountId || '')}" ${k.upstreamAccountId ? '' : 'disabled'}>检查</button><button data-up-credentials="${esc(k.upstreamAccountId || '')}" ${k.upstreamAccountId ? '' : 'disabled'}>替换</button><button class="danger" data-api-key-delete="${esc(k.id)}">删除</button></td>
             </tr>`).join('')}</tbody></table>
           </div>
-          ${pager(ups, 'upstreams')}
-          <div class="panel grid">
-            <div class="toolbar"><h2>API Key 记录</h2></div>
-            <div class="table-wrap">
-              <table><thead><tr><th>API Key 记录</th><th>上游账号</th><th>API Key 状态</th><th>可调度</th><th>最近调度</th><th>操作</th></tr></thead><tbody>${keys.items.map(k => `<tr><td>${esc(k.id)}</td><td>${esc(k.upstreamAccountName || k.upstreamAccountId)}</td><td>${availability(k.status)}</td><td>${k.routeAvailable ? availability('available') : availability('unavailable')}</td><td>${esc(fmtTime(k.lastUsedAt))}</td><td><button data-api-key-status="${esc(k.id)}" data-value="${k.status === 'active' ? 'disabled' : 'active'}">${k.status === 'active' ? '停用' : '启用'}</button></td></tr>`).join('')}</tbody></table>
-            </div>
-            ${pager(keys, 'apiKeys')}
-          </div>
+          ${pager(keys, 'apiKeys')}
         </div>`;
       if ($('upForm')) $('upForm').onsubmit = async (e) => {
         e.preventDefault();
@@ -610,8 +623,9 @@
           state.upstreamCredentialEditId = '';
           state.upstreamPanel = '';
         } else {
-          await request('/admin/upstreams', { method: 'POST', body: JSON.stringify(d) });
-          state.upstreamMsg = '已导入 Codex 上游账号';
+          const up = await request('/admin/upstreams', { method: 'POST', body: JSON.stringify(d) });
+          await request('/admin/api-keys', { method: 'POST', body: JSON.stringify({ upstreamAccountId: up.id }) });
+          state.upstreamMsg = '已导入 Codex 上游账号并生成 API Key 记录';
           state.upstreamPanel = '';
         }
         renderUpstreams();
@@ -620,23 +634,15 @@
         e.preventDefault();
         const raw = $('upstreamImportJson').value.trim();
         if (!raw) {
-          state.upstreamMsg = '请选择或粘贴账号导出 JSON';
-          renderUpstreams();
-          return;
-        }
-        let payload;
-        try {
-          payload = JSON.parse(raw);
-        } catch (err) {
-          state.upstreamMsg = 'JSON 格式无效';
+          state.upstreamMsg = '请选择或粘贴账号导入内容';
           renderUpstreams();
           return;
         }
         try {
-          const data = await request('/admin/upstreams/import', { method: 'POST', body: JSON.stringify(payload) });
+          const data = await request('/admin/upstreams/import', { method: 'POST', body: JSON.stringify({ content: raw }) });
           state.upstreamCredentialEditId = '';
           state.upstreamPanel = '';
-          state.upstreamMsg = `已导入 ${data.imported || 0} 个 Codex 上游账号`;
+          state.upstreamMsg = `已导入 ${data.imported || 0} 个 Codex 上游账号并生成 ${(data.apiKeys || []).length} 个 API Key 记录`;
         } catch (err) {
           state.upstreamMsg = err.message === 'invalid_upstream_import_request' ? '未识别到可导入的 Codex 上游账号' : '导入失败';
         }
@@ -661,16 +667,11 @@
         renderUpstreams();
       });
       document.querySelectorAll('[data-up-credentials]').forEach(btn => btn.onclick = async () => {
-        const item = ups.items.find(x => x.id === btn.dataset.upCredentials);
+        const item = keys.items.map(x => x.upstream).find(x => x && x.id === btn.dataset.upCredentials);
         if (!item) return;
         state.upstreamCredentialEditId = item.id;
         state.upstreamPanel = 'manual';
         state.upstreamMsg = '';
-        renderUpstreams();
-      });
-      document.querySelectorAll('[data-key]').forEach(btn => btn.onclick = async () => {
-        await request('/admin/api-keys', { method: 'POST', body: JSON.stringify({ upstreamAccountId: btn.dataset.key }) });
-        state.upstreamMsg = '已生成 API Key 记录';
         renderUpstreams();
       });
       document.querySelectorAll('[data-check]').forEach(btn => btn.onclick = async () => {
@@ -696,16 +697,20 @@
         state.upstreamMsg = '已更新 API Key 状态';
         renderUpstreams();
       });
+      document.querySelectorAll('[data-api-key-delete]').forEach(btn => btn.onclick = async () => {
+        await request(`/admin/api-keys/${btn.dataset.apiKeyDelete}`, { method: 'DELETE' });
+        state.upstreamMsg = '已删除 API Key 记录';
+        renderUpstreams();
+      });
       document.querySelector('[data-upstream-filter]').onclick = () => {
         state.upstreamAvailable = $('upstreamAvailable').value;
-        state.upstreamPage = 1;
+        state.apiKeyPage = 1;
         state.upstreamMsg = '';
         state.upstreamCredentialEditId = '';
         renderUpstreams();
       };
       document.querySelector('[data-refresh-upstreams]').onclick = renderUpstreams;
-      bindPager('upstreams', (page) => { state.upstreamPage = page; state.upstreamCredentialEditId = ''; renderUpstreams(); });
-      bindPager('apiKeys', (page) => { state.apiKeyPage = page; renderUpstreams(); });
+      bindPager('apiKeys', (page) => { state.apiKeyPage = page; state.upstreamCredentialEditId = ''; renderUpstreams(); });
     }
 
     async function renderDevices() {
