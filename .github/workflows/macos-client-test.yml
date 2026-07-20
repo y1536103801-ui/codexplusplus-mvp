@@ -2,6 +2,11 @@ name: macOS client test
 
 on:
   workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/macos-client-test.yml"
+      - "desktop-client/**"
+      - "scripts/build-macos-client.sh"
   pull_request:
     paths:
       - ".github/workflows/macos-client-test.yml"
