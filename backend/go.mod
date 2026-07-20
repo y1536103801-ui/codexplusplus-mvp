@@ -4,6 +4,7 @@ go 1.26
 
 require (
 	github.com/jackc/pgx/v5 v5.7.6
+	github.com/klauspost/compress v1.18.4
 	github.com/redis/go-redis/v9 v9.7.0
 )
 

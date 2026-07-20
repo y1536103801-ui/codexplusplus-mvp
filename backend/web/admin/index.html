@@ -30,7 +30,7 @@
     section { padding: 22px 28px 40px; }
     .auth { max-width: 420px; margin: 12vh auto; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 24px; }
     .grid { display: grid; gap: 14px; }
-    .cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+    .cards { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
     .card, .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 16px; }
     .metric { color: var(--muted); font-size: 13px; }
     .metric strong { display: block; color: var(--text); font-size: 28px; margin-top: 8px; }
@@ -50,35 +50,47 @@
     tr:last-child td { border-bottom: none; }
     .split { display: grid; grid-template-columns: 340px minmax(0, 1fr); gap: 16px; align-items: start; }
     .status { display: inline-flex; align-items: center; min-height: 24px; padding: 0 8px; border-radius: 999px; background: #eef2f6; color: var(--muted); }
-    .status.active, .status.approved, .status.available { background: #e7f7ee; color: var(--ok); }
-    .status.pending { background: #fff6e5; color: var(--warn); }
+    .status.active, .status.approved, .status.available, .status.fulfilled { background: #e7f7ee; color: var(--ok); }
+    .status.pending, .status.contacted { background: #fff6e5; color: var(--warn); }
+    .status.checking { background: #eaf2ff; color: #175cd3; }
     .status.disabled, .status.rejected { background: #fdeceb; color: var(--danger); }
     .msg { min-height: 22px; color: var(--muted); }
     .msg.err { color: var(--danger); }
     .hidden { display: none !important; }
     .row-actions { display: grid; grid-template-columns: 1fr; gap: 6px; align-items: stretch; white-space: normal; }
     .row-actions button { width: 100%; min-height: 28px; padding: 0 6px; background: #fbfcfd; }
-    .upstream-table td:last-child, .api-key-table td:last-child { vertical-align: middle; }
+    .api-key-table td:last-child { vertical-align: middle; }
     .switch-slot { display: inline-flex; width: 42px; min-width: 42px; height: 30px; align-items: center; justify-content: center; }
     .page-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
     .page-head h2 { margin: 0; font-size: 20px; }
     .table-wrap { width: 100%; overflow: hidden; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); }
     .table-wrap table { border: 0; border-radius: 0; min-width: 0; }
-    .table-wrap .upstream-table, .table-wrap .api-key-table { table-layout: fixed; width: 100%; min-width: 0; }
-    .upstream-table td:nth-child(6), .upstream-table th:nth-child(6), .api-key-table td:nth-child(5), .api-key-table th:nth-child(5) { text-align: center; }
-    .upstream-table th, .upstream-table td, .api-key-table th, .api-key-table td { padding: 10px 8px; }
+    .table-wrap .api-key-table { table-layout: fixed; width: 100%; min-width: 0; }
+    .api-key-table th, .api-key-table td { padding: 10px 8px; }
     .time-cell { white-space: normal; }
     .account-main { display: grid; gap: 4px; min-width: 0; }
     .account-main strong { font-weight: 650; }
     .meta-stack { display: grid; gap: 4px; color: var(--muted); }
     .meta-stack strong { color: var(--text); font-weight: 600; }
     .meta-stack .status { justify-self: start; }
+    .runtime-summary { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; padding: 9px 12px; border: 1px solid var(--line); border-radius: 10px; background: #fbfcfd; }
     .meta-inline { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
     .muted { color: var(--muted); }
     .upstream-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
     .upstream-form-grid label:last-of-type, .upstream-form-grid textarea { grid-column: 1 / -1; }
     .upstream-json { min-height: 120px; font-family: Consolas, "SFMono-Regular", monospace; font-size: 12px; }
     .upstream-panel-actions { display: flex; gap: 10px; align-items: center; justify-content: flex-end; flex-wrap: wrap; }
+    .session-import { display: flex; gap: 12px; align-items: center; justify-content: space-between; flex-wrap: wrap; padding: 12px; border: 1px solid #b7ddd5; border-radius: 6px; background: var(--brand-soft); }
+    .session-import div { display: grid; gap: 4px; }
+    .session-import a { display: inline-flex; align-items: center; min-height: 36px; padding: 0 12px; border: 1px solid var(--brand); border-radius: 6px; color: var(--brand); background: #fff; text-decoration: none; font-weight: 600; }
+    .panel-close { margin-left: auto; }
+    .usage-priority-table { table-layout: fixed; }
+    .usage-priority-table .account-main { gap: 3px; }
+    .usage-value { display: grid; gap: 3px; }
+    .usage-value strong { color: var(--text); font-size: 14px; }
+    .idle-usage { cursor: help; }
+    .remark-cell { display: block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text); }
+    .remark-editor textarea { min-height: 84px; }
     .account-detail { display: grid; gap: 8px; }
     .account-detail summary { cursor: pointer; color: var(--text); font-weight: 650; }
     .detail-grid { display: grid; grid-template-columns: 92px minmax(0, 1fr); gap: 6px 10px; margin-top: 8px; color: var(--muted); }
@@ -87,11 +99,32 @@
     .switch-toggle::before { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 999px; background: #8a95a5; box-shadow: 0 1px 2px rgba(16, 24, 40, .18); transition: left .16s ease, background .16s ease; }
     .switch-toggle.enabled { background: #d8efe7; border-color: #a8d8c9; }
     .switch-toggle.enabled::before { left: 18px; background: var(--ok); }
+    .analytics-filter-grid { display: grid; grid-template-columns: repeat(4, minmax(150px, 1fr)); gap: 12px; align-items: end; }
+    .analytics-account-field { grid-column: span 2; align-self: stretch; }
+    .analytics-accounts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 12px; max-height: 116px; overflow: auto; padding: 8px 10px; border: 1px solid var(--line); border-radius: 6px; background: #fbfcfd; }
+    .analytics-account-option { display: flex; align-items: center; gap: 7px; min-width: 0; color: var(--text); }
+    .analytics-account-option input { width: auto; min-height: 0; margin: 0; }
+    .analytics-account-option span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .analytics-actions { display: flex; gap: 8px; align-items: center; }
+    .analytics-cards { grid-template-columns: repeat(4, minmax(0, 1fr)); margin-top: 14px; }
+    .analytics-chart { margin-top: 14px; overflow-x: auto; border: 1px solid var(--line); border-radius: 8px; background: #fff; padding: 12px; }
+    .analytics-chart svg { display: block; width: 100%; min-width: 720px; height: auto; }
+    .analytics-legend { display: flex; flex-wrap: wrap; gap: 8px 16px; margin: 4px 0 0 54px; color: var(--muted); font-size: 12px; }
+    .analytics-legend span { display: inline-flex; align-items: center; gap: 6px; }
+    .analytics-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 999px; }
+    .analytics-note { margin: 10px 0 0; color: var(--muted); font-size: 12px; line-height: 1.6; }
+    .analytics-note.warn { color: var(--warn); }
+    .analytics-table-wrap { max-height: 420px; overflow: auto; margin-top: 14px; border: 1px solid var(--line); border-radius: 8px; }
+    .analytics-table-wrap table { border: 0; border-radius: 0; }
+    .analytics-table-wrap thead { position: sticky; top: 0; z-index: 1; }
     @media (max-width: 900px) {
       main { grid-template-columns: 1fr; }
       nav { display: flex; overflow-x: auto; border-right: none; border-bottom: 1px solid var(--line); }
       nav button { min-width: 132px; }
       .cards, .split { grid-template-columns: 1fr; }
+      .analytics-filter-grid, .analytics-cards { grid-template-columns: 1fr; }
+      .analytics-account-field { grid-column: auto; }
+      .analytics-accounts { grid-template-columns: 1fr; }
       .upstream-form-grid { grid-template-columns: 1fr; }
       section { padding: 18px; }
     }
@@ -119,8 +152,9 @@
         <button data-tab="overview" class="active">运营概览</button>
         <button data-tab="users">普通用户</button>
         <button data-tab="topups">Token 充值项</button>
+        <button data-tab="orders">账号购买申请</button>
         <button data-tab="recharges">待确认充值</button>
-        <button data-tab="upstreams">号池账号</button>
+        <button data-tab="upstreams">号池 Key</button>
         <button data-tab="devices">设备管理</button>
         <button data-tab="usage">用量与审计</button>
       </nav>
@@ -130,9 +164,18 @@
 
   <script>
     const api = location.origin + '/api';
-    const state = { token: localStorage.getItem('adminToken') || '', tab: 'overview', initialized: false, usersPage: 1, userQ: '', userDetailId: '', userLedgerPage: 1, userRechargePage: 1, userUsagePage: 1, topupsPage: 1, topupQ: '', topupEnabled: '', topupEditId: '', rechargePage: 1, upstreamPage: 1, apiKeyPage: 1, upstreamAvailable: '', upstreamMsg: '', upstreamCredentialEditId: '', upstreamPanel: '', devicePage: 1, usagePage: 1, usageToday: '', ledgerPage: 1, auditPage: 1 };
+    const state = { token: localStorage.getItem('adminToken') || '', tab: 'overview', initialized: false, usersPage: 1, userQ: '', userDetailId: '', userLedgerPage: 1, userRechargePage: 1, userUsagePage: 1, topupsPage: 1, topupQ: '', topupEnabled: '', topupEditId: '', orderPage: 1, orderStatus: '', orderMsg: '', orderFulfillId: '', rechargePage: 1, upstreamPage: 1, upstreamAvailable: '', upstreamMsg: '', upstreamPanel: '', upstreamRemarkId: '', upstreamCheckingIds: [], codexOAuth: null, devicePage: 1, usagePage: 1, usageToday: '', ledgerPage: 1, auditPage: 1, usageAnalyticsAccounts: [], usageAnalyticsFrom: '', usageAnalyticsTo: '', usageAnalyticsGroupBy: 'day', usageAnalyticsMetric: 'averageTokensPerTask', usageAnalyticsTimezone: 'Asia/Shanghai', usageAnalyticsMinTasks: '', usageAnalyticsMaxTasks: '', usageAnalyticsMinTokens: '', usageAnalyticsMaxTokens: '' };
+    let codexOAuthPollTimer = 0;
+    let upstreamUsageRefreshTimer = 0;
+    let upstreamRenderRevision = 0;
     const $ = (id) => document.getElementById(id);
     const fmtTime = (v) => v ? new Date(v).toLocaleString() : '';
+    const fmtUsagePeriod = (from, to) => {
+      if (!to) return '未记录';
+      const start = fmtTime(from || to);
+      const end = fmtTime(to);
+      return start === end ? end : `${start} 至 ${end}`;
+    };
     const money = (cents) => cents === 0 ? 'free' : '¥' + (Number(cents || 0) / 100).toFixed(2);
     const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (ch) => ({
       '&': '&amp;',
@@ -148,14 +191,34 @@
       disabled: '不可用',
       unavailable: '不可用',
       pending: '等待管理员确认',
+      contacted: '已联系',
+      fulfilled: '已发放',
       approved: '已确认',
       rejected: '已拒绝',
-      cancelled: '已取消'
+      cancelled: '已取消',
+      pending_authorization: '待授权',
+      authorizing: '授权准备中',
+      action_required: '等待完成授权',
+      authorized: '已授权',
+      checking: '检查中',
+      failed: '授权失败'
     })[v] || (v || '');
     const status = (v) => `<span class="status ${statusClass(v)}">${esc(statusLabel(v))}</span>`;
     const availability = (v) => {
       const ok = v === 'active' || v === 'available';
       return `<span class="status ${ok ? 'available' : 'disabled'}">${ok ? '可用' : '不可用'}</span>`;
+    };
+    const clientStateCell = (user) => {
+      const states = [];
+      if (user.clientOnline) states.push('<span class="status available">在线</span>');
+      else states.push('<span class="muted">离线</span>');
+      if (user.clientActive) states.push('<span class="status">Codex 运行中</span>');
+      if (user.gatewayActive) states.push('<span class="status checking">号池使用中</span>');
+      const upstream = user.assignedUpstreamAccount || {};
+      const upstreamLabel = upstream.name || upstream.email || upstream.id || '';
+      const lastSeen = user.clientOnlineLastSeenAt ? `最近心跳 ${fmtTime(user.clientOnlineLastSeenAt)}` : '';
+      const detail = [upstreamLabel ? `使用 ${upstreamLabel}` : '', lastSeen].filter(Boolean).join(' · ');
+      return `<div class="meta-stack">${states.join(' ')}${detail ? `<span class="muted">${esc(detail)}</span>` : ''}</div>`;
     };
     const qs = (params) => new URLSearchParams(Object.entries(params).filter(([, v]) => v !== undefined && v !== null && v !== '')).toString();
 
@@ -167,6 +230,31 @@
       const data = text ? JSON.parse(text) : {};
       if (!res.ok) throw new Error(data.error || res.statusText);
       return data;
+    }
+
+    async function downloadAdminJSON(path) {
+      const res = await fetch(api + path, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${state.token}` },
+        body: '{}'
+      });
+      if (!res.ok) {
+        const text = await res.text();
+        let data = {};
+        try { data = text ? JSON.parse(text) : {}; } catch {}
+        throw new Error(data.error || res.statusText);
+      }
+      const disposition = res.headers.get('Content-Disposition') || '';
+      const match = disposition.match(/filename="?([^";]+)"?/i);
+      const filename = match ? match[1] : 'codexppp-account-pool.json';
+      const href = URL.createObjectURL(await res.blob());
+      const link = document.createElement('a');
+      link.href = href;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(href);
     }
 
     async function bootstrap() {
@@ -196,6 +284,19 @@
         localStorage.removeItem('adminToken');
         state.token = '';
       }
+    }
+
+    function requireFreshAdminLogin(message = '为保护号池授权数据，请重新登录后再导出') {
+      localStorage.removeItem('adminToken');
+      state.token = '';
+      $('app').classList.add('hidden');
+      $('auth').classList.remove('hidden');
+      $('newPasswordWrap').classList.add('hidden');
+      $('authAction').textContent = '登录';
+      $('password').value = '';
+      $('authHint').textContent = message;
+      $('authHint').className = 'msg err';
+      $('password').focus();
     }
 
     async function authAction() {
@@ -236,27 +337,85 @@
       return Object.fromEntries(new FormData(form).entries());
     }
 
-    function upstreamFormData(form) {
-      const d = formData(form);
-      if (d.expiresAtLocal) {
-        const expiresAt = new Date(d.expiresAtLocal);
-        if (Number.isNaN(expiresAt.getTime())) throw new Error('expires_at_invalid');
-        d.expiresAt = expiresAt.toISOString();
-      }
-      delete d.expiresAtLocal;
-      return d;
-    }
-
     function fmtNumber(v) {
       return new Intl.NumberFormat('zh-CN', { maximumFractionDigits: 2 }).format(Number(v || 0));
     }
     function fmtPercent(v) {
       return `${fmtNumber(v)}%`;
     }
+    function usageMetricLabel(metric) {
+      return ({
+        averageTokensPerTask: '单任务平均 Token',
+        taskCount: '任务量',
+        totalTokens: 'Token 消耗量'
+      })[metric] || metric;
+    }
+    function usageMetricValue(point, metric) {
+      return Number(point && point[metric] || 0);
+    }
+    function usageAnalyticsAccounts(data) {
+      const selected = new Set(data.selectedAccountIds || []);
+      if (!(data.accounts || []).length) return '<span class="muted">号池暂无账号</span>';
+      return (data.accounts || []).map(account => `<label class="analytics-account-option" title="${esc(account.label)}"><input type="checkbox" data-analytics-account value="${esc(account.id)}" ${selected.has(account.id) ? 'checked' : ''}><span>${esc(account.label)}</span></label>`).join('');
+    }
+    function renderUsageAnalyticsChart(data) {
+      const points = data.points || [];
+      if (!points.length) return '<p class="muted">当前筛选条件没有匹配的时间段。</p>';
+      const metric = data.query.metric;
+      const labels = [...new Set(points.map(point => point.bucket))];
+      const accountIds = data.selectedAccountIds || [];
+      const accountLabels = Object.fromEntries((data.accounts || []).map(account => [account.id, account.label]));
+      const byKey = new Map(points.map(point => [`${point.accountId}\u0000${point.bucket}`, point]));
+      const colors = ['#116b5f', '#3066be', '#b54708', '#7a5af8', '#c11574', '#667085', '#0e9384', '#ca8504', '#2e90fa', '#6938ef', '#dd2590', '#039855', '#dc6803', '#344054', '#4e5ba6', '#c01048', '#0788f5', '#15803d', '#a15c07', '#475467'];
+      const width = 960;
+      const height = 320;
+      const left = 62;
+      const right = 22;
+      const top = 24;
+      const bottom = 58;
+      const plotWidth = width - left - right;
+      const plotHeight = height - top - bottom;
+      const values = points.map(point => usageMetricValue(point, metric));
+      const maxValue = Math.max(1, ...values);
+      const x = index => labels.length === 1 ? left + plotWidth / 2 : left + index * plotWidth / (labels.length - 1);
+      const y = value => top + plotHeight - Math.max(0, value) / maxValue * plotHeight;
+      const grid = Array.from({ length: 5 }, (_, index) => {
+        const value = maxValue * (4 - index) / 4;
+        const py = top + index * plotHeight / 4;
+        return `<line x1="${left}" y1="${py}" x2="${width - right}" y2="${py}" stroke="#e4e7ec"/><text x="${left - 9}" y="${py + 4}" text-anchor="end" fill="#667085" font-size="11">${esc(fmtNumber(value))}</text>`;
+      }).join('');
+      const labelStep = Math.max(1, Math.ceil(labels.length / 8));
+      const xLabels = labels.map((label, index) => (index % labelStep === 0 || index === labels.length - 1) ? `<text x="${x(index)}" y="${height - 24}" text-anchor="middle" fill="#667085" font-size="11">${esc(label)}</text>` : '').join('');
+      const lines = accountIds.map((accountId, seriesIndex) => {
+        const color = colors[seriesIndex % colors.length];
+        const seriesPoints = labels.map((label, index) => ({ point: byKey.get(`${accountId}\u0000${label}`), index }));
+        const segments = [];
+        let segment = [];
+        seriesPoints.forEach(item => {
+          if (item.point) segment.push(item);
+          else if (segment.length) { segments.push(segment); segment = []; }
+        });
+        if (segment.length) segments.push(segment);
+        const polylines = segments.filter(items => items.length > 1).map(items => `<polyline points="${items.map(item => `${x(item.index)},${y(usageMetricValue(item.point, metric))}`).join(' ')}" fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`).join('');
+        const circles = seriesPoints.map(item => {
+          if (!item.point) return '';
+          const value = usageMetricValue(item.point, metric);
+          return `<circle cx="${x(item.index)}" cy="${y(value)}" r="3.5" fill="${color}"><title>${esc(accountLabels[accountId] || accountId)} · ${esc(item.point.bucket)} · ${esc(usageMetricLabel(metric))} ${esc(fmtNumber(value))}</title></circle>`;
+        }).join('');
+        return `${polylines}${circles}`;
+      }).join('');
+      const legend = accountIds.map((accountId, index) => `<span><i style="background:${colors[index % colors.length]}"></i>${esc(accountLabels[accountId] || accountId)}</span>`).join('');
+      return `<svg viewBox="0 0 ${width} ${height}" role="img" aria-label="${esc(usageMetricLabel(metric))}趋势图"><text x="${left}" y="14" fill="#475467" font-size="12">${esc(usageMetricLabel(metric))}</text>${grid}<line x1="${left}" y1="${top + plotHeight}" x2="${width - right}" y2="${top + plotHeight}" stroke="#98a2b3"/>${lines}${xLabels}</svg><div class="analytics-legend">${legend}</div>`;
+    }
+    function renderUsageAnalyticsTable(data) {
+      const rows = data.points || [];
+      if (!rows.length) return '';
+      return `<div class="analytics-table-wrap"><table><thead><tr><th>时间段</th><th>账号</th><th>任务量</th><th>调用记录</th><th>input</th><th>cached</th><th>output</th><th>总 Token</th><th>单任务平均</th></tr></thead><tbody>${rows.map(point => `<tr><td>${esc(point.bucket)}</td><td>${esc(point.accountLabel || point.accountId)}</td><td>${esc(fmtNumber(point.taskCount))}</td><td>${esc(fmtNumber(point.recordCount))}</td><td>${esc(fmtNumber(point.inputTokens))}</td><td>${esc(fmtNumber(point.cachedInputTokens))}</td><td>${esc(fmtNumber(point.outputTokens))}</td><td>${esc(fmtNumber(point.totalTokens))}</td><td>${esc(fmtNumber(point.averageTokensPerTask))}</td></tr>`).join('')}</tbody></table></div>`;
+    }
     function upstreamReasonLabel(value) {
       return ({
         available: '检查通过',
-        check_failed: '检查失败',
+        check_failed: '检查服务返回未知错误',
         missing_access_token: '缺少 access_token',
         missing_chatgpt_account_id: '缺少 chatgptAccountId',
         auth_failed: '认证失败',
@@ -264,18 +423,27 @@
         rate_limited: '频率限制',
         service_overloaded: 'Codex 服务繁忙',
         check_service_start_failed: '检查服务启动失败',
-        check_service_unavailable: '检查服务不可用'
+        check_service_unavailable: '检查服务不可用',
+        check_timed_out: '检查超时',
+        secret_decrypt_failed: '授权数据无法解密',
+        secret_encrypt_failed: '授权刷新结果保存失败',
+        state_save_failed: '检查结果保存失败',
+        upstream_not_found: '账号不存在',
+        short_lived_auth: '短期授权',
+        token_expired: '授权已过期',
+        refreshable: '可自动续期',
+        pending_authorization: '待授权',
+        authorizing: '授权准备中',
+        action_required: '等待完成授权',
+        authorized: '已授权',
+        failed: '授权失败',
+        codex_oauth_email_mismatch: '授权账号与候选邮箱不一致'
       })[value] || value || '';
     }
     function upstreamAccountCell(up) {
       const name = up.name || up.email || up.id;
       const meta = [up.group || '未分组', up.email && up.email !== name ? up.email : ''].filter(Boolean);
       return `<div class="account-main"><strong>${esc(name)}</strong>${meta.map(x => `<span class="muted">${esc(x)}</span>`).join('')}</div>`;
-    }
-    function upstreamMeta(up) {
-      const first = [up.subscriptionTier].filter(Boolean).join(' / ');
-      const second = [up.credentialType, up.tokenType].filter(Boolean).join(' / ');
-      return `<div class="meta-stack">${first ? `<strong>${esc(first)}</strong>` : '<span class="muted">未检查</span>'}${second ? `<span>${esc(second)}</span>` : ''}</div>`;
     }
     function upstreamLimitLines(up) {
       const items = [];
@@ -287,7 +455,7 @@
       return items;
     }
     function upstreamAvailabilityCell(up) {
-      const reason = up.availabilityStatus !== 'available' ? upstreamReasonLabel(up.entitlementStatus) : '';
+      const reason = up.entitlementStatus && up.entitlementStatus !== 'available' ? upstreamReasonLabel(up.entitlementStatus) : (up.availabilityStatus !== 'available' ? upstreamReasonLabel(up.entitlementStatus) : '');
       const limitLines = upstreamLimitLines(up);
       const detail = reason || (up.lastCheckedAt ? (limitLines.length ? limitLines.join(' / ') : '无额度数据') : '未检查');
       return `<div class="meta-stack">${availability(up.availabilityStatus)}<span class="muted">${esc(detail)}</span></div>`;
@@ -297,22 +465,74 @@
       const expired = Date.now() >= new Date(up.expiresAt).getTime();
       return `<div class="meta-stack"><span>${esc(fmtTime(up.expiresAt))}</span><span class="${expired ? 'status disabled' : 'muted'}">${expired ? '已过期' : '未过期'}</span></div>`;
     }
+    function upstreamAuthLine(up) {
+      const statusText = upstreamReasonLabel(up.credentialStatus) || '未识别';
+      return `<div class="meta-stack"><strong>${esc(statusText)}</strong><span>${upstreamValidity(up)}</span></div>`;
+    }
+    function upstreamUseUserCell(up) {
+      const active = Array.isArray(up.activeUserAccounts) ? up.activeUserAccounts : [];
+      if (active.length) {
+        const label = active.length > 2 ? `${active.slice(0, 2).join('、')} 等 ${active.length} 人` : active.join('、');
+        const limit = Number(up.activeUserLimit || 0);
+        const occupancy = limit > 0 ? `${active.length}/${limit}` : `${active.length}`;
+        return `<div class="usage-value"><span class="status available">正在使用 ${esc(occupancy)}</span><strong>${esc(label)}</strong></div>`;
+      }
+      const detail = up.lastUserAccount
+        ? `最近使用用户：${up.lastUserAccount}\n使用时间段：${fmtUsagePeriod(up.lastUsedFrom, up.lastUsedAt)}`
+        : '暂无最近使用记录';
+      const limit = Number(up.activeUserLimit || 0);
+      return `<span class="status available idle-usage" title="${esc(detail)}" aria-label="空闲；${esc(detail)}">空闲${limit > 0 ? ` 0/${esc(limit)}` : ''}</span>`;
+    }
+    function upstreamUsageCell(up) {
+      const routed = Number(up.routedUsageTokens || 0);
+      const accountUsage = Number(up.usageTokens || 0);
+      return `<div class="usage-value"><strong>${esc(fmtNumber(routed))} token</strong><span class="muted">本系统今日${accountUsage && accountUsage !== routed ? ` / 上游统计 ${esc(fmtNumber(accountUsage))}` : ''}</span></div>`;
+    }
+    function upstreamRemainingCell(up) {
+      if (up.checkStatus === 'checking' || state.upstreamCheckingIds.includes(up.id)) {
+        return '<div class="usage-value"><span class="status checking">检查中</span><span class="muted">正在读取授权与额度</span></div>';
+      }
+      const lines = [];
+      const reason = up.checkStatus === 'failed'
+        ? upstreamReasonLabel(up.checkFailureReason || up.entitlementStatus) || '未知原因'
+        : '';
+      if (reason) lines.push(`<strong>${esc(reason)}</strong>`);
+      if (up.rateLimitRemainingPercent !== null && up.rateLimitRemainingPercent !== undefined) lines.push(`<strong>${esc(fmtPercent(up.rateLimitRemainingPercent))}</strong>`);
+      if (up.creditBalanceLabel) lines.push(`<span class="muted">credits ${esc(up.creditBalanceLabel)}</span>`);
+      else if (up.creditBalance !== null && up.creditBalance !== undefined) lines.push(`<span class="muted">credits ${esc(fmtNumber(up.creditBalance))}</span>`);
+      if (up.rateLimitResetsAt) lines.push(`<span class="muted">${esc(fmtTime(up.rateLimitResetsAt))} 重置</span>`);
+      if (lines.length) {
+        lines.push(`<span class="muted">检查于 ${esc(fmtTime(up.lastCheckedAt))}</span>`);
+        return `<div class="usage-value">${lines.join('')}</div>`;
+      }
+      if (up.lastCheckedAt) {
+        return `<div class="usage-value"><strong>已检查，无额度数据</strong><span class="muted">${esc(fmtTime(up.lastCheckedAt))}</span></div>`;
+      }
+      return '<span class="muted">未检查</span>';
+    }
+    function upstreamStatusCell(up, key) {
+      const checking = up.checkStatus === 'checking' || state.upstreamCheckingIds.includes(up.id);
+      if (checking) {
+        return '<div class="meta-stack"><span class="status checking">检查中</span><span class="muted">正在检查账号</span></div>';
+      }
+      const failureReason = up.checkStatus === 'failed' ? upstreamReasonLabel(up.checkFailureReason || up.entitlementStatus) || '未知原因' : '';
+      const detail = failureReason ? `检查失败：${failureReason}` : upstreamReasonLabel(up.credentialStatus) || '未识别';
+      return `<div class="meta-stack">${up.availabilityStatus === 'available' && key.status === 'active' ? availability('available') : availability('unavailable')}<span class="muted">${esc(detail)}</span>${key.id ? `<span class="switch-slot"><button class="switch-toggle ${key.status === 'active' ? 'enabled' : ''}" data-api-key-status="${esc(key.id)}" data-value="${key.status === 'active' ? 'disabled' : 'active'}" title="${key.status === 'active' ? '关闭' : '启用'}"></button></span>` : ''}</div>`;
+    }
     function apiKeyPrimaryCell(key) {
-      return `<div class="account-main"><strong>${esc(key.id)}</strong><span class="muted">创建 ${esc(fmtTime(key.createdAt))}</span></div>`;
+      return `<div class="account-main"><strong>${esc(key.keyPreview || key.id)}</strong><span class="muted">创建 ${esc(fmtTime(key.createdAt))}</span></div>`;
     }
     function apiKeyAccountDetail(key) {
       const up = key.upstream || {};
-      if (!up.id) return '<span class="muted">未绑定账号</span>';
-      const summary = up.name || up.email || up.id;
+      if (!up.id) return '<details class="account-detail"><summary>详情</summary><span class="muted">未绑定授权</span></details>';
       return `<details class="account-detail">
-        <summary>${esc(summary)}</summary>
+        <summary>详情</summary>
         <div class="detail-grid">
-          <span>账号</span><span>${upstreamAccountCell(up)}</span>
-          <span>资料</span><span>${upstreamMeta(up)}</span>
-          <span>时效</span><span>${upstreamValidity(up)}</span>
-          <span>账号状态</span><span>${upstreamAvailabilityCell(up)}</span>
+          <span>授权来源</span><span>${upstreamAccountCell(up)}</span>
+          <span>套餐</span><span>${esc(up.subscriptionTier || '未识别')}</span>
+          <span>授权</span><span>${upstreamAuthLine(up)}</span>
+          <span>额度</span><span>${upstreamAvailabilityCell(up)}</span>
           <span>最近检查</span><span>${esc(fmtTime(up.lastCheckedAt) || '未检查')}</span>
-          <span>账号启用</span><span><button class="switch-toggle ${up.enabled ? 'enabled' : ''}" data-up-enabled="${esc(up.id)}" data-value="${up.enabled ? 'false' : 'true'}" title="${up.enabled ? '启用' : '关闭'}"></button></span>
         </div>
       </details>`;
     }
@@ -327,12 +547,68 @@
         description: src.description || ''
       };
     }
+    function stopCodexOAuthPoll() {
+      if (codexOAuthPollTimer) {
+        clearInterval(codexOAuthPollTimer);
+        codexOAuthPollTimer = 0;
+      }
+    }
+    function scheduleUpstreamUsageRefresh() {
+      if (upstreamUsageRefreshTimer) clearTimeout(upstreamUsageRefreshTimer);
+      upstreamUsageRefreshTimer = 0;
+      if (state.tab !== 'upstreams' || state.upstreamPanel || state.upstreamRemarkId || state.codexOAuth || state.upstreamCheckingIds.length) return;
+      upstreamUsageRefreshTimer = setTimeout(() => {
+        upstreamUsageRefreshTimer = 0;
+        if (state.tab === 'upstreams' && !state.upstreamPanel && !state.upstreamRemarkId && !state.codexOAuth && !state.upstreamCheckingIds.length) renderUpstreams().catch(() => {});
+      }, 5000);
+    }
+    function startCodexOAuthPoll(oauthState) {
+      stopCodexOAuthPoll();
+      codexOAuthPollTimer = setInterval(async () => {
+        try {
+          const data = await request('/admin/codex-oauth/status?' + qs({ state: oauthState }));
+          if (data.status === 'imported') {
+            stopCodexOAuthPoll();
+            const label = [data.accountName, data.keyPreview].filter(Boolean).join(' / ');
+            state.upstreamMsg = label ? `已导入 Codex 授权：${label}` : '已导入 Codex 授权';
+            state.codexOAuth = null;
+            renderUpstreams();
+          } else if (data.status === 'failed') {
+            stopCodexOAuthPoll();
+            state.upstreamMsg = `Codex 授权失败：${upstreamReasonLabel(data.error) || data.error || '未知原因'}`;
+            state.codexOAuth = { ...(state.codexOAuth || {}), ...data };
+            renderUpstreams();
+          }
+        } catch {
+          stopCodexOAuthPoll();
+        }
+      }, 1500);
+    }
+
+    async function beginCodexOAuth(method, upstreamId = '') {
+      const popup = window.open('about:blank', '_blank');
+      state.upstreamMsg = '正在准备 Codex 授权';
+      try {
+        const data = await request('/admin/codex-oauth/start', { method: 'POST', body: JSON.stringify({ method, upstreamId }) });
+        const authUrl = data.verificationUrl || data.authorizeUrl;
+        if (popup && authUrl) popup.location.href = authUrl;
+        else if (authUrl) window.location.href = authUrl;
+        state.codexOAuth = { ...data, method, upstreamId };
+        state.upstreamMsg = data.userCode ? `已打开 Codex 授权页，验证码：${data.userCode}` : '已打开 Codex 授权页';
+        startCodexOAuthPoll(data.state);
+      } catch (err) {
+        if (popup) popup.close();
+        state.upstreamMsg = `Codex 授权启动失败：${upstreamReasonLabel(err.message) || err.message}`;
+      }
+      renderUpstreams();
+    }
 
     async function render() {
       const tab = state.tab;
       if (tab === 'overview') return renderOverview();
       if (tab === 'users') return renderUsers();
       if (tab === 'topups') return renderTopups();
+      if (tab === 'orders') return renderOrders();
       if (tab === 'recharges') return renderRecharges();
       if (tab === 'upstreams') return renderUpstreams();
       if (tab === 'devices') return renderDevices();
@@ -344,14 +620,16 @@
       $('content').innerHTML = `
         <div class="cards">
           <button class="card metric" data-jump="recharges">待确认充值<strong>${esc(o.pendingRecharges)}</strong></button>
-          <button class="card metric" data-jump="upstreams" data-available="true">可调度号池账号<strong>${esc(o.availableUpstreams)}</strong></button>
+          <button class="card metric" data-jump="orders" data-order-status="pending">待处理购买<strong>${esc(o.pendingAccountOrders || 0)}</strong></button>
+          <button class="card metric" data-jump="upstreams" data-available="true">可调度号池 Key<strong>${esc(o.availableUpstreams)}</strong></button>
           <button class="card metric" data-jump="usage" data-today="true">今日 token 用量<strong>${esc(o.todayTokens)}</strong></button>
         </div>`;
       document.querySelectorAll('[data-jump]').forEach(btn => btn.onclick = () => {
         if (btn.dataset.jump === 'recharges') state.rechargePage = 1;
+        if (btn.dataset.jump === 'orders') { state.orderPage = 1; state.orderStatus = btn.dataset.orderStatus || ''; }
         if (btn.dataset.available) {
           state.upstreamAvailable = btn.dataset.available;
-          state.upstreamPage = 1;
+          state.apiKeyPage = 1;
         }
         if (btn.dataset.today) {
           state.usageToday = btn.dataset.today;
@@ -383,6 +661,8 @@
                 <p>token <strong>${esc(detail.user.tokenBalance)}</strong></p>
                 <p>最近充值 <span class="status">${esc(detail.user.recentRechargeStatus)}</span></p>
                 <p>账号状态 ${status(detail.user.status)}</p>
+                <p>客户端 ${clientStateCell(detail.user)}</p>
+                ${detail.user.clientActive ? `<p class="muted">客户端 ${esc(detail.user.desktopVersion || '未上报')} · Codex ${esc(detail.user.codexVersion || '未上报')}</p>` : ''}
                 <p>最近使用 ${esc(fmtTime(detail.user.lastLoginAt))}</p>
                 <form id="userAdjustForm" class="grid">
                   <label>token 变动<input name="deltaTokens" type="number" value="1000"></label>
@@ -407,9 +687,9 @@
                 <button data-user-search>搜索</button>
                 <button data-refresh>刷新</button>
               </div>
-              <table><thead><tr><th>账号</th><th>token</th><th>最近充值</th><th>状态</th><th>最近使用</th><th>操作</th></tr></thead>
+              <table><thead><tr><th>账号</th><th>token</th><th>最近充值</th><th>状态</th><th>客户端</th><th>最近使用</th><th>操作</th></tr></thead>
               <tbody>${data.items.map(u => `<tr>
-                <td>${esc(u.account)}</td><td>${esc(u.tokenBalance)}</td><td>${esc(u.recentRechargeStatus)}</td><td>${status(u.status)}</td><td>${esc(fmtTime(u.lastLoginAt))}</td>
+                <td>${esc(u.account)}</td><td>${esc(u.tokenBalance)}</td><td>${esc(u.recentRechargeStatus)}</td><td>${status(u.status)}</td><td>${clientStateCell(u)}</td><td>${esc(fmtTime(u.lastLoginAt))}</td>
                 <td class="row-actions">
                   <button data-user-detail="${esc(u.id)}">详情</button>
                   <button data-status="${esc(u.id)}" data-value="${u.status === 'active' ? 'disabled' : 'active'}">${u.status === 'active' ? '停用' : '启用'}</button>
@@ -546,6 +826,64 @@
       document.querySelector('[data-refresh]').onclick = renderTopups;
     }
 
+    async function renderOrders() {
+      const data = await request('/admin/account-orders?' + qs({ status: state.orderStatus, page: state.orderPage, size: 10 }));
+      const fulfillTarget = data.items.find(order => order.id === state.orderFulfillId);
+      $('content').innerHTML = `
+        <div class="grid">
+          <div class="page-head">
+            <div><h2>账号购买申请</h2><p class="muted">官网只收集购买意向；确认收款并创建用户后，再完成订单和初始 Token 入账。</p></div>
+            <div class="toolbar">
+              <select id="orderStatus"><option value="">全部状态</option><option value="pending" ${state.orderStatus === 'pending' ? 'selected' : ''}>待处理</option><option value="contacted" ${state.orderStatus === 'contacted' ? 'selected' : ''}>已联系</option><option value="fulfilled" ${state.orderStatus === 'fulfilled' ? 'selected' : ''}>已发放</option><option value="rejected" ${state.orderStatus === 'rejected' ? 'selected' : ''}>已拒绝</option></select>
+              <button data-order-filter>筛选</button><button data-refresh>刷新</button><button data-create-order-user>创建普通用户</button>
+            </div>
+          </div>
+          <p class="msg ${state.orderMsg ? '' : 'hidden'}">${esc(state.orderMsg)}</p>
+          ${fulfillTarget ? `<form id="orderFulfillForm" class="panel grid"><div class="toolbar"><h2>完成订单：${esc(fulfillTarget.id)}</h2><button type="button" data-close-order-fulfill>关闭</button></div><p class="muted">请先在“普通用户”中创建账号。提交后，${esc(Number(fulfillTarget.tokens || 0).toLocaleString())} Token 将一次性入账，订单不可再次处理。</p><label>发放的普通用户账号<input name="userAccount" required autocomplete="off" placeholder="输入已经创建的账号"></label><label>管理员备注<textarea name="adminRemark" maxlength="300" placeholder="选填，不会显示给购买者"></textarea></label><div><button class="primary">确认收款、完成并入账</button></div></form>` : ''}
+          <div class="table-wrap"><table><thead><tr><th>订单</th><th>联系方式</th><th>套餐</th><th>期望账号</th><th>备注</th><th>状态</th><th>发放账号</th><th>提交时间</th><th>操作</th></tr></thead><tbody>
+            ${data.items.length ? data.items.map(order => `<tr>
+              <td><strong>${esc(order.id)}</strong></td>
+              <td>${esc(order.contact || '解密失败')}</td>
+              <td><div class="meta-stack"><strong>${esc(order.topupName)}</strong><span>${esc(money(order.priceCents))} · ${esc(Number(order.tokens || 0).toLocaleString())} token</span></div></td>
+              <td>${esc(order.preferredAccount || '未指定')}</td>
+              <td>${esc(order.remark || '—')}</td>
+              <td>${status(order.status)}</td>
+              <td>${esc(order.userAccount || '—')}</td>
+              <td>${esc(fmtTime(order.createdAt))}</td>
+              <td class="row-actions">${order.status === 'pending' ? `<button data-order-contacted="${esc(order.id)}">标记已联系</button>` : ''}${order.status === 'pending' || order.status === 'contacted' ? `<button class="primary" data-order-fulfilled="${esc(order.id)}">完成并入账</button><button class="danger" data-order-rejected="${esc(order.id)}">拒绝</button>` : ''}</td>
+            </tr>`).join('') : '<tr><td colspan="9" class="muted">暂无购买申请</td></tr>'}
+          </tbody></table></div>
+          ${pager(data, 'orders')}
+        </div>`;
+      document.querySelector('[data-order-filter]').onclick = () => { state.orderStatus = $('orderStatus').value; state.orderPage = 1; state.orderMsg = ''; renderOrders(); };
+      document.querySelector('[data-refresh]').onclick = renderOrders;
+      document.querySelector('[data-create-order-user]').onclick = () => { state.userDetailId = ''; setTab('users'); };
+      document.querySelectorAll('[data-order-contacted]').forEach(btn => btn.onclick = async () => {
+        await request(`/admin/account-orders/${btn.dataset.orderContacted}/status`, { method: 'POST', body: JSON.stringify({ status: 'contacted', userAccount: '', adminRemark: '' }) });
+        state.orderMsg = '已标记为已联系'; renderOrders();
+      });
+      document.querySelectorAll('[data-order-rejected]').forEach(btn => btn.onclick = async () => {
+        await request(`/admin/account-orders/${btn.dataset.orderRejected}/status`, { method: 'POST', body: JSON.stringify({ status: 'rejected', userAccount: '', adminRemark: '' }) });
+        state.orderMsg = '购买申请已拒绝'; renderOrders();
+      });
+      document.querySelectorAll('[data-order-fulfilled]').forEach(btn => btn.onclick = () => { state.orderFulfillId = btn.dataset.orderFulfilled; state.orderMsg = ''; renderOrders(); });
+      const closeFulfill = document.querySelector('[data-close-order-fulfill]');
+      if (closeFulfill) closeFulfill.onclick = () => { state.orderFulfillId = ''; renderOrders(); };
+      if ($('orderFulfillForm')) $('orderFulfillForm').onsubmit = async (event) => {
+        event.preventDefault();
+        const data = formData(event.target);
+        try {
+          await request(`/admin/account-orders/${state.orderFulfillId}/status`, { method: 'POST', body: JSON.stringify({ status: 'fulfilled', userAccount: data.userAccount.trim(), adminRemark: data.adminRemark.trim() }) });
+          state.orderMsg = '订单已完成，套餐 Token 已入账';
+          state.orderFulfillId = '';
+        } catch (err) {
+          state.orderMsg = err.message === 'account_order_user_not_found' ? '未找到可用的普通用户账号，请先创建或启用该账号' : `完成失败：${err.message}`;
+        }
+        renderOrders();
+      };
+      bindPager('orders', (page) => { state.orderPage = page; renderOrders(); });
+    }
+
     async function renderRecharges() {
       const data = await request('/admin/recharges?' + qs({ status: 'pending', page: state.rechargePage, size: 10 }));
       $('content').innerHTML = `
@@ -560,91 +898,104 @@
     }
 
     async function renderUpstreams() {
-      const keys = await request('/admin/api-keys?' + qs({ available: state.upstreamAvailable, page: state.apiKeyPage, size: 10 }));
-      let editingUpstream = state.upstreamCredentialEditId ? (keys.items.find(x => x.upstream && x.upstream.id === state.upstreamCredentialEditId)?.upstream || null) : null;
-      if (state.upstreamCredentialEditId && !editingUpstream) state.upstreamCredentialEditId = '';
-      const upFormItem = editingUpstream || {};
-      const upFormExpiresAt = upFormItem.expiresAt ? new Date(upFormItem.expiresAt).toISOString().slice(0, 16) : '';
-      const upstreamPanel = state.upstreamCredentialEditId ? 'manual' : state.upstreamPanel;
-      const upstreamFormPanel = upstreamPanel === 'import' ? `
+      const renderRevision = ++upstreamRenderRevision;
+      const requestedPage = state.upstreamPage;
+      const requestedAvailable = state.upstreamAvailable;
+      const [keys, upstreams, pending] = await Promise.all([
+        request('/admin/api-keys?' + qs({ page: 1, size: 100 })),
+        request('/admin/upstreams?' + qs({ authorization: 'authorized', available: requestedAvailable, page: requestedPage, size: 10 })),
+        request('/admin/upstreams?' + qs({ authorization: 'pending', page: 1, size: 100 }))
+      ]);
+      if (renderRevision !== upstreamRenderRevision || state.tab !== 'upstreams') return;
+      const candidates = pending.items;
+      const remarkTarget = [...upstreams.items, ...candidates].find(up => up.id === state.upstreamRemarkId);
+      const upstreamFormPanel = state.upstreamPanel === 'import' ? `
         <form id="upImportForm" class="panel grid">
-          <div class="toolbar"><h2>自动识别导入</h2><button type="button" data-close-upstream-panel>收起</button></div>
+          <div class="toolbar"><h2>添加号池账号</h2><button type="button" class="panel-close" data-close-upstream-panel aria-label="关闭添加账号">关闭</button></div>
+          <p class="muted">支持 ChatGPT session JSON、邮箱密码、Codex auth.json、Sub2API 账号备份、Token JSON 和现有纯 Token 文本。邮箱密码会加密暂存为待授权账号，授权完成前不会进入调度。</p>
+          <div class="session-import">
+            <div><strong>从已登录的 ChatGPT 会话导入</strong><span class="muted">打开会话 JSON，复制页面全部内容并粘贴到下方。后端会提取所需授权字段、加密保存并生成号池 Key；不会保存头像等无关会话资料。</span></div>
+            <a href="https://chatgpt.com/api/auth/session" target="_blank" rel="noopener noreferrer">获取 session JSON</a>
+          </div>
           <div class="upstream-form-grid">
-            <label>选择导入文件<input id="upstreamImportFile" type="file" accept="application/json,text/plain,.json,.txt"></label>
-            <label>账号导入内容<textarea id="upstreamImportJson" class="upstream-json" spellcheck="false"></textarea></label>
+            <label>选择导入文件<input id="upstreamImportFile" type="file" accept="application/json,text/plain,text/csv,.json,.txt,.csv"></label>
+            <label>账号或授权内容<textarea id="upstreamImportJson" class="upstream-json" spellcheck="false" placeholder="直接粘贴 ChatGPT session JSON&#10;&#10;也支持：&#10;邮箱,密码&#10;user@example.com,password&#10;&#10;Codex auth.json 或 Sub2API 备份"></textarea></label>
           </div>
           <div class="upstream-panel-actions"><button class="primary">识别并导入</button></div>
-        </form>` : upstreamPanel === 'manual' ? `
-        <form id="upForm" class="panel grid">
-          <div class="toolbar"><h2>${editingUpstream ? '替换 Codex 上游账号凭据' : '手动导入 Codex 上游账号'}</h2>${editingUpstream ? '<button type="button" data-cancel-upstream-credentials>取消替换</button>' : '<button type="button" data-close-upstream-panel>收起</button>'}</div>
-          <div class="upstream-form-grid">
-            <label>账号名称<input name="name" value="${esc(upFormItem.name || '')}"></label>
-            <label>分组<input name="group" value="${esc(upFormItem.group || '')}"></label>
-            <label>凭据类型<select name="credentialType"><option value="oauth">oauth</option></select></label>
-            <label>token_type<input name="tokenType" value="${esc(upFormItem.tokenType || '')}"></label>
-            <label>expires_at<input name="expiresAtLocal" type="datetime-local" value="${esc(upFormExpiresAt)}"></label>
-            <label>email<input name="email" value="${esc(upFormItem.email || '')}"></label>
-            <label>subscription_tier<input name="subscriptionTier" value="${esc(upFormItem.subscriptionTier || '')}"></label>
-            <label>entitlement_status<input name="entitlementStatus" value="${esc(upFormItem.entitlementStatus || '')}"></label>
-            <label>access_token<input name="accessToken" required></label>
-            <label>refresh_token<input name="refreshToken"></label>
-          </div>
-          <div class="upstream-panel-actions"><button class="primary">${editingUpstream ? '保存替换' : '导入'}</button></div>
+        </form>` : '';
+      const oauthPanel = state.codexOAuth ? `
+        <div class="panel grid">
+          <div class="toolbar"><h2>正在授权${state.codexOAuth.accountName ? `：${esc(state.codexOAuth.accountName)}` : ''}</h2><button type="button" class="panel-close" data-close-oauth-panel aria-label="关闭授权">关闭</button></div>
+          ${state.codexOAuth.userCode ? `<p>设备验证码：<strong>${esc(state.codexOAuth.userCode)}</strong></p>` : ''}
+          <p class="muted">请在已打开的官方授权页完成登录。${state.codexOAuth.authMethod === 'app_server_browser' ? '浏览器最后跳转到 localhost 页面时，复制地址栏中的完整回调地址并粘贴到下面。' : '设备码流程完成后会自动入池。'}</p>
+          ${state.codexOAuth.authMethod === 'app_server_browser' ? `<form id="codexCallbackForm" class="grid"><label>完整回调地址<input id="codexCallbackUrl" type="url" required placeholder="http://localhost:&lt;port&gt;/auth/callback?code=...&amp;state=..."></label><div><button class="primary">提交回调并完成授权</button></div></form>` : ''}
+        </div>` : '';
+      const remarkPanel = remarkTarget ? `
+        <form id="upstreamRemarkForm" class="panel grid remark-editor">
+          <div class="toolbar"><h2>账号备注：${esc(remarkTarget.name || remarkTarget.email || remarkTarget.id)}</h2><button type="button" class="panel-close" data-close-upstream-remark aria-label="关闭备注编辑">关闭</button></div>
+          <label>备注<textarea id="upstreamRemark" maxlength="500" placeholder="例如：购买批次、用途或账号注意事项">${esc(remarkTarget.remark || '')}</textarea></label>
+          <div class="upstream-panel-actions"><button class="primary">保存备注</button></div>
         </form>` : '';
       $('content').innerHTML = `
         <div class="grid">
           <div class="page-head">
-            <h2>号池账号</h2>
+            <h2>号池账号与 API Key</h2>
             <div class="toolbar">
-              <select id="upstreamAvailable"><option value="">全部账号</option><option value="true" ${state.upstreamAvailable === 'true' ? 'selected' : ''}>可调度账号</option></select>
+              <select id="upstreamAvailable"><option value="">全部账号</option><option value="true" ${state.upstreamAvailable === 'true' ? 'selected' : ''}>可用账号</option></select>
               <button data-upstream-filter>筛选</button>
               <button data-refresh-upstreams>刷新</button>
-              <button data-open-upstream-panel="import" class="primary">自动导入</button>
-              <button data-open-upstream-panel="manual">手动导入</button>
+              <button data-export-upstreams>导出号池</button>
+              <button data-start-codex-oauth data-method="device_code">设备码授权</button>
+              <button data-start-codex-oauth data-method="browser">浏览器授权</button>
+              <button data-open-upstream-panel="import" class="primary">添加账号</button>
             </div>
           </div>
           ${upstreamFormPanel}
+          ${oauthPanel}
+          ${remarkPanel}
           <p id="upstreamMsg" class="msg">${esc(state.upstreamMsg)}</p>
+          ${(upstreams.onlineClientAccounts || []).length || (upstreams.activeClientAccounts || []).length ? `<div class="runtime-summary">${(upstreams.onlineClientAccounts || []).length ? `<span><strong>客户端在线</strong> ${esc(upstreams.onlineClientAccounts.join('、'))}</span>` : ''}${(upstreams.activeClientAccounts || []).length ? `<span><strong>Codex 运行中</strong> ${esc(upstreams.activeClientAccounts.join('、'))}</span>` : ''}${(upstreams.unassignedClientAccounts || []).length ? `<span class="muted">待首次任务分配：${esc(upstreams.unassignedClientAccounts.join('、'))}</span>` : ''}</div>` : ''}
+          ${candidates.length ? `<div class="panel grid">
+            <h2>待授权账号（${candidates.length}）</h2>
+            <div class="table-wrap"><table><thead><tr><th>账号</th><th>来源</th><th>状态</th><th>操作</th></tr></thead><tbody>${candidates.map(up => `<tr>
+              <td>${upstreamAccountCell(up)}</td>
+              <td>${esc(({ chatgpt_session: 'ChatGPT session', email_password: '邮箱密码', sub2api: 'Sub2API', codex_auth_json: 'Codex auth.json', token_json: 'Token JSON' })[up.sourceType] || up.sourceType || '未识别')}</td>
+              <td><div class="meta-stack">${status(up.authorizationStatus)}<span class="muted">${up.hasPassword ? '密码已加密暂存' : '无暂存密码'}${up.lastAuthorizationError ? ` / ${esc(upstreamReasonLabel(up.lastAuthorizationError))}` : ''}</span></div></td>
+              <td class="row-actions"><button class="primary" data-authorize-candidate="${esc(up.id)}" data-method="browser">浏览器授权</button><button data-authorize-candidate="${esc(up.id)}" data-method="device_code">设备码</button><button data-edit-upstream-remark="${esc(up.id)}">备注</button><button class="danger" data-delete-candidate="${esc(up.id)}">删除</button></td>
+            </tr>`).join('')}</tbody></table></div>
+          </div>` : ''}
           <div class="table-wrap">
-            <table class="api-key-table"><colgroup><col style="width:19%"><col style="width:14%"><col style="width:37%"><col style="width:12%"><col style="width:6%"><col style="width:12%"></colgroup><thead><tr><th>API Key 记录</th><th>可调度</th><th>账号详情</th><th>最近调度</th><th>启用</th><th>操作</th></tr></thead>
-            <tbody>${keys.items.map(k => `<tr>
-              <td>${apiKeyPrimaryCell(k)}</td><td>${k.routeAvailable ? availability('available') : availability('unavailable')}</td><td>${apiKeyAccountDetail(k)}</td><td class="time-cell">${esc(fmtTime(k.lastUsedAt) || '未调度')}</td><td><span class="switch-slot"><button class="switch-toggle ${k.status === 'active' ? 'enabled' : ''}" data-api-key-status="${esc(k.id)}" data-value="${k.status === 'active' ? 'disabled' : 'active'}" title="${k.status === 'active' ? '启用' : '关闭'}"></button></span></td>
-              <td class="row-actions"><button data-check="${esc(k.upstreamAccountId || '')}" ${k.upstreamAccountId ? '' : 'disabled'}>检查</button><button data-up-credentials="${esc(k.upstreamAccountId || '')}" ${k.upstreamAccountId ? '' : 'disabled'}>替换</button><button class="danger" data-api-key-delete="${esc(k.id)}">删除</button></td>
-            </tr>`).join('')}</tbody></table>
+            <table class="usage-priority-table"><colgroup><col style="width:18%"><col style="width:13%"><col style="width:13%"><col style="width:13%"><col style="width:15%"><col style="width:14%"><col style="width:14%"></colgroup><thead><tr><th>号池账号</th><th>使用用户</th><th>今日使用</th><th>账号剩余</th><th>备注</th><th>状态</th><th>操作</th></tr></thead>
+            <tbody>${upstreams.items.map(up => {
+              const key = keys.items.find(k => k.upstreamAccountId === up.id) || {};
+              const checking = up.checkStatus === 'checking' || state.upstreamCheckingIds.includes(up.id);
+              return `<tr>
+                <td>${upstreamAccountCell(up)}<span class="muted">${esc(key.keyPreview || '未生成 Key')}</span></td>
+                <td>${upstreamUseUserCell(up)}</td>
+                <td>${upstreamUsageCell(up)}</td>
+                <td data-upstream-remaining>${upstreamRemainingCell(up)}</td>
+                <td><span class="${up.remark ? 'remark-cell' : 'muted'}" title="${esc(up.remark || '')}">${esc(up.remark || '—')}</span></td>
+                <td data-upstream-status>${upstreamStatusCell(up, key)}</td>
+                <td class="row-actions"><button data-check="${esc(up.id)}" ${checking ? 'disabled' : ''}>${checking ? '检查中' : '检查'}</button><button data-edit-upstream-remark="${esc(up.id)}">备注</button>${key.id ? `<button class="danger" data-api-key-delete="${esc(key.id)}">删除</button>` : `<button class="danger" data-delete-candidate="${esc(up.id)}">删除</button>`}</td>
+              </tr>`;
+            }).join('')}</tbody></table>
           </div>
-          ${pager(keys, 'apiKeys')}
+          ${pager(upstreams, 'upstreams')}
         </div>`;
-      if ($('upForm')) $('upForm').onsubmit = async (e) => {
-        e.preventDefault();
-        const d = upstreamFormData(e.target);
-        if (state.upstreamCredentialEditId) {
-          await request(`/admin/upstreams/${state.upstreamCredentialEditId}/credentials`, { method: 'POST', body: JSON.stringify(d) });
-          state.upstreamMsg = '已替换 Codex 上游账号凭据';
-          state.upstreamCredentialEditId = '';
-          state.upstreamPanel = '';
-        } else {
-          const up = await request('/admin/upstreams', { method: 'POST', body: JSON.stringify(d) });
-          await request('/admin/api-keys', { method: 'POST', body: JSON.stringify({ upstreamAccountId: up.id }) });
-          state.upstreamMsg = '已导入 Codex 上游账号并生成 API Key 记录';
-          state.upstreamPanel = '';
-        }
-        renderUpstreams();
-      };
       if ($('upImportForm')) $('upImportForm').onsubmit = async (e) => {
         e.preventDefault();
         const raw = $('upstreamImportJson').value.trim();
         if (!raw) {
-          state.upstreamMsg = '请选择或粘贴账号导入内容';
+          state.upstreamMsg = '请选择或粘贴导入内容';
           renderUpstreams();
           return;
         }
         try {
           const data = await request('/admin/upstreams/import', { method: 'POST', body: JSON.stringify({ content: raw }) });
-          state.upstreamCredentialEditId = '';
           state.upstreamPanel = '';
-          state.upstreamMsg = `已导入 ${data.imported || 0} 个 Codex 上游账号并生成 ${(data.apiKeys || []).length} 个 API Key 记录`;
+          state.upstreamMsg = `新增 ${data.imported || 0} 条，更新 ${data.updated || 0} 条，其中 ${data.pending || 0} 条待授权，生成或返回 ${(data.apiKeys || []).length} 个 API Key`;
         } catch (err) {
-          state.upstreamMsg = err.message === 'invalid_upstream_import_request' ? '未识别到可导入的 Codex 上游账号' : '导入失败';
+          state.upstreamMsg = err.message === 'invalid_upstream_import_request' ? '未识别到可导入的账号或授权材料' : `导入失败：${err.message}`;
         }
         renderUpstreams();
       };
@@ -653,43 +1004,99 @@
         if (!file) return;
         $('upstreamImportJson').value = await file.text();
       };
-      const cancelCredentialEdit = document.querySelector('[data-cancel-upstream-credentials]');
-      if (cancelCredentialEdit) cancelCredentialEdit.onclick = () => { state.upstreamCredentialEditId = ''; state.upstreamPanel = ''; renderUpstreams(); };
       document.querySelectorAll('[data-close-upstream-panel]').forEach(btn => btn.onclick = () => {
-        state.upstreamCredentialEditId = '';
         state.upstreamPanel = '';
         renderUpstreams();
       });
       document.querySelectorAll('[data-open-upstream-panel]').forEach(btn => btn.onclick = () => {
-        state.upstreamCredentialEditId = '';
+        state.upstreamRemarkId = '';
         state.upstreamPanel = btn.dataset.openUpstreamPanel;
         state.upstreamMsg = '';
         renderUpstreams();
       });
-      document.querySelectorAll('[data-up-credentials]').forEach(btn => btn.onclick = async () => {
-        const item = keys.items.map(x => x.upstream).find(x => x && x.id === btn.dataset.upCredentials);
-        if (!item) return;
-        state.upstreamCredentialEditId = item.id;
-        state.upstreamPanel = 'manual';
+      document.querySelectorAll('[data-edit-upstream-remark]').forEach(btn => btn.onclick = () => {
+        state.upstreamPanel = '';
+        state.upstreamRemarkId = btn.dataset.editUpstreamRemark;
         state.upstreamMsg = '';
         renderUpstreams();
       });
-      document.querySelectorAll('[data-check]').forEach(btn => btn.onclick = async () => {
-        btn.disabled = true;
-        btn.textContent = '检查中';
-        state.upstreamMsg = '正在检查账号';
+      const closeRemark = document.querySelector('[data-close-upstream-remark]');
+      if (closeRemark) closeRemark.onclick = () => {
+        state.upstreamRemarkId = '';
+        renderUpstreams();
+      };
+      if ($('upstreamRemarkForm')) $('upstreamRemarkForm').onsubmit = async (e) => {
+        e.preventDefault();
         try {
-          await request(`/admin/upstreams/${btn.dataset.check}/check`, { method: 'POST' });
-          state.upstreamMsg = '已完成账号检查';
+          await request(`/admin/upstreams/${state.upstreamRemarkId}/remark`, { method: 'POST', body: JSON.stringify({ remark: $('upstreamRemark').value.trim() }) });
+          state.upstreamRemarkId = '';
+          state.upstreamMsg = '备注已保存';
         } catch (err) {
-          state.upstreamMsg = '检查失败';
+          state.upstreamMsg = err.message === 'invalid_upstream_remark_request' ? '备注不能超过 500 个字符' : `备注保存失败：${err.message}`;
         }
         renderUpstreams();
+      };
+      document.querySelectorAll('[data-start-codex-oauth]').forEach(btn => btn.onclick = () => beginCodexOAuth(btn.dataset.method));
+      document.querySelectorAll('[data-authorize-candidate]').forEach(btn => btn.onclick = () => beginCodexOAuth(btn.dataset.method, btn.dataset.authorizeCandidate));
+      document.querySelectorAll('[data-delete-candidate]').forEach(btn => btn.onclick = async () => {
+        await request(`/admin/upstreams/${btn.dataset.deleteCandidate}`, { method: 'DELETE' });
+        state.upstreamMsg = '已删除待授权账号';
+        renderUpstreams();
       });
-      document.querySelectorAll('[data-up-enabled]').forEach(btn => btn.onclick = async () => {
-        const body = { enabled: btn.dataset.value === 'true' };
-        await request(`/admin/upstreams/${btn.dataset.upEnabled}/status`, { method: 'POST', body: JSON.stringify(body) });
-        state.upstreamMsg = '已更新账号状态';
+      const closeOAuth = document.querySelector('[data-close-oauth-panel]');
+      if (closeOAuth) closeOAuth.onclick = async () => {
+        stopCodexOAuthPoll();
+        const oauthState = state.codexOAuth && state.codexOAuth.state;
+        state.codexOAuth = null;
+        if (oauthState) {
+          try {
+            await request('/admin/codex-oauth/cancel', { method: 'POST', body: JSON.stringify({ state: oauthState }) });
+            state.upstreamMsg = '已关闭授权';
+          } catch {
+            state.upstreamMsg = '授权窗口已关闭';
+          }
+        }
+        renderUpstreams();
+      };
+      if ($('codexCallbackForm')) $('codexCallbackForm').onsubmit = async (e) => {
+        e.preventDefault();
+        try {
+          await request('/admin/codex-oauth/callback', { method: 'POST', body: JSON.stringify({ state: state.codexOAuth.state, callbackUrl: $('codexCallbackUrl').value.trim() }) });
+          state.upstreamMsg = '回调已提交，正在完成授权';
+        } catch (err) {
+          state.upstreamMsg = `回调提交失败：${upstreamReasonLabel(err.message) || err.message}`;
+        }
+        renderUpstreams();
+      };
+      document.querySelectorAll('[data-check]').forEach(btn => btn.onclick = async () => {
+        const upstreamId = btn.dataset.check;
+        if (state.upstreamCheckingIds.includes(upstreamId)) return;
+        state.upstreamCheckingIds = [...state.upstreamCheckingIds, upstreamId];
+        if (upstreamUsageRefreshTimer) clearTimeout(upstreamUsageRefreshTimer);
+        upstreamUsageRefreshTimer = 0;
+        btn.disabled = true;
+        btn.textContent = '检查中';
+        state.upstreamMsg = '正在检查授权';
+        if ($('upstreamMsg')) $('upstreamMsg').textContent = state.upstreamMsg;
+        const row = btn.closest('tr');
+        const remainingCell = row && row.querySelector('[data-upstream-remaining]');
+        const statusCell = row && row.querySelector('[data-upstream-status]');
+        if (remainingCell) remainingCell.innerHTML = '<div class="usage-value"><span class="status checking">检查中</span><span class="muted">正在读取授权与额度</span></div>';
+        if (statusCell) statusCell.innerHTML = '<div class="meta-stack"><span class="status checking">检查中</span><span class="muted">正在检查账号</span></div>';
+        try {
+          const checked = await request(`/admin/upstreams/${upstreamId}/check`, { method: 'POST' });
+          if (checked.checkStatus === 'failed') {
+            const reason = upstreamReasonLabel(checked.checkFailureReason || checked.entitlementStatus) || '未知原因';
+            state.upstreamMsg = `检查失败：${reason}`;
+          } else {
+            state.upstreamMsg = '已完成授权检查';
+          }
+        } catch (err) {
+          const reason = upstreamReasonLabel(err.message) || '未知原因';
+          state.upstreamMsg = `检查失败：${reason}`;
+        } finally {
+          state.upstreamCheckingIds = state.upstreamCheckingIds.filter(id => id !== upstreamId);
+        }
         renderUpstreams();
       });
       document.querySelectorAll('[data-api-key-status]').forEach(btn => btn.onclick = async () => {
@@ -699,18 +1106,31 @@
       });
       document.querySelectorAll('[data-api-key-delete]').forEach(btn => btn.onclick = async () => {
         await request(`/admin/api-keys/${btn.dataset.apiKeyDelete}`, { method: 'DELETE' });
-        state.upstreamMsg = '已删除 API Key 记录';
+        state.upstreamMsg = '已删除 API Key';
         renderUpstreams();
       });
       document.querySelector('[data-upstream-filter]').onclick = () => {
         state.upstreamAvailable = $('upstreamAvailable').value;
-        state.apiKeyPage = 1;
+        state.upstreamPage = 1;
         state.upstreamMsg = '';
-        state.upstreamCredentialEditId = '';
         renderUpstreams();
       };
       document.querySelector('[data-refresh-upstreams]').onclick = renderUpstreams;
-      bindPager('apiKeys', (page) => { state.apiKeyPage = page; state.upstreamCredentialEditId = ''; renderUpstreams(); });
+      document.querySelector('[data-export-upstreams]').onclick = async () => {
+        try {
+          await downloadAdminJSON('/admin/upstreams/export');
+          state.upstreamMsg = '号池已导出';
+        } catch (err) {
+          if (err.message === 'reauth_required') {
+            requireFreshAdminLogin();
+            return;
+          }
+          state.upstreamMsg = `导出失败：${err.message}`;
+        }
+        renderUpstreams();
+      };
+      bindPager('upstreams', (page) => { state.upstreamPage = page; renderUpstreams(); });
+      scheduleUpstreamUsageRefresh();
     }
 
     async function renderDevices() {
@@ -722,16 +1142,96 @@
     }
 
     async function renderUsage() {
-      const [usage, ledger, audit] = await Promise.all([
+      const analyticsPath = '/admin/usage/analytics?' + qs({
+        accountIds: state.usageAnalyticsAccounts.join(','),
+        from: state.usageAnalyticsFrom,
+        to: state.usageAnalyticsTo,
+        groupBy: state.usageAnalyticsGroupBy,
+        metric: state.usageAnalyticsMetric,
+        timezone: state.usageAnalyticsTimezone,
+        minTasks: state.usageAnalyticsMinTasks,
+        maxTasks: state.usageAnalyticsMaxTasks,
+        minTokens: state.usageAnalyticsMinTokens,
+        maxTokens: state.usageAnalyticsMaxTokens
+      });
+      const [analytics, usage, ledger, audit] = await Promise.all([
+        request(analyticsPath),
         request('/admin/usage?' + qs({ page: state.usagePage, size: 10, today: state.usageToday })),
         request('/admin/ledger?' + qs({ page: state.ledgerPage, size: 10 })),
         request('/admin/audit?' + qs({ page: state.auditPage, size: 10 }))
       ]);
+      state.usageAnalyticsAccounts = analytics.selectedAccountIds || [];
+      state.usageAnalyticsFrom = analytics.query.from;
+      state.usageAnalyticsTo = analytics.query.to;
+      state.usageAnalyticsGroupBy = analytics.query.groupBy;
+      state.usageAnalyticsMetric = analytics.query.metric;
+      state.usageAnalyticsTimezone = analytics.query.timezone;
+      state.usageAnalyticsMinTasks = analytics.query.minTasks ?? '';
+      state.usageAnalyticsMaxTasks = analytics.query.maxTasks ?? '';
+      state.usageAnalyticsMinTokens = analytics.query.minTokens ?? '';
+      state.usageAnalyticsMaxTokens = analytics.query.maxTokens ?? '';
+      const summary = analytics.summary || {};
+      const quality = analytics.dataQuality || {};
+      const fallbackNote = Number(quality.historicalFallback || 0) > 0
+        ? `<p class="analytics-note warn">其中 ${esc(fmtNumber(quality.historicalFallback))} 条历史调用没有会话标识，已按每条调用计为一个任务；新产生的调用将按 Codex 会话统计。</p>`
+        : '<p class="analytics-note">当前匹配记录均带有会话标识，可按任务口径聚合。</p>';
       $('content').innerHTML = `<div class="grid">
-        <div class="panel"><div class="toolbar"><h2>用量</h2><select id="usageToday"><option value="" ${state.usageToday === '' ? 'selected' : ''}>全部</option><option value="true" ${state.usageToday === 'true' ? 'selected' : ''}>今日</option></select><button data-usage-filter>筛选</button></div><table><thead><tr><th>时间</th><th>用户</th><th>模型</th><th>input</th><th>cached</th><th>output</th><th>total</th></tr></thead><tbody>${usage.items.map(u => `<tr><td>${esc(fmtTime(u.createdAt))}</td><td>${esc(u.userAccount || u.userId)}</td><td>${esc(u.model)}</td><td>${esc(u.inputTokens)}</td><td>${esc(u.cachedInputTokens)}</td><td>${esc(u.outputTokens)}</td><td>${esc(u.totalTokens)}</td></tr>`).join('')}</tbody></table>${pager(usage, 'usage')}</div>
+        <div class="panel">
+          <div class="page-head"><div><h2>账号 Token 统计</h2><p class="analytics-note">按号池账号和时间段查看任务量与 Token 消耗。范围条件作用于每个“账号 × 时间段”的聚合结果。</p></div><button data-analytics-reset>恢复默认</button></div>
+          <div class="analytics-filter-grid">
+            <div class="analytics-account-field"><span class="metric">号池账号（可多选）</span><div class="analytics-accounts">${usageAnalyticsAccounts(analytics)}</div></div>
+            <label>开始日期<input id="analyticsFrom" type="date" value="${esc(state.usageAnalyticsFrom)}"></label>
+            <label>结束日期<input id="analyticsTo" type="date" value="${esc(state.usageAnalyticsTo)}"></label>
+            <label>时间粒度<select id="analyticsGroupBy"><option value="day" ${state.usageAnalyticsGroupBy === 'day' ? 'selected' : ''}>按日</option><option value="week" ${state.usageAnalyticsGroupBy === 'week' ? 'selected' : ''}>按周</option><option value="month" ${state.usageAnalyticsGroupBy === 'month' ? 'selected' : ''}>按月</option></select></label>
+            <label>图表指标<select id="analyticsMetric"><option value="averageTokensPerTask" ${state.usageAnalyticsMetric === 'averageTokensPerTask' ? 'selected' : ''}>单任务平均 Token</option><option value="taskCount" ${state.usageAnalyticsMetric === 'taskCount' ? 'selected' : ''}>任务量</option><option value="totalTokens" ${state.usageAnalyticsMetric === 'totalTokens' ? 'selected' : ''}>Token 消耗量</option></select></label>
+            <label>时区<select id="analyticsTimezone"><option value="Asia/Shanghai" ${state.usageAnalyticsTimezone === 'Asia/Shanghai' ? 'selected' : ''}>北京时间</option><option value="UTC" ${state.usageAnalyticsTimezone === 'UTC' ? 'selected' : ''}>UTC</option></select></label>
+            <label>任务量下限<input id="analyticsMinTasks" type="number" min="0" step="1" placeholder="不限" value="${esc(state.usageAnalyticsMinTasks)}"></label>
+            <label>任务量上限<input id="analyticsMaxTasks" type="number" min="0" step="1" placeholder="不限" value="${esc(state.usageAnalyticsMaxTasks)}"></label>
+            <label>Token 下限<input id="analyticsMinTokens" type="number" min="0" step="1" placeholder="不限" value="${esc(state.usageAnalyticsMinTokens)}"></label>
+            <label>Token 上限<input id="analyticsMaxTokens" type="number" min="0" step="1" placeholder="不限" value="${esc(state.usageAnalyticsMaxTokens)}"></label>
+            <div class="analytics-actions"><button class="primary" data-analytics-apply>应用筛选</button></div>
+          </div>
+          <div class="cards analytics-cards">
+            <div class="card metric">任务量<strong>${esc(fmtNumber(summary.taskCount))}</strong></div>
+            <div class="card metric">Token 消耗量<strong>${esc(fmtNumber(summary.totalTokens))}</strong></div>
+            <div class="card metric">单任务平均 Token<strong>${esc(fmtNumber(summary.averageTokensPerTask))}</strong></div>
+            <div class="card metric">匹配时间段<strong>${esc(fmtNumber(summary.matchedBuckets))}</strong></div>
+          </div>
+          <div class="analytics-chart">${renderUsageAnalyticsChart(analytics)}</div>
+          ${fallbackNote}
+          <p class="analytics-note">统计口径：${esc(quality.taskDefinition || '')}。数据源：${esc(analytics.source || 'usage_records')}。</p>
+          ${renderUsageAnalyticsTable(analytics)}
+        </div>
+        <div class="panel"><div class="toolbar"><h2>用量明细</h2><select id="usageToday"><option value="" ${state.usageToday === '' ? 'selected' : ''}>全部</option><option value="true" ${state.usageToday === 'true' ? 'selected' : ''}>今日</option></select><button data-usage-filter>筛选</button></div><table><thead><tr><th>时间</th><th>号池账号</th><th>用户</th><th>模型</th><th>input</th><th>cached</th><th>output</th><th>total</th></tr></thead><tbody>${usage.items.map(u => `<tr><td>${esc(fmtTime(u.createdAt))}</td><td>${esc(u.upstreamAccount || u.upstreamAccountId || '')}</td><td>${esc(u.userAccount || u.userId)}</td><td>${esc(u.model)}</td><td>${esc(u.inputTokens)}</td><td>${esc(u.cachedInputTokens)}</td><td>${esc(u.outputTokens)}</td><td>${esc(u.totalTokens)}</td></tr>`).join('')}</tbody></table>${pager(usage, 'usage')}</div>
         <div class="panel"><h2>token 流水</h2><table><thead><tr><th>时间</th><th>用户</th><th>类型</th><th>token 变动</th><th>变动后余额</th><th>来源</th></tr></thead><tbody>${ledger.items.map(x => `<tr><td>${esc(fmtTime(x.createdAt))}</td><td>${esc(x.userAccount || x.userId)}</td><td>${esc(x.typeLabel || x.type)}</td><td>${esc(x.deltaTokens)}</td><td>${esc(x.balanceAfter)}</td><td>${esc(x.source)}</td></tr>`).join('')}</tbody></table>${pager(ledger, 'ledger')}</div>
         <div class="panel"><h2>审计</h2><table><thead><tr><th>时间</th><th>操作者</th><th>角色</th><th>动作</th><th>目标</th><th>详情</th></tr></thead><tbody>${audit.items.map(a => `<tr><td>${esc(fmtTime(a.createdAt))}</td><td>${esc(a.actorAccount || a.actorId || '')}</td><td>${esc(a.actorRole || '')}</td><td>${esc(a.action)}</td><td>${esc(a.targetId || '')}</td><td>${esc(a.detail || '')}</td></tr>`).join('')}</tbody></table>${pager(audit, 'audit')}</div>
       </div>`;
+      document.querySelector('[data-analytics-apply]').onclick = () => {
+        state.usageAnalyticsAccounts = [...document.querySelectorAll('[data-analytics-account]:checked')].map(input => input.value);
+        state.usageAnalyticsFrom = $('analyticsFrom').value;
+        state.usageAnalyticsTo = $('analyticsTo').value;
+        state.usageAnalyticsGroupBy = $('analyticsGroupBy').value;
+        state.usageAnalyticsMetric = $('analyticsMetric').value;
+        state.usageAnalyticsTimezone = $('analyticsTimezone').value;
+        state.usageAnalyticsMinTasks = $('analyticsMinTasks').value;
+        state.usageAnalyticsMaxTasks = $('analyticsMaxTasks').value;
+        state.usageAnalyticsMinTokens = $('analyticsMinTokens').value;
+        state.usageAnalyticsMaxTokens = $('analyticsMaxTokens').value;
+        renderUsage();
+      };
+      document.querySelector('[data-analytics-reset]').onclick = () => {
+        state.usageAnalyticsAccounts = [];
+        state.usageAnalyticsFrom = '';
+        state.usageAnalyticsTo = '';
+        state.usageAnalyticsGroupBy = 'day';
+        state.usageAnalyticsMetric = 'averageTokensPerTask';
+        state.usageAnalyticsTimezone = 'Asia/Shanghai';
+        state.usageAnalyticsMinTasks = '';
+        state.usageAnalyticsMaxTasks = '';
+        state.usageAnalyticsMinTokens = '';
+        state.usageAnalyticsMaxTokens = '';
+        renderUsage();
+      };
       document.querySelector('[data-usage-filter]').onclick = () => {
         state.usageToday = $('usageToday').value;
         state.usagePage = 1;
@@ -760,6 +1260,9 @@
     }
 
     function setTab(tab) {
+      if (upstreamUsageRefreshTimer) clearTimeout(upstreamUsageRefreshTimer);
+      upstreamUsageRefreshTimer = 0;
+      upstreamRenderRevision++;
       state.tab = tab;
       document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
       render().catch(err => {

@@ -1,0 +1,11 @@
+[Unit]
+Description=Daily Codex+++ backup
+
+[Timer]
+OnCalendar=*-*-* 03:30:00 UTC
+Persistent=true
+RandomizedDelaySec=15m
+Unit=codexppp-backup.service
+
+[Install]
+WantedBy=timers.target

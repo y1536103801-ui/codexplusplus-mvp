@@ -97,13 +97,14 @@
           <div class="toolbar">
             <button id="launchBtn" class="primary">启动 Codex</button>
           </div>
+          <p id="platformNote" class="muted">官方桌面应用名称显示为 ChatGPT；其中包含 OpenAI Codex 编程代理。</p>
           <p id="launchMsg" class="msg"></p>
         </div>
         <div class="hero-side">
           <canvas id="spark" class="spark" width="220" height="64"></canvas>
           <div id="installProgress" class="install-progress hidden" aria-live="polite">
             <div class="install-progress-head">
-              <span id="installProgressText">准备安装 Codex</span>
+              <span id="installProgressText">准备安装官方 ChatGPT 桌面应用（Codex）</span>
               <span id="installProgressPercent" class="install-progress-percent">0%</span>
             </div>
             <div class="install-progress-bar"><span id="installProgressFill"></span></div>
@@ -154,7 +155,7 @@
         <h2>客户端更新</h2>
         <div class="toolbar">
           <button id="checkUpdateBtn">检查更新</button>
-          <button id="openUpdateBtn" class="primary" disabled>获取更新</button>
+          <button id="openUpdateBtn" class="primary" disabled>更新客户端</button>
         </div>
         <table id="updateTable"></table>
         <p id="updateMsg" class="msg"></p>
@@ -169,13 +170,14 @@
   <script>
     const INTEROP_MAJOR = '1';
     const state = {
-      api: 'http://localhost:8787/api',
+      api: 'https://codex.52cx.top/api',
       token: localStorage.getItem('clientToken') || '',
       user: null,
       device: null,
       security: null,
-      diagnostics: { codexDetected: '不可用', codexRunning: '不可用', codexAccount: '', codexAuthMode: '', configWritten: '不可用', lastFailure: '' },
-      currentVersion: '0.1.40',
+      diagnostics: { codexDetected: '不可用', codexRunning: '不可用', codexVersion: '', codexCompatible: '未检查', codexAccount: '', codexAuthMode: '', configWritten: '不可用', lastFailure: '' },
+      currentVersion: '0.1.60',
+      platform: 'windows',
       updateInfo: null,
       usagePage: 1,
       ledgerPage: 1,
@@ -184,6 +186,7 @@
       diagnosticsRefreshTimer: null,
       diagnosticsRefreshPending: false,
       codexLaunchPhase: '',
+      clientUpdatePhase: '',
       installProgressTimer: null,
       installProgressPercent: 0
     };
@@ -194,10 +197,31 @@
       const headers = { 'Content-Type': 'application/json', 'X-CodexPPP-Interop-Major': INTEROP_MAJOR, ...(opts.headers || {}) };
       if (state.token) headers.Authorization = `Bearer ${state.token}`;
       let res;
-      try {
-        res = await fetch(state.api + path, { ...opts, headers });
-      } catch {
-        throw new Error('network_unavailable');
+      if (tauriInvoke()) {
+        let native;
+        try {
+          native = await invokeTauri('backend_request', {
+            path,
+            method: opts.method || 'GET',
+            body: opts.body || null,
+            token: state.token || ''
+          });
+        } catch (err) {
+          const code = typeof err === 'string' ? err : (err && err.message) || 'network_unavailable';
+          throw new Error(code);
+        }
+        res = {
+          ok: native.status >= 200 && native.status < 300,
+          status: native.status,
+          statusText: '',
+          text: async () => native.body || ''
+        };
+      } else {
+        try {
+          res = await fetch(state.api + path, { ...opts, headers });
+        } catch {
+          throw new Error('network_unavailable');
+        }
       }
       let data = {};
       try {
@@ -224,7 +248,15 @@
     async function ensureDesktopVersion() {
       const version = await invokeTauri('desktop_version');
       if (version) state.currentVersion = String(version);
+      const platform = await invokeTauri('desktop_platform');
+      if (platform === 'macos' || platform === 'windows') state.platform = platform;
+      if ($('platformNote')) $('platformNote').textContent = state.platform === 'macos'
+        ? 'macOS 中官方应用名称显示为 ChatGPT；其中包含 OpenAI Codex 编程代理。'
+        : 'Windows 中官方应用名称显示为 ChatGPT；其中包含 OpenAI Codex 编程代理。';
     }
+    const isMacOS = () => state.platform === 'macos';
+    const officialUpdateSource = () => isMacOS() ? 'OpenAI 官方安装包' : 'Microsoft Store';
+    const officialAppLocation = () => isMacOS() ? '“应用程序”文件夹' : '开始菜单';
     const fmt = (v) => v ? new Date(v).toLocaleString() : '';
     const money = (cents) => cents === 0 ? 'free' : '¥' + (Number(cents || 0) / 100).toFixed(2);
     const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (ch) => ({
@@ -248,7 +280,7 @@
       const body = {
         account: $('account').value,
         password: $('password').value,
-        deviceName: identity.deviceName || 'Windows 设备',
+        deviceName: identity.deviceName || '桌面设备',
         fingerprint: identity.fingerprint
       };
       try {
@@ -272,6 +304,12 @@
       applyClientMe(me);
       const local = await invokeTauri('codex_diagnostics');
       applyLocalDiagnostics(local);
+      await ensureDesktopVersion();
+      await refreshCodexUpdateStatus();
+      try {
+        await refreshDesktopUpdateInfo();
+      } catch (err) {
+      }
       await loadTopups();
       if (!$('advanced').classList.contains('hidden')) await loadAdvanced();
     }
@@ -284,6 +322,7 @@
       $('userAccount').textContent = me.user.account;
       $('recentRecharge').textContent = me.user.recentRechargeStatus || '无';
       $('serviceState').textContent = me.service?.status || '不可用';
+      $('currentAccount').textContent = codexAccountDisplay();
       if (!$('advanced').classList.contains('hidden')) renderAccountOverviewTable();
       if (me.usage7d) drawSpark($('spark'), me.usage7d.map(x => Number(x.tokens || 0)), '#0f6b5d');
     }
@@ -291,16 +330,52 @@
     function applyLocalDiagnostics(local) {
       if (!local) return;
       state.diagnostics = { ...state.diagnostics, ...local };
-      $('currentAccount').textContent = state.diagnostics.codexAccount || '未识别';
+      $('currentAccount').textContent = codexAccountDisplay();
       if (local.codexRunning === '可用') state.codexLaunchPhase = '';
       renderCodexLaunchState();
     }
 
+    function codexAccountDisplay() {
+      if (state.diagnostics.codexAccount) return state.diagnostics.codexAccount;
+      return '未识别';
+    }
+
+    async function refreshCodexUpdateStatus() {
+      if (state.diagnostics.codexDetected !== '可用' || state.diagnostics.codexRunning === '可用') return;
+      state.diagnostics.codexCompatible = '检查中';
+      renderCodexLaunchState();
+      try {
+        const result = await invokeTauri('check_codex_update');
+        applyLocalDiagnostics(result);
+        if (result.updateAvailable) {
+          const latest = result.latestVersion ? ` ${result.latestVersion}` : '';
+          $('launchMsg').textContent = `${officialUpdateSource()}检测到 Codex 新版本${latest}，更新后才能启动`;
+          $('launchMsg').className = 'msg';
+        }
+      } catch (err) {
+        const code = typeof err === 'string' ? err : (err && err.message) || 'codex_version_check_failed';
+        state.diagnostics.codexCompatible = code === 'codex_version_check_unavailable' ? '待验证' : '检查失败';
+        $('launchMsg').textContent = userMessage(code, 'Codex 版本实时检查失败，请重新检查');
+        $('launchMsg').className = 'msg';
+        renderCodexLaunchState();
+      }
+    }
+
+    function clientUpdateRequired() {
+      return Boolean(state.updateInfo && state.updateInfo.available);
+    }
+
     function codexStatusText() {
+      if (state.clientUpdatePhase === 'updating') return '正在更新客户端';
       if (state.codexLaunchPhase === 'installing') return '正在安装';
       if (state.codexLaunchPhase === 'starting') return '正在启动';
+      if (state.codexLaunchPhase === 'launched') return '已启动';
       if (state.diagnostics.codexRunning === '可用') return '运行中';
+      if (clientUpdateRequired()) return '客户端需更新';
       if (state.diagnostics.codexDetected !== '可用') return '未检测到';
+      if (state.diagnostics.codexCompatible === '检查中') return '正在检查 Codex 版本';
+      if (state.diagnostics.codexCompatible === '不可用') return '需要更新';
+      if (state.diagnostics.codexCompatible !== '可用') return '版本待验证';
       return '未启动';
     }
 
@@ -310,18 +385,40 @@
       if (status === '运行中') {
         $('launchBtn').textContent = '停止 Codex';
         $('launchBtn').disabled = false;
+      } else if (status === '已启动') {
+        $('launchBtn').textContent = 'Codex 已启动';
+        $('launchBtn').disabled = true;
+      } else if (status === '正在更新客户端') {
+        $('launchBtn').textContent = '正在更新';
+        $('launchBtn').disabled = true;
       } else if (status === '正在安装') {
         $('launchBtn').textContent = '正在安装';
         $('launchBtn').disabled = true;
       } else if (status === '正在启动') {
         $('launchBtn').textContent = '正在启动';
         $('launchBtn').disabled = true;
+      } else if (status === '正在检查 Codex 版本') {
+        $('launchBtn').textContent = '正在检查 Codex 更新';
+        $('launchBtn').disabled = true;
+      } else if (status === '客户端需更新') {
+        $('launchBtn').textContent = '更新客户端';
+        $('launchBtn').disabled = false;
       } else if (status === '未检测到') {
-        $('launchBtn').textContent = '安装 Codex';
+        $('launchBtn').textContent = '安装 Codex 桌面端';
+        $('launchBtn').disabled = false;
+      } else if (status === '需要更新') {
+        $('launchBtn').textContent = '更新 Codex 桌面端';
+        $('launchBtn').disabled = false;
+      } else if (status === '版本待验证') {
+        $('launchBtn').textContent = '检查并更新 Codex';
         $('launchBtn').disabled = false;
       } else {
         $('launchBtn').textContent = '启动 Codex';
         $('launchBtn').disabled = false;
+      }
+      if (clientUpdateRequired() && state.clientUpdatePhase !== 'updating' && !$('launchMsg').classList.contains('err')) {
+        const latest = state.updateInfo.latestVersion ? ` ${state.updateInfo.latestVersion}` : '';
+        $('launchMsg').textContent = `发现客户端新版本${latest}，更新后才能启动 Codex`;
       }
     }
 
@@ -332,11 +429,11 @@
       $('installProgressFill').style.width = `${state.installProgressPercent}%`;
     }
 
-    function showInstallProgress() {
+    function showInstallProgress(initialText = '') {
       $('spark').classList.add('hidden');
       $('installProgress').classList.remove('hidden', 'err');
       state.installProgressPercent = 0;
-      setInstallProgress(8, '准备安装 Codex');
+      setInstallProgress(8, initialText || (state.diagnostics.codexDetected === '可用' ? '准备更新 Codex 桌面端' : '准备安装 Codex 桌面端'));
     }
 
     function startInstallProgress() {
@@ -345,16 +442,27 @@
       state.installProgressTimer = setInterval(() => {
         const current = state.installProgressPercent;
         const next = current < 38 ? current + 6 : current < 72 ? current + 3 : Math.min(92, current + 1);
-        const text = next < 38 ? '正在准备安装环境' : next < 72 ? '正在安装 Codex' : '正在确认安装结果';
+        const text = next < 38 ? '正在获取官方安装器' : next < 72 ? '正在安装或更新 Codex 桌面端' : '正在确认 Codex 桌面端';
         setInstallProgress(next, text);
       }, 900);
+    }
+
+    function startClientUpdateProgress() {
+      showInstallProgress('准备更新 Codex+++ 客户端');
+      clearInterval(state.installProgressTimer);
+      state.installProgressTimer = setInterval(() => {
+        const current = state.installProgressPercent;
+        const next = current < 40 ? current + 5 : current < 75 ? current + 2 : Math.min(90, current + 1);
+        const text = next < 40 ? '正在下载客户端更新' : next < 75 ? '正在校验客户端更新' : '正在准备静默安装';
+        setInstallProgress(next, text);
+      }, 700);
     }
 
     function finishInstallProgress(ok) {
       clearInterval(state.installProgressTimer);
       state.installProgressTimer = null;
       if (ok) {
-        setInstallProgress(100, 'Codex 已安装');
+        setInstallProgress(100, 'Codex 桌面端已就绪');
         setTimeout(() => {
           $('installProgress').classList.add('hidden');
           $('spark').classList.remove('hidden');
@@ -364,16 +472,25 @@
         return;
       }
       $('installProgress').classList.add('err');
-      setInstallProgress(Math.max(48, state.installProgressPercent), 'Codex 安装失败');
+      setInstallProgress(Math.max(48, state.installProgressPercent), 'Codex 桌面端安装失败');
     }
 
     async function refreshLocalDiagnostics() {
-      if (!state.token || document.hidden || $('app').classList.contains('hidden')) return;
+      if (!state.token || $('app').classList.contains('hidden')) return;
       if (state.diagnosticsRefreshPending) return;
       state.diagnosticsRefreshPending = true;
       try {
+        try { await request('/client/presence/heartbeat', { method: 'POST', body: '{}' }); } catch (err) {}
         const local = await invokeTauri('codex_diagnostics');
         applyLocalDiagnostics(local);
+        if (state.diagnostics.codexRunning === '可用' || state.codexLaunchPhase === 'launched') {
+          try {
+            await request('/client/launch/heartbeat', {
+              method: 'POST',
+              body: JSON.stringify({ desktopVersion: state.currentVersion, codexVersion: state.diagnostics.codexVersion || '' })
+            });
+          } catch (err) {}
+        }
       } catch (err) {
       } finally {
         state.diagnosticsRefreshPending = false;
@@ -435,13 +552,17 @@
         launchStep = 'service';
         const me = await request('/client/me');
         applyClientMe(me);
-        let providerToken = '';
-        if (state.diagnostics.codexAuthMode !== 'chatgpt') {
-          launchStep = 'backend_prepare';
-          const prep = await request('/client/launch/prepare', { method: 'POST', body: '{}' });
-          providerToken = prep.provider && prep.provider.bearerToken;
-          if (!providerToken) throw new Error('codex_provider_unavailable');
-        }
+        launchStep = 'backend_prepare';
+        const prep = await request('/client/launch/prepare', {
+          method: 'POST',
+          body: JSON.stringify({
+            localAccount: state.diagnostics.codexAccount || '',
+            localAuthMode: state.diagnostics.codexAuthMode || '',
+            managedRuntime: true
+          })
+        });
+        const providerToken = prep.provider && prep.provider.bearerToken;
+        if (!providerToken) throw new Error('codex_provider_unavailable');
         launchStep = 'local_prepare';
         const localPrep = await invokeTauri('prepare_codex', { backendUrl: state.api, providerToken });
         applyLocalDiagnostics(localPrep);
@@ -450,9 +571,20 @@
         renderCodexLaunchState();
         launchStep = 'local_launch';
         const launch = await invokeTauri('launch_codex');
-        $('startState').textContent = launch ? launch.launchState : '已启动';
-        launchStep = 'wait_running';
-        await waitForCodexRunning();
+        if (!launch) throw new Error('codex_appid_launch_failed');
+        state.codexLaunchPhase = 'launched';
+        state.diagnostics.lastFailure = '';
+        const capabilityWarning = launch.capabilityWarning ? userMessage(launch.capabilityWarning, '') : '';
+        $('launchMsg').textContent = capabilityWarning ? `Codex 已启动；${capabilityWarning}` : 'Codex 已启动';
+        $('launchMsg').className = 'msg';
+        renderCodexLaunchState();
+        try {
+          await request('/client/launch/heartbeat', {
+            method: 'POST',
+            body: JSON.stringify({ desktopVersion: state.currentVersion, codexVersion: state.diagnostics.codexVersion || '' })
+          });
+        } catch (err) {}
+        confirmCodexRunningInBackground();
       } catch (err) {
         state.codexLaunchPhase = '';
         try {
@@ -474,19 +606,24 @@
       if (!$('advanced').classList.contains('hidden')) loadAdvanced();
     }
 
-    async function waitForCodexRunning() {
+    async function confirmCodexRunningInBackground() {
       for (let i = 0; i < 20; i += 1) {
         await new Promise(resolve => setTimeout(resolve, 750));
-        const local = await invokeTauri('codex_diagnostics');
-        applyLocalDiagnostics(local);
-        if (state.diagnostics.codexRunning === '可用') return;
-        state.codexLaunchPhase = 'starting';
-        renderCodexLaunchState();
+        try {
+          const local = await invokeTauri('codex_diagnostics');
+          applyLocalDiagnostics(local);
+          if (state.diagnostics.codexRunning === '可用') return;
+        } catch (err) {}
       }
+      const failure = userMessage('codex_process_exited_after_launch', `Codex 启动后立即退出，请在${officialAppLocation()}确认官方应用可正常打开`);
       state.codexLaunchPhase = '';
-      $('startState').textContent = '已发起启动';
-      $('launchBtn').textContent = '启动 Codex';
-      $('launchBtn').disabled = false;
+      state.diagnostics.lastFailure = failure;
+      $('startState').textContent = '启动失败';
+      $('launchMsg').textContent = failure;
+      $('launchMsg').className = 'msg err';
+      try { await request('/client/launch/stop', { method: 'POST', body: '{}' }); } catch (err) {}
+      try { await invokeTauri('stop_codex'); } catch (err) {}
+      renderCodexLaunchState();
     }
 
     async function stopCodex() {
@@ -498,6 +635,7 @@
         $('launchBtn').disabled = true;
         const stopped = await invokeTauri('stop_codex');
         applyLocalDiagnostics(stopped);
+        try { await request('/client/launch/stop', { method: 'POST', body: '{}' }); } catch (err) {}
         await refreshLocalDiagnostics();
       } catch (err) {
         $('launchMsg').textContent = userMessage(err.message, '停止失败，请稍后重试');
@@ -509,6 +647,7 @@
     }
 
     async function installCodex() {
+      const updating = state.diagnostics.codexDetected === '可用';
       $('launchMsg').textContent = '';
       $('launchMsg').className = 'msg';
       state.codexLaunchPhase = 'installing';
@@ -517,18 +656,20 @@
       let installOk = false;
       try {
         if (!tauriInvoke()) throw new Error('desktop_shell_required');
-        $('launchBtn').textContent = '正在安装';
+        $('launchBtn').textContent = updating ? '正在更新 Codex 桌面端' : '正在安装 Codex 桌面端';
         $('launchBtn').disabled = true;
         const installed = await invokeTauri('install_codex');
         if (installed === null) throw new Error('codex_install_unavailable');
         setInstallProgress(94, '正在确认安装结果');
         applyLocalDiagnostics(installed);
         await refreshLocalDiagnostics();
-        $('launchMsg').textContent = 'Codex 已安装';
+        $('launchMsg').textContent = updating
+          ? 'Codex 桌面端已更新并保持关闭；点击“启动 Codex”后将自动配置登录'
+          : 'Codex 桌面端已安装并保持关闭；点击“启动 Codex”后将自动配置登录';
         $('launchMsg').className = 'msg';
         installOk = true;
       } catch (err) {
-        $('launchMsg').textContent = userMessage(err.message, 'Codex 安装失败，请联系管理员');
+        $('launchMsg').textContent = userMessage(err.message, 'Codex 桌面端安装失败，请联系管理员');
         $('launchMsg').className = 'msg err';
       } finally {
         state.codexLaunchPhase = '';
@@ -540,8 +681,65 @@
     async function launchButtonAction() {
       const status = codexStatusText();
       if (status === '运行中') return stopCodex();
-      if (status === '未检测到') return installCodex();
+      if (status === '已启动') return;
+      if (status === '客户端需更新') return installDesktopUpdate();
+      if (status === '正在更新客户端') return;
+      if (status === '未检测到' || status === '需要更新' || status === '版本待验证') return installCodex();
       return launchCodex();
+    }
+
+    async function installDesktopUpdate() {
+      const info = state.updateInfo || {};
+      if (!(info.available && info.downloadUrl && info.sha256)) {
+        $('launchMsg').textContent = '客户端更新信息不完整，请联系管理员';
+        $('launchMsg').className = 'msg err';
+        if ($('updateMsg')) {
+          $('updateMsg').textContent = '客户端更新信息不完整，请联系管理员';
+          $('updateMsg').className = 'msg err';
+        }
+        return;
+      }
+
+      state.clientUpdatePhase = 'updating';
+      $('launchMsg').textContent = '正在更新客户端，请勿关闭程序';
+      $('launchMsg').className = 'msg';
+      $('updateMsg').textContent = '正在更新客户端，请勿关闭程序';
+      $('updateMsg').className = 'msg';
+      startClientUpdateProgress();
+      renderCodexLaunchState();
+      renderUpdateInfo();
+      try {
+        if (!tauriInvoke()) throw new Error('update_download_unavailable');
+        if (state.diagnostics.codexRunning === '可用') {
+          const stopped = await invokeTauri('stop_codex');
+          applyLocalDiagnostics(stopped);
+          try { await request('/client/launch/stop', { method: 'POST', body: '{}' }); } catch (err) {}
+          state.clientUpdatePhase = 'updating';
+          renderCodexLaunchState();
+        }
+        await invokeTauri('install_desktop_update', {
+          downloadUrl: info.downloadUrl,
+          sha256: info.sha256
+        });
+        clearInterval(state.installProgressTimer);
+        state.installProgressTimer = null;
+        setInstallProgress(100, '正在静默安装，客户端将自动重启');
+        $('launchMsg').textContent = '客户端更新已下载并校验，正在静默安装';
+        $('updateMsg').textContent = '客户端更新已下载并校验，正在静默安装';
+        setTimeout(() => {
+          invokeTauri('exit_for_desktop_update').catch(() => {});
+        }, 650);
+      } catch (err) {
+        state.clientUpdatePhase = '';
+        finishInstallProgress(false);
+        const message = userMessage(err.message || err, '客户端更新失败，请稍后重试');
+        renderCodexLaunchState();
+        renderUpdateInfo();
+        $('launchMsg').textContent = message;
+        $('launchMsg').className = 'msg err';
+        $('updateMsg').textContent = message;
+        $('updateMsg').className = 'msg err';
+      }
     }
 
     function userMessage(code, fallback) {
@@ -553,23 +751,50 @@
         invalid_json: '请求失败，请稍后重试',
         request_failed: '请求失败，请稍后重试',
         network_unavailable: '网络不可用，请稍后重试',
+        backend_timeout: '连接服务器超时，请检查系统代理或防火墙',
+        backend_connect_failed: '客户端无法连接服务器，请检查系统代理、防火墙或安全软件',
+        backend_response_failed: '服务器响应异常，请稍后重试',
+        backend_request_invalid: '客户端网络配置异常，请更新客户端',
         client_version_incompatible: '客户端版本不兼容，请更新客户端',
+        client_update_required: '当前客户端已不再允许创建非受控会话，请先更新客户端',
         login_failed: '登录失败',
         invalid_client_login_request: '登录失败',
-        desktop_client_required: '请使用 Windows 客户端登录',
+        desktop_client_required: '请使用 Codex+++ 桌面客户端登录',
         route_unavailable: '服务暂时不可用，请稍后再试',
-        desktop_shell_required: '请使用 Windows 客户端启动 Codex',
-        codex_not_detected: '未检测到本机 Codex，请确认已安装后重试',
-        codex_launch_failed: '本机 Codex 主程序启动失败，请确认 Codex 可从开始菜单正常打开',
-        codex_appid_launch_failed: '本机 Codex 启动失败，请确认 Codex 可从开始菜单正常打开',
+        personal_codex_login_detected: '检测到非本后端提供的 Codex 登录，请先退出您自己的登录后重试',
+        desktop_shell_required: '请使用 Codex+++ 桌面客户端启动 Codex',
+        codex_not_detected: '未检测到 Codex 桌面端，请先在客户端内安装官方 ChatGPT 桌面应用',
+        codex_launch_failed: `本机 Codex 主程序启动失败，请确认 Codex 可从${officialAppLocation()}正常打开`,
+        codex_appid_launch_failed: `本机 Codex 启动失败，请确认 Codex 可从${officialAppLocation()}正常打开`,
+        codex_appid_invalid: '检测到的 Codex 应用标识不正确，请更新或重新安装官方应用',
+        codex_activation_com_init_failed: 'Windows 应用启动组件初始化失败，请重启电脑后重试',
+        codex_activation_manager_failed: 'Windows 应用启动服务不可用，请重启电脑后重试',
+        codex_activation_request_failed: 'Windows 未能激活 Codex，请先从开始菜单打开一次后重试',
+        codex_activation_no_process: 'Windows 已接受启动请求，但没有返回 Codex 进程，请更新或修复官方应用',
+        codex_activation_process_exited: `Codex 进程启动后立即退出，请先从${officialAppLocation()}确认官方应用可正常打开`,
+        codex_process_exited_after_launch: `Codex 启动后立即退出，请先从${officialAppLocation()}确认官方应用可正常打开`,
         codex_command_launch_failed: '本机 Codex 命令启动失败，请联系管理员',
         codex_auth_write_failed: 'Codex 自动登录失败，请联系管理员',
         codex_stop_failed: 'Codex 停止失败，请稍后重试',
-        codex_install_unavailable: 'Codex 安装失败，请联系管理员',
-        codex_install_component_missing: 'Codex 安装失败，请联系管理员',
-        codex_install_failed: 'Codex 安装失败，请联系管理员',
-        update_download_unavailable: '请使用 Windows 客户端获取更新',
-        update_download_failed: '获取更新失败，请稍后重试'
+        codex_restore_failed: 'Codex 已停止，但原登录配置恢复失败，请联系管理员',
+        codex_install_unavailable: 'Codex 桌面端安装不可用，请联系管理员',
+        codex_install_component_missing: 'Codex 桌面端安装组件不可用，请联系管理员',
+        codex_install_failed: 'Codex 桌面端安装失败，请联系管理员',
+        codex_update_failed: `Codex 桌面端版本过旧且自动更新失败，请检查${officialUpdateSource()}后重试`,
+        codex_must_stop_before_update: '请先停止正在运行的 Codex，再进行安装或更新',
+        codex_install_autolaunch_stop_failed: 'Codex 已更新，但未能关闭安装器自动打开的窗口；请关闭 Codex 后再点击启动',
+        codex_version_unreadable: '无法读取本机 Codex 版本，请更新或重新安装官方应用',
+        codex_version_not_verified: `Codex 尚未通过${officialUpdateSource()}实时版本检查，请先检查更新`,
+        codex_version_check_unavailable: '本机缺少 WinGet，点击“检查并更新 Codex”后将由微软官方安装器完成验证',
+        codex_version_check_failed: `${officialUpdateSource()}版本检查失败，请检查网络后重试`,
+        codex_signature_invalid: '检测到的 ChatGPT（Codex）桌面应用未通过官方签名校验，请在客户端内重新安装',
+        codex_macos_unsupported: '当前 Mac 不满足要求，需要 macOS 14 或更高版本',
+        codex_browser_plugin_install_failed: 'Browser 能力未能自动配置，请在 Codex 的插件目录确认 Browser 已启用',
+        update_download_unavailable: '当前平台暂不支持客户端内更新',
+        update_download_failed: '客户端下载失败，请稍后重试',
+        update_integrity_failed: '客户端更新校验失败，请稍后重试',
+        update_metadata_invalid: '客户端更新信息异常，请联系管理员',
+        update_install_failed: '客户端静默更新启动失败，请稍后重试'
       };
       return messages[code] || fallback;
     }
@@ -578,8 +803,8 @@
       const mapped = userMessage(code, '');
       if (mapped) return mapped;
       if (step === 'service' || step === 'backend_prepare') return 'Codex+++ 服务暂时不可用，请稍后再试';
-      if (step === 'local_launch') return '本机 Codex 主程序启动失败，请确认 Codex 可从开始菜单正常打开';
-      if (String(code).includes('未检测到本机 Codex')) return '未检测到本机 Codex，请确认已安装后重试';
+      if (step === 'local_launch') return `本机 Codex 主程序启动失败，请确认 Codex 可从${officialAppLocation()}正常打开`;
+      if (String(code).includes('未检测到 Codex 桌面端')) return '未检测到 Codex 桌面端，请先在客户端内安装官方 ChatGPT 桌面应用';
       return '启动失败，请稍后重试';
     }
 
@@ -608,14 +833,19 @@
         ['登录状态', state.security?.sessionStatus || '']
       ]);
       await ensureDesktopVersion();
+      if (!state.updateInfo) {
+        try { await refreshDesktopUpdateInfo(); } catch (err) {}
+      }
       renderUpdateInfo();
       $('diagnosticsTable').innerHTML = table(['项目', '状态'], [
         ['本机 Codex 是否检测到', state.diagnostics.codexDetected],
         ['本机 Codex 是否正在运行', state.diagnostics.codexRunning],
+        ['本机 Codex 版本', state.diagnostics.codexVersion || '未识别'],
+        ['本机 Codex 版本兼容', state.diagnostics.codexCompatible],
         ['最近一次启动失败原因', state.diagnostics.lastFailure || '']
       ]);
       $('checkUpdateBtn').onclick = checkUpdate;
-      $('openUpdateBtn').onclick = openUpdateDownload;
+      $('openUpdateBtn').onclick = installDesktopUpdate;
       bindPager('usage', (page) => { state.usagePage = page; loadAdvanced(); });
       bindPager('ledger', (page) => { state.ledgerPage = page; loadAdvanced(); });
       bindPager('recharge', (page) => { state.rechargePage = page; loadAdvanced(); });
@@ -625,15 +855,21 @@
       const btn = $('checkUpdateBtn');
       btn.disabled = true;
       try {
-        await ensureDesktopVersion();
-        state.updateInfo = await request(`/client/desktop/update?currentVersion=${encodeURIComponent(state.currentVersion)}`);
-        renderUpdateInfo();
+        await refreshDesktopUpdateInfo();
       } catch (err) {
         $('updateMsg').textContent = userMessage(err.message, '检查更新失败，请稍后重试');
         $('updateMsg').className = 'msg err';
       } finally {
         btn.disabled = false;
       }
+    }
+
+    async function refreshDesktopUpdateInfo() {
+      await ensureDesktopVersion();
+      state.updateInfo = await request(`/client/desktop/update?currentVersion=${encodeURIComponent(state.currentVersion)}&platform=${encodeURIComponent(state.platform)}`);
+      renderUpdateInfo();
+      renderCodexLaunchState();
+      return state.updateInfo;
     }
 
     function renderUpdateInfo() {
@@ -646,26 +882,15 @@
       if (info.releaseNotes) rows.push(['更新说明', info.releaseNotes]);
       if (info.sha256) rows.push(['校验值', info.sha256]);
       $('updateTable').innerHTML = table(['项目', '状态'], rows);
-      $('openUpdateBtn').disabled = !(info.available && info.downloadUrl);
+      $('checkUpdateBtn').disabled = state.clientUpdatePhase === 'updating';
+      $('openUpdateBtn').textContent = state.clientUpdatePhase === 'updating' ? '正在更新' : '更新客户端';
+      $('openUpdateBtn').disabled = state.clientUpdatePhase === 'updating' || !(info.available && info.downloadUrl && info.sha256);
       $('updateMsg').className = 'msg';
-      $('updateMsg').textContent = info.available ? (info.downloadUrl ? '发现新版本' : '发现新版本，请联系管理员获取更新') : '当前已是最新版本';
-    }
-
-    async function openUpdateDownload() {
-      const info = state.updateInfo || {};
-      if (!(info.available && info.downloadUrl)) {
-        $('updateMsg').textContent = '当前没有可获取的更新';
-        return;
-      }
-      try {
-        const opened = await invokeTauri('open_update_download', { downloadUrl: info.downloadUrl });
-        if (opened === null) throw new Error('update_download_unavailable');
-        $('updateMsg').textContent = '已打开更新下载';
-        $('updateMsg').className = 'msg';
-      } catch (err) {
-        $('updateMsg').textContent = userMessage(err.message, '获取更新失败，请稍后重试');
-        $('updateMsg').className = 'msg err';
-      }
+      $('updateMsg').textContent = state.clientUpdatePhase === 'updating'
+        ? '正在更新客户端，请勿关闭程序'
+        : info.available
+          ? (info.downloadUrl && info.sha256 ? '发现新版本，可静默更新' : '发现新版本，请联系管理员获取更新')
+          : '当前已是最新版本';
     }
 
     function table(headers, rows) {
@@ -745,8 +970,35 @@
       });
     }
 
+    async function logoutClient() {
+      $('logoutBtn').disabled = true;
+      try {
+        try {
+          await invokeTauri('stop_codex');
+        } catch (err) {}
+        try { await request('/client/launch/stop', { method: 'POST', body: '{}' }); } catch (err) {}
+        try { await request('/client/presence/stop', { method: 'POST', body: '{}' }); } catch (err) {}
+      } finally {
+        clearInterval(state.balanceRefreshTimer);
+        clearInterval(state.diagnosticsRefreshTimer);
+        localStorage.removeItem('clientToken');
+        location.reload();
+      }
+    }
+
+    async function stopAndExitFromTray() {
+      try {
+        try { await invokeTauri('stop_codex'); } catch (err) {}
+        try { await request('/client/launch/stop', { method: 'POST', body: '{}' }); } catch (err) {}
+        try { await request('/client/presence/stop', { method: 'POST', body: '{}' }); } catch (err) {}
+      } finally {
+        try { await invokeTauri('exit_managed_client'); } catch (err) {}
+      }
+    }
+    window.__codexpppStopAndExitFromTray = stopAndExitFromTray;
+
     $('loginBtn').onclick = login;
-    $('logoutBtn').onclick = () => { localStorage.removeItem('clientToken'); location.reload(); };
+    $('logoutBtn').onclick = logoutClient;
     $('launchBtn').onclick = launchButtonAction;
     $('simpleBtn').onclick = () => { $('simple').classList.remove('hidden'); $('advanced').classList.add('hidden'); $('simpleBtn').classList.add('primary'); $('advancedBtn').classList.remove('primary'); };
     $('advancedBtn').onclick = async () => { $('simple').classList.add('hidden'); $('advanced').classList.remove('hidden'); $('simpleBtn').classList.remove('primary'); $('advancedBtn').classList.add('primary'); await loadAdvanced(); };
@@ -754,6 +1006,7 @@
     document.addEventListener('visibilitychange', () => { if (!document.hidden) { silentRefreshBalance(); refreshLocalDiagnostics(); } });
     async function boot() {
       await configureApiBase();
+      await ensureDesktopVersion();
       if (state.token) {
         $('login').classList.add('hidden');
         $('app').classList.remove('hidden');

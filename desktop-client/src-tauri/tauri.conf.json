@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "Codex+++",
-  "version": "0.1.40",
+  "version": "0.1.60",
   "identifier": "com.codexppp.desktop",
   "build": {
     "frontendDist": "../ui"
@@ -18,15 +18,13 @@
       }
     ],
     "security": {
-      "csp": null
+      "csp": "default-src 'self'; connect-src 'self' ipc: http://ipc.localhost https://codex.52cx.top; img-src 'self' asset: http://asset.localhost data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'"
     }
   },
   "bundle": {
     "active": true,
-    "targets": ["nsis"],
-    "icon": ["icons/icon.ico"],
     "publisher": "Codex+++",
-    "shortDescription": "Codex+++ Windows client",
-    "longDescription": "Codex+++ Windows client for logging in, checking token balance, requesting token top-ups, checking local Codex status, installing Codex automatically, and launching Codex."
+    "shortDescription": "Codex+++ desktop client",
+    "longDescription": "Codex+++ desktop client for logging in, checking token balance, requesting token top-ups, checking local Codex status, installing Codex automatically, and launching Codex."
   }
 }

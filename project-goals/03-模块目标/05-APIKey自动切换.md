@@ -13,7 +13,7 @@ API Key 自动切换
 
 参考 sub2api 的结果必须落到后端 gateway 调度，不得变成普通用户手动配置 API Key。
 
-首版 Windows 客户端不得接收、保存、展示或切换 API Key。API Key 或等价可用路由只在后端 gateway 内部流转。
+Windows 与 macOS 客户端不得接收、保存、展示或切换号池内部 API Key。API Key 或等价可用路由只在后端 gateway 内部流转。
 
 必须做到
 --------

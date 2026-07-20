@@ -47,6 +47,24 @@ CREATE TABLE IF NOT EXISTS token_topups (
 CREATE INDEX IF NOT EXISTS idx_token_topups_enabled_sort
   ON token_topups(enabled, sort_order, created_at);
 
+CREATE TABLE IF NOT EXISTS account_orders (
+  id TEXT PRIMARY KEY,
+  buyer_cipher TEXT NOT NULL,
+  topup_id TEXT NOT NULL,
+  topup_name TEXT NOT NULL,
+  price_cents BIGINT NOT NULL CHECK (price_cents > 0),
+  tokens BIGINT NOT NULL CHECK (tokens > 0),
+  status TEXT NOT NULL CHECK (status IN ('pending', 'contacted', 'fulfilled', 'rejected')),
+  user_id TEXT NOT NULL DEFAULT '',
+  admin_remark TEXT NOT NULL DEFAULT '',
+  created_at TIMESTAMPTZ NOT NULL,
+  updated_at TIMESTAMPTZ NOT NULL,
+  fulfilled_at TIMESTAMPTZ
+);
+
+CREATE INDEX IF NOT EXISTS idx_account_orders_status_created
+  ON account_orders(status, created_at DESC);
+
 CREATE TABLE IF NOT EXISTS recharge_requests (
   id TEXT PRIMARY KEY,
   user_id TEXT NOT NULL REFERENCES users(id),
@@ -94,9 +112,15 @@ CREATE TABLE IF NOT EXISTS upstream_accounts (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL,
   account_group TEXT NOT NULL DEFAULT '',
+  remark TEXT NOT NULL DEFAULT '',
   credential_type TEXT NOT NULL,
+  source_type TEXT NOT NULL DEFAULT '',
+  authorization_status TEXT NOT NULL DEFAULT 'authorized',
   access_token_cipher TEXT NOT NULL DEFAULT '',
   refresh_token_cipher TEXT NOT NULL DEFAULT '',
+  auth_json_cipher TEXT NOT NULL DEFAULT '',
+  password_cipher TEXT NOT NULL DEFAULT '',
+  last_authorization_error TEXT NOT NULL DEFAULT '',
   token_type TEXT NOT NULL DEFAULT '',
   chatgpt_account_id TEXT NOT NULL DEFAULT '',
   expires_at TIMESTAMPTZ,
@@ -118,6 +142,8 @@ CREATE TABLE IF NOT EXISTS upstream_accounts (
 );
 
 ALTER TABLE upstream_accounts
+  ADD COLUMN IF NOT EXISTS remark TEXT NOT NULL DEFAULT '';
+ALTER TABLE upstream_accounts
   ADD COLUMN IF NOT EXISTS usage_tokens BIGINT NOT NULL DEFAULT 0;
 ALTER TABLE upstream_accounts
   ADD COLUMN IF NOT EXISTS rate_limit_used_percent DOUBLE PRECISION;
@@ -129,18 +155,30 @@ ALTER TABLE upstream_accounts
   ADD COLUMN IF NOT EXISTS credit_balance_label TEXT NOT NULL DEFAULT '';
 ALTER TABLE upstream_accounts
   ADD COLUMN IF NOT EXISTS chatgpt_account_id TEXT NOT NULL DEFAULT '';
+ALTER TABLE upstream_accounts
+  ADD COLUMN IF NOT EXISTS auth_json_cipher TEXT NOT NULL DEFAULT '';
+ALTER TABLE upstream_accounts
+  ADD COLUMN IF NOT EXISTS source_type TEXT NOT NULL DEFAULT '';
+ALTER TABLE upstream_accounts
+  ADD COLUMN IF NOT EXISTS authorization_status TEXT NOT NULL DEFAULT 'authorized';
+ALTER TABLE upstream_accounts
+  ADD COLUMN IF NOT EXISTS password_cipher TEXT NOT NULL DEFAULT '';
+ALTER TABLE upstream_accounts
+  ADD COLUMN IF NOT EXISTS last_authorization_error TEXT NOT NULL DEFAULT '';
 
 ALTER TABLE upstream_accounts
   DROP COLUMN IF EXISTS run_url_cipher;
 
 CREATE INDEX IF NOT EXISTS idx_upstream_accounts_available
-  ON upstream_accounts(status, balance_status, risk_status, account_group);
+  ON upstream_accounts(status, authorization_status, balance_status, risk_status, account_group);
 
 CREATE TABLE IF NOT EXISTS api_keys (
   id TEXT PRIMARY KEY,
+  key_cipher TEXT NOT NULL DEFAULT '',
   key_hash TEXT NOT NULL UNIQUE,
   public_prefix TEXT NOT NULL,
   upstream_account_id TEXT NOT NULL REFERENCES upstream_accounts(id),
+  user_id TEXT NOT NULL DEFAULT '',
   status TEXT NOT NULL CHECK (status IN ('active', 'disabled')),
   last_used_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ NOT NULL,
@@ -148,14 +186,37 @@ CREATE TABLE IF NOT EXISTS api_keys (
 );
 
 ALTER TABLE api_keys
+  ADD COLUMN IF NOT EXISTS key_cipher TEXT NOT NULL DEFAULT '';
+ALTER TABLE api_keys
+  ADD COLUMN IF NOT EXISTS user_id TEXT NOT NULL DEFAULT '';
+ALTER TABLE api_keys
   ADD COLUMN IF NOT EXISTS last_used_at TIMESTAMPTZ;
 
 CREATE INDEX IF NOT EXISTS idx_api_keys_upstream_status
   ON api_keys(upstream_account_id, status);
 
+CREATE TABLE IF NOT EXISTS client_access_keys (
+  id TEXT PRIMARY KEY,
+  key_cipher TEXT NOT NULL DEFAULT '',
+  key_hash TEXT NOT NULL UNIQUE,
+  public_prefix TEXT NOT NULL,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  status TEXT NOT NULL CHECK (status IN ('active', 'disabled')),
+  last_used_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL,
+  updated_at TIMESTAMPTZ NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_client_access_keys_user_status
+  ON client_access_keys(user_id, status);
+
 CREATE TABLE IF NOT EXISTS usage_records (
   id TEXT PRIMARY KEY,
   user_id TEXT NOT NULL REFERENCES users(id),
+  upstream_account_id TEXT NOT NULL DEFAULT '',
+  api_key_id TEXT NOT NULL DEFAULT '',
+  client_access_key_id TEXT NOT NULL DEFAULT '',
+  session_id TEXT NOT NULL DEFAULT '',
   model TEXT NOT NULL,
   input_tokens BIGINT NOT NULL CHECK (input_tokens >= 0),
   cached_input_tokens BIGINT NOT NULL CHECK (cached_input_tokens >= 0),
@@ -164,11 +225,26 @@ CREATE TABLE IF NOT EXISTS usage_records (
   created_at TIMESTAMPTZ NOT NULL
 );
 
+ALTER TABLE usage_records
+  ADD COLUMN IF NOT EXISTS upstream_account_id TEXT NOT NULL DEFAULT '';
+ALTER TABLE usage_records
+  ADD COLUMN IF NOT EXISTS api_key_id TEXT NOT NULL DEFAULT '';
+ALTER TABLE usage_records
+  ADD COLUMN IF NOT EXISTS client_access_key_id TEXT NOT NULL DEFAULT '';
+ALTER TABLE usage_records
+  ADD COLUMN IF NOT EXISTS session_id TEXT NOT NULL DEFAULT '';
+
 CREATE INDEX IF NOT EXISTS idx_usage_records_user_created
   ON usage_records(user_id, created_at DESC);
 
 CREATE INDEX IF NOT EXISTS idx_usage_records_created
   ON usage_records(created_at DESC);
+
+CREATE INDEX IF NOT EXISTS idx_usage_records_upstream_created
+  ON usage_records(upstream_account_id, created_at DESC);
+
+CREATE INDEX IF NOT EXISTS idx_usage_records_session_created
+  ON usage_records(session_id, created_at DESC);
 
 CREATE TABLE IF NOT EXISTS audit_logs (
   id TEXT PRIMARY KEY,
@@ -192,19 +268,22 @@ CREATE INDEX IF NOT EXISTS idx_audit_logs_created
 
 CREATE TABLE IF NOT EXISTS sessions (
   token TEXT PRIMARY KEY,
-  role TEXT NOT NULL CHECK (role IN ('admin', 'client', 'codex')),
+  role TEXT NOT NULL CHECK (role IN ('admin', 'client')),
   subject_id TEXT NOT NULL,
   device_id TEXT NOT NULL DEFAULT '',
   expires_at TIMESTAMPTZ NOT NULL,
   created_at TIMESTAMPTZ NOT NULL
 );
 
+DELETE FROM sessions
+  WHERE role = 'codex';
+
 ALTER TABLE sessions
   DROP CONSTRAINT IF EXISTS sessions_role_check;
 
 ALTER TABLE sessions
   ADD CONSTRAINT sessions_role_check
-  CHECK (role IN ('admin', 'client', 'codex'));
+  CHECK (role IN ('admin', 'client'));
 
 CREATE INDEX IF NOT EXISTS idx_sessions_subject
   ON sessions(role, subject_id, expires_at DESC);
@@ -233,6 +312,9 @@ CREATE TABLE IF NOT EXISTS idempotency_records (
   upstream_status INTEGER NOT NULL DEFAULT 0,
   error TEXT NOT NULL DEFAULT '',
   result_text TEXT NOT NULL DEFAULT '',
+  result_body TEXT NOT NULL DEFAULT '',
+  result_type TEXT NOT NULL DEFAULT '',
+  result_headers TEXT NOT NULL DEFAULT '',
   created_at TIMESTAMPTZ NOT NULL,
   updated_at TIMESTAMPTZ NOT NULL,
   UNIQUE(user_id, request_id)
@@ -240,6 +322,12 @@ CREATE TABLE IF NOT EXISTS idempotency_records (
 
 ALTER TABLE idempotency_records
   ADD COLUMN IF NOT EXISTS result_text TEXT NOT NULL DEFAULT '';
+ALTER TABLE idempotency_records
+  ADD COLUMN IF NOT EXISTS result_body TEXT NOT NULL DEFAULT '';
+ALTER TABLE idempotency_records
+  ADD COLUMN IF NOT EXISTS result_type TEXT NOT NULL DEFAULT '';
+ALTER TABLE idempotency_records
+  ADD COLUMN IF NOT EXISTS result_headers TEXT NOT NULL DEFAULT '';
 
 CREATE INDEX IF NOT EXISTS idx_idempotency_records_user_status
   ON idempotency_records(user_id, status, created_at DESC);

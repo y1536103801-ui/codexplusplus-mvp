@@ -10,8 +10,6 @@ $tauriDir = Join-Path $repoRoot "desktop-client\src-tauri"
 
 Push-Location $tauriDir
 try {
-  cargo build
-
   if ($Bundle) {
     $hasTauriCli = $false
     try {
@@ -26,6 +24,8 @@ try {
     }
 
     cargo tauri build
+  } else {
+    cargo build
   }
 } finally {
   Pop-Location

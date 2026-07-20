@@ -1,0 +1,17 @@
+[Unit]
+Description=Codex+++ PostgreSQL and runtime backup
+Requires=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/opt/codexppp/scripts/backup-server.sh
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+ReadWritePaths=/opt/codexppp/backups
+Nice=10
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7
